@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b32b0fba1c71d74aa339d06c4160215, type: 3}
+  m_Name: "Bean_\u963F\u62C9\u6BD4\u5361"
+  m_EditorClassIdentifier: 
+  beanType: 1
+  beanName: "\u963F\u62C9\u6BD4\u5361"
+  description: 
+  beanIcon: {fileID: 21300000, guid: 1a6c39779eef0cc44a9a2b29ddd7d667, type: 3}
+  beanBarrelIcon: {fileID: 21300000, guid: be1a1ae572d1a2345ae69ad8b0315585, type: 3}
+  beanColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
+  isPermanent: 1
+  initialUseCount: -1
+  isSpecial: 0
+  specialTag: 
