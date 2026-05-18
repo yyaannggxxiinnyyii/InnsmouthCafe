@@ -30,7 +30,7 @@ namespace InnsmouthCafe.Data
 
         [Header("小料属性")]
         [Tooltip("小料属性标签列表（可多选）")]
-        public List<ToppingAttribute> attributes = new List<ToppingAttribute>();
+        public List<ToppingTag> attributes = new List<ToppingTag>();
 
         [Header("解锁设置")]
         [Tooltip("是否永久解锁（false表示一次性小料）")]
@@ -62,7 +62,7 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 检查是否包含指定属性
         /// </summary>
-        public bool HasAttribute(ToppingAttribute attribute)
+        public bool HasAttribute(ToppingTag attribute)
         {
             return attributes.Contains(attribute);
         }
@@ -86,16 +86,16 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 获取属性的中文名称
         /// </summary>
-        private string GetAttributeName(ToppingAttribute attribute)
+        private string GetAttributeName(ToppingTag attribute)
         {
             switch (attribute)
             {
-                case ToppingAttribute.Sweet: return "甜";
-                case ToppingAttribute.Bitter: return "苦";
-                case ToppingAttribute.Salty: return "咸";
-                case ToppingAttribute.Crispy: return "脆";
-                case ToppingAttribute.Boba: return "爆珠";
-                case ToppingAttribute.ExoticAroma: return "异香";
+                case ToppingTag.Sweet: return "甜";
+                case ToppingTag.Bitter: return "苦";
+                case ToppingTag.Salty: return "咸";
+                case ToppingTag.Crispy: return "脆";
+                case ToppingTag.Popping: return "爆珠";
+                case ToppingTag.StrangeAroma: return "异香";
                 default: return attribute.ToString();
             }
         }
@@ -126,43 +126,43 @@ namespace InnsmouthCafe.Data
             // 根据小料类型建议属性标签
             switch (toppingType)
             {
-                case ToppingType.CaramelCrumbs:
-                    if (!HasAttribute(ToppingAttribute.Sweet) && !HasAttribute(ToppingAttribute.Crispy))
+                case ToppingType.CaramelCrisp:
+                    if (!HasAttribute(ToppingTag.Sweet) && !HasAttribute(ToppingTag.Crispy))
                     {
                         Debug.Log($"[{toppingName}] 焦糖碎建议添加’甜’或’脆’属性");
                     }
                     break;
 
                 case ToppingType.ChocolatePowder:
-                    if (!HasAttribute(ToppingAttribute.Bitter))
+                    if (!HasAttribute(ToppingTag.Bitter))
                     {
                         Debug.Log($"[{toppingName}] 巧克力粉建议添加’苦’属性");
                     }
                     break;
 
-                case ToppingType.StarfishSugar:
-                    if (!HasAttribute(ToppingAttribute.Salty) && !HasAttribute(ToppingAttribute.Crispy))
+                case ToppingType.StarfishCandy:
+                    if (!HasAttribute(ToppingTag.Salty) && !HasAttribute(ToppingTag.Crispy))
                     {
                         Debug.Log($"[{toppingName}] 海星糖建议添加’咸’或’脆’属性");
                     }
                     break;
 
-                case ToppingType.EyeballBoba:
-                    if (!HasAttribute(ToppingAttribute.Boba) && !HasAttribute(ToppingAttribute.ExoticAroma))
+                case ToppingType.EyeballPoppingBoba:
+                    if (!HasAttribute(ToppingTag.Popping) && !HasAttribute(ToppingTag.StrangeAroma))
                     {
                         Debug.Log($"[{toppingName}] 眼球爆珠建议添加’爆珠’或’异香’属性");
                     }
                     break;
 
                 case ToppingType.MoonDust:
-                    if (!HasAttribute(ToppingAttribute.ExoticAroma))
+                    if (!HasAttribute(ToppingTag.StrangeAroma))
                     {
                         Debug.Log($"[{toppingName}] 月尘粉建议添加’异香’属性");
                     }
                     break;
 
                 case ToppingType.BlackSalt:
-                    if (!HasAttribute(ToppingAttribute.Salty) && !HasAttribute(ToppingAttribute.Bitter))
+                    if (!HasAttribute(ToppingTag.Salty) && !HasAttribute(ToppingTag.Bitter))
                     {
                         Debug.Log($"[{toppingName}] 黑盐建议添加’咸’或’苦’属性");
                     }

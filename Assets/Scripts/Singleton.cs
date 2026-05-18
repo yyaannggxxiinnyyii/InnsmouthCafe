@@ -9,16 +9,19 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
 
-    /// <summary>
-    /// 全局唯一实例访问器。场景中不存在时返回 null。
-    /// </summary>
-    public static T Instance => _instance;
+    public static T Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = Object.FindObjectOfType<T>();
+            }
 
-    /// <summary>
-    /// Unity 生命周期：初始化时注册单例。
-    /// 若场景中已存在另一个实例，则销毁当前 GameObject。
-    /// 子类覆写时必须调用 base.Awake()。
-    /// </summary>
+            return _instance;
+        }
+    }
+
     protected virtual void Awake()
     {
         if (_instance == null)

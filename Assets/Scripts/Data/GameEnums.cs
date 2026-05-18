@@ -78,7 +78,7 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 精磨 - 浓郁、强烈
         /// </summary>
-        Superfine
+        ExtraFine
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 焦糖碎 - 甜/脆
         /// </summary>
-        CaramelCrumbs,
+        CaramelCrisp,
 
         /// <summary>
         /// 巧克力粉 - 苦
@@ -125,12 +125,12 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 海星糖 - 咸/脆
         /// </summary>
-        StarfishSugar,
+        StarfishCandy,
 
         /// <summary>
         /// 眼球爆珠 - 爆珠/异香
         /// </summary>
-        EyeballBoba,
+        EyeballPoppingBoba,
 
         /// <summary>
         /// 月尘粉 - 异香
@@ -144,9 +144,9 @@ namespace InnsmouthCafe.Data
     }
 
     /// <summary>
-    /// 小料属性
+    /// 小料标签（属性）
     /// </summary>
-    public enum ToppingAttribute
+    public enum ToppingTag
     {
         /// <summary>
         /// 甜
@@ -171,12 +171,12 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 爆珠
         /// </summary>
-        Boba,
+        Popping,
 
         /// <summary>
         /// 异香
         /// </summary>
-        ExoticAroma
+        StrangeAroma
     }
 
     /// <summary>
@@ -398,5 +398,72 @@ namespace InnsmouthCafe.Data
         /// 当前制作失败（如溢出），必须倒掉重做
         /// </summary>
         Failed
+    }
+
+    /// <summary>
+    /// 制作主状态（V0.2）
+    /// </summary>
+    public enum CraftMainState
+    {
+        /// <summary>
+        /// 未开始
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// 制作中
+        /// </summary>
+        Crafting,
+
+        /// <summary>
+        /// 已提交
+        /// </summary>
+        Submitted,
+
+        /// <summary>
+        /// 失败（溢出等）
+        /// </summary>
+        Failed
+    }
+
+    /// <summary>
+    /// 制作模块状态（V0.2）
+    /// </summary>
+    public enum CraftModuleState
+    {
+        /// <summary>
+        /// 选择杯子
+        /// </summary>
+        CupSelect,
+
+        /// <summary>
+        /// 选择豆子
+        /// </summary>
+        BeanSelect,
+
+        /// <summary>
+        /// 选择研磨
+        /// </summary>
+        GrindSelect,
+
+        /// <summary>
+        /// 萃取
+        /// </summary>
+        Extract,
+
+        /// <summary>
+        /// 添加辅助液
+        /// </summary>
+        LiquidAdd,
+
+        /// <summary>
+        /// 添加小料
+        /// </summary>
+        ToppingAdd,
+
+        /// <summary>
+        /// 查看/提交
+        /// </summary>
+        Review
     }
 }
