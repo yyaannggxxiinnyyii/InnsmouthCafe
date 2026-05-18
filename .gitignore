@@ -15,7 +15,7 @@
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1
 *.blend1.meta
-
+/Assets/Resources/ArtAssets/Front/
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
@@ -96,4 +96,5 @@ InitTestScene*.unity*
 /[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
 
 # Auto-generated scenes by play mode tests
-/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*Assets/Resources/ArtAssets/Front/
+Assets/Resources/ArtAssets/Front/*.otf
