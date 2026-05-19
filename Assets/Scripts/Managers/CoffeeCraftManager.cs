@@ -149,6 +149,13 @@ namespace InnsmouthCafe.Managers
         /// <param name="beanType">豆种类型</param>
         public void AddBean(BeanType beanType)
         {
+            // 检查是否已经研磨过（研磨后不能再取豆）
+            if (_currentBatch.grindType.HasValue)
+            {
+                Debug.LogWarning("[CoffeeCraft] 咖啡粉已研磨，不能再添加豆子。请先清空咖啡粉或萃取完成后再取豆");
+                return;
+            }
+
             if (_currentBatch.beanGram + _beanPerClick > _maxBeanPerBatch)
             {
                 Debug.LogWarning($"[CoffeeCraft] 单批次豆量已达上限：{_maxBeanPerBatch}g");

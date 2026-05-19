@@ -7,11 +7,10 @@ namespace InnsmouthCafe.Managers
     /// <summary>
     /// 界面切换管理器
     /// 负责管理三个主要游戏界面的循环切换
+    /// 支持手动切换和根据制作状态自动切换
     /// </summary>
     public class ViewSwitchManager : MonoBehaviour
     {
-        #region 单例
-
         private static ViewSwitchManager _instance;
 
         /// <summary>
@@ -34,40 +33,30 @@ namespace InnsmouthCafe.Managers
             }
         }
 
-        #endregion
-
-        #region 序列化字段
-
         [Header("界面面板")]
-        [SerializeField]
-        [Tooltip("吧台接单界面")]
+        [SerializeField] [Tooltip("吧台接单界面")]
         private GameObject _barPanel;
 
-        [SerializeField]
-        [Tooltip("制作界面1：基础咖啡制作")]
+        [SerializeField] [Tooltip("制作界面1：基础咖啡制作")]
         private GameObject _craftBasePanel;
 
-        [SerializeField]
-        [Tooltip("制作界面2：调味与完成")]
+        [SerializeField] [Tooltip("制作界面2：调味与完成")]
         private GameObject _craftMixPanel;
 
         [Header("切换按钮")]
-        [SerializeField]
-        [Tooltip("左切换按钮")]
+        [SerializeField] [Tooltip("左切换按钮")]
         private GameObject _leftSwitchButton;
 
-        [SerializeField]
-        [Tooltip("右切换按钮")]
+        [SerializeField] [Tooltip("右切换按钮")]
         private GameObject _rightSwitchButton;
 
+        [Header("自动切换")]
+        [SerializeField] [Tooltip("是否启用根据制作状态自动切换")]
+        private bool _enableAutoSwitch = true;
+
         [Header("调试")]
-        [SerializeField]
-        [Tooltip("是否显示调试日志")]
+        [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = true;
-
-        #endregion
-
-        #region 私有字段
 
         /// <summary>
         /// 界面列表（按顺序）
@@ -89,9 +78,10 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         private bool _canSwitch = true;
 
-        #endregion
-
-        #region Unity生命周期
+        /// <summary>
+        /// 咖啡制作管理器引用
+        /// </summary>
+        private CoffeeCraftManager _craftManager;
 
         private void Awake()
         {
@@ -112,11 +102,30 @@ namespace InnsmouthCafe.Managers
         {
             // 默认显示吧台接单界面
             ShowView(GameViewType.Bar);
+
+            // 订阅咖啡制作状态变化事件
+            if (_enableAutoSwitch)
+            {
+                _craftManager = CoffeeCraftManager.Instance;
+                if (_craftManager != null)
+                {
+                    _craftManager.OnModuleStateChanged += OnModuleStateChanged;
+                    if (_showDebugLog)
+                    {
+                        Debug.Log("[ViewSwitchManager] 已订阅制作状态变化事件");
+                    }
+                }
+            }
         }
 
-        #endregion
-
-        #region 初始化
+        private void OnDestroy()
+        {
+            // 取消订阅事件
+            if (_craftManager != null)
+            {
+                _craftManager.OnModuleStateChanged -= OnModuleStateChanged;
+            }
+        }
 
         /// <summary>
         /// 初始化界面列表
@@ -139,9 +148,38 @@ namespace InnsmouthCafe.Managers
             }
         }
 
-        #endregion
+        /// <summary>
+        /// 制作模块状态变化回调
+        /// 根据状态自动切换界面
+        /// </summary>
+        private void OnModuleStateChanged(CraftModuleState state)
+        {
+            if (!_enableAutoSwitch)
+            {
+                return;
+            }
 
-        #region 公共方法
+            switch (state)
+            {
+                case CraftModuleState.BeanSelect:
+                case CraftModuleState.GrindSelect:
+                case CraftModuleState.Extract:
+                    // 取豆、研磨、萃取阶段 → 显示制作界面1
+                    ShowView(GameViewType.CraftBase);
+                    break;
+
+                case CraftModuleState.LiquidAdd:
+                case CraftModuleState.ToppingAdd:
+                    // 加液、加料阶段 → 显示制作界面2
+                    ShowView(GameViewType.CraftMix);
+                    break;
+            }
+
+            if (_showDebugLog)
+            {
+                Debug.Log($"[ViewSwitchManager] 根据制作状态自动切换: {state} → {_currentViewType}");
+            }
+        }
 
         /// <summary>
         /// 切换到下一个界面
@@ -262,6 +300,20 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
+        /// 设置是否启用自动切换
+        /// </summary>
+        /// <param name="enable">是否启用</param>
+        public void SetAutoSwitch(bool enable)
+        {
+            _enableAutoSwitch = enable;
+
+            if (_showDebugLog)
+            {
+                Debug.Log($"[ViewSwitchManager] 设置自动切换: {enable}");
+            }
+        }
+
+        /// <summary>
         /// 获取当前界面类型
         /// </summary>
         /// <returns>当前界面类型</returns>
@@ -298,7 +350,5 @@ namespace InnsmouthCafe.Managers
                 Debug.Log("[ViewSwitchManager] 切换按钮引用已设置");
             }
         }
-
-        #endregion
     }
 }
