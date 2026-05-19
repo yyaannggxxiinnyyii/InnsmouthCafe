@@ -15,8 +15,8 @@ namespace InnsmouthCafe.UI
         private Image _toppingIcon;
 
         [Header("状态")]
-        [Tooltip("当前小料类型")]
-        private ToppingType? _currentTopping;
+        [Tooltip("当前小料配置")]
+        private ToppingSO _currentTopping;
 
         [Tooltip("锚点索引")]
         private int _anchorIndex;
@@ -33,7 +33,7 @@ namespace InnsmouthCafe.UI
         /// <summary>
         /// 是否为空
         /// </summary>
-        public bool IsEmpty => !_currentTopping.HasValue;
+        public bool IsEmpty => _currentTopping == null;
 
         private void Awake()
         {
@@ -48,9 +48,9 @@ namespace InnsmouthCafe.UI
         /// <summary>
         /// 设置小料并显示
         /// </summary>
-        public void SetTopping(ToppingType toppingType, Sprite sprite)
+        public void SetTopping(ToppingSO topping, Sprite sprite)
         {
-            _currentTopping = toppingType;
+            _currentTopping = topping;
 
             if (_toppingIcon != null)
             {

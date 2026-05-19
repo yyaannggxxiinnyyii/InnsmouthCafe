@@ -10,8 +10,8 @@ namespace InnsmouthCafe.Data
     [System.Serializable]
     public class ToppingInstanceData
     {
-        [Tooltip("小料类型")]
-        public ToppingType toppingType;
+        [Tooltip("小料配置")]
+        public ToppingSO topping;
 
         [Tooltip("添加顺序索引（用于锚点定位）")]
         public int orderIndex;
@@ -84,6 +84,53 @@ namespace InnsmouthCafe.Data
                 total += segment.amountMl;
             }
             return total;
+        }
+
+        /// <summary>
+        /// 克隆当前咖啡数据（深拷贝）
+        /// </summary>
+        public CoffeeData Clone()
+        {
+            CoffeeData clone = new CoffeeData
+            {
+                selectedCup = this.selectedCup,
+                currentTotalVolume = this.currentTotalVolume,
+                isOverflowed = this.isOverflowed
+            };
+
+            // 深拷贝咖啡液段
+            foreach (var segment in coffeeSegments)
+            {
+                clone.coffeeSegments.Add(new CoffeeExtractSegmentData
+                {
+                    bean = segment.bean,
+                    grindType = segment.grindType,
+                    beanGram = segment.beanGram,
+                    extractedVolume = segment.extractedVolume
+                });
+            }
+
+            // 深拷贝辅助液段
+            foreach (var segment in liquidSegments)
+            {
+                clone.liquidSegments.Add(new LiquidSegmentData
+                {
+                    liquid = segment.liquid,
+                    amountMl = segment.amountMl
+                });
+            }
+
+            // 深拷贝小料列表
+            foreach (var topping in toppings)
+            {
+                clone.toppings.Add(new ToppingInstanceData
+                {
+                    topping = topping.topping,
+                    orderIndex = topping.orderIndex
+                });
+            }
+
+            return clone;
         }
     }
 }

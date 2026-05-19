@@ -18,6 +18,19 @@ namespace InnsmouthCafe.Utils
         [SerializeField] private CupContainerData _testSmallCup;
         [SerializeField] private CupContainerData _testMediumCup;
 
+        [Header("测试用豆子配置")]
+        [SerializeField] private BeanSO _normalBeanConfig;
+        [SerializeField] private BeanSO _arabicaBeanConfig;
+
+        [Header("测试用液体配置")]
+        [SerializeField] private LiquidSO _hotWaterConfig;
+        [SerializeField] private LiquidSO _milkConfig;
+        [SerializeField] private LiquidSO _foamConfig;
+
+        [Header("测试用小料配置")]
+        [SerializeField] private ToppingSO _caramelCrispConfig;
+        [SerializeField] private ToppingSO _chocolatePowderConfig;
+
         private CoffeeCraftManager _manager;
         private Vector2 _scrollPosition;
         private bool _showDebugWindow = true;
@@ -58,8 +71,8 @@ namespace InnsmouthCafe.Utils
             if (Input.GetKeyDown(KeyCode.Alpha1)) TestStartNewCraft();
             if (Input.GetKeyDown(KeyCode.Alpha2)) TestSelectSmallCup();
             if (Input.GetKeyDown(KeyCode.Alpha3)) TestSelectMediumCup();
-            if (Input.GetKeyDown(KeyCode.Alpha4)) TestAddBean(BeanType.Normal);
-            if (Input.GetKeyDown(KeyCode.Alpha5)) TestAddBean(BeanType.Arabica);
+            if (Input.GetKeyDown(KeyCode.Alpha4)) TestAddBean(_normalBeanConfig);
+            if (Input.GetKeyDown(KeyCode.Alpha5)) TestAddBean(_arabicaBeanConfig);
             if (Input.GetKeyDown(KeyCode.Alpha6)) TestSelectGrind(GrindType.Coarse);
             if (Input.GetKeyDown(KeyCode.Alpha7)) TestSelectGrind(GrindType.Fine);
             if (Input.GetKeyDown(KeyCode.Alpha8)) TestSelectGrind(GrindType.ExtraFine);
@@ -67,19 +80,18 @@ namespace InnsmouthCafe.Utils
             if (Input.GetKeyDown(KeyCode.Alpha0)) TestSubmit();
 
             // 辅助液测试（按住）
-            if (Input.GetKeyDown(KeyCode.Q)) _manager.StartPourLiquid(LiquidType.HotWater);
+            if (Input.GetKeyDown(KeyCode.Q)) _manager.StartPourLiquid(_hotWaterConfig);
             if (Input.GetKeyUp(KeyCode.Q)) _manager.StopPourLiquid();
 
-            if (Input.GetKeyDown(KeyCode.W)) _manager.StartPourLiquid(LiquidType.Milk);
+            if (Input.GetKeyDown(KeyCode.W)) _manager.StartPourLiquid(_milkConfig);
             if (Input.GetKeyUp(KeyCode.W)) _manager.StopPourLiquid();
 
-            if (Input.GetKeyDown(KeyCode.E)) _manager.StartPourLiquid(LiquidType.Foam);
+            if (Input.GetKeyDown(KeyCode.E)) _manager.StartPourLiquid(_foamConfig);
             if (Input.GetKeyUp(KeyCode.E)) _manager.StopPourLiquid();
 
             // 小料测试
-            if (Input.GetKeyDown(KeyCode.R)) TestAddTopping(ToppingType.CaramelCrisp);
-            if (Input.GetKeyDown(KeyCode.T)) TestAddTopping(ToppingType.ChocolatePowder);
-            if (Input.GetKeyDown(KeyCode.Y)) TestAddTopping(ToppingType.StarfishCandy);
+            if (Input.GetKeyDown(KeyCode.R)) TestAddTopping(_caramelCrispConfig);
+            if (Input.GetKeyDown(KeyCode.T)) TestAddTopping(_chocolatePowderConfig);
 
             // 其他操作
             if (Input.GetKeyDown(KeyCode.C)) TestClearWholeCoffee();
@@ -127,10 +139,10 @@ namespace InnsmouthCafe.Utils
             _manager.SelectCup(_testMediumCup);
         }
 
-        private void TestAddBean(BeanType beanType)
+        private void TestAddBean(BeanSO bean)
         {
-            Debug.Log($"[Test] 添加咖啡豆: {beanType}");
-            _manager.AddBean(beanType);
+            Debug.Log($"[Test] 添加咖啡豆: {(bean != null ? bean.beanName : "null")}");
+            _manager.AddBean(bean);
         }
 
         private void TestSelectGrind(GrindType grindType)
@@ -141,15 +153,15 @@ namespace InnsmouthCafe.Utils
 
         private void TestFinishExtraction()
         {
-            Debug.Log("[Test] 完成萃取");
+            Debug.Log("[Test] 开始萃取（自动完成）");
             _manager.StartExtraction();
-            _manager.FinishExtraction();
+            // 注意：萃取现在是渐进式的，会自动完成，不需要手动调用FinishExtraction
         }
 
-        private void TestAddTopping(ToppingType toppingType)
+        private void TestAddTopping(ToppingSO topping)
         {
-            Debug.Log($"[Test] 添加小料: {toppingType}");
-            _manager.AddTopping(toppingType);
+            Debug.Log($"[Test] 添加小料: {(topping != null ? topping.toppingName : "null")}");
+            _manager.AddTopping(topping);
         }
 
         private void TestSubmit()
@@ -228,7 +240,7 @@ namespace InnsmouthCafe.Utils
                 var batch = _manager.CurrentBatch;
                 GUILayout.Space(5);
                 GUILayout.Label("<b>当前批次:</b>", GUI.skin.box);
-                GUILayout.Label($"  豆种: {(batch.beanType.HasValue ? batch.beanType.Value.ToString() : "未选择")}");
+                GUILayout.Label($"  豆种: {(batch.bean != null ? batch.bean.beanName : "未选择")}");
                 GUILayout.Label($"  豆量: {batch.beanGram:F1}g");
                 GUILayout.Label($"  研磨: {(batch.grindType.HasValue ? batch.grindType.Value.ToString() : "未选择")}");
             }

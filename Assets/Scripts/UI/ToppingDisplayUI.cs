@@ -149,42 +149,48 @@ namespace InnsmouthCafe.UI
             for (int i = 0; i < data.toppings.Count && i < _anchors.Length; i++)
             {
                 ToppingInstanceData topping = data.toppings[i];
-                Sprite sprite = GetToppingSprite(topping.toppingType);
+                Sprite sprite = GetToppingSprite(topping.topping);
 
                 if (_anchors[i] != null)
                 {
-                    _anchors[i].SetTopping(topping.toppingType, sprite);
+                    _anchors[i].SetTopping(topping.topping, sprite);
                 }
             }
         }
 
         /// <summary>
-        /// 根据小料类型获取图标
+        /// 根据小料配置获取图标
         /// </summary>
-        private Sprite GetToppingSprite(ToppingType toppingType)
+        private Sprite GetToppingSprite(ToppingSO topping)
         {
-            switch (toppingType)
+            if (topping == null)
             {
-                case ToppingType.CaramelCrisp:
+                return null;
+            }
+
+            // 根据 toppingId 来获取对应的精灵
+            switch (topping.toppingId)
+            {
+                case "caramel_crisp":
                     return _caramelCrispSprite;
 
-                case ToppingType.ChocolatePowder:
+                case "chocolate_powder":
                     return _chocolatePowderSprite;
 
-                case ToppingType.StarfishCandy:
+                case "starfish_candy":
                     return _starfishCandySprite;
 
-                case ToppingType.EyeballPoppingBoba:
+                case "eyeball_popping_boba":
                     return _eyeballPoppingBobaSprite;
 
-                case ToppingType.MoonDust:
+                case "moon_dust":
                     return _moonDustSprite;
 
-                case ToppingType.BlackSalt:
+                case "black_salt":
                     return _blackSaltSprite;
 
                 default:
-                    Debug.LogWarning($"[ToppingDisplayUI] 未配置小料图标：{toppingType}");
+                    Debug.LogWarning($"[ToppingDisplayUI] 未配置小料图标：{topping.toppingName}");
                     return null;
             }
         }

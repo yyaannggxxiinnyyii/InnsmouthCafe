@@ -40,27 +40,6 @@ namespace InnsmouthCafe.Data
     }
 
     /// <summary>
-    /// 咖啡豆类型
-    /// </summary>
-    public enum BeanType
-    {
-        /// <summary>
-        /// 普通豆 - 基础豆种
-        /// </summary>
-        Normal,
-
-        /// <summary>
-        /// 阿拉比卡豆 - 香气型豆种
-        /// </summary>
-        Arabica,
-
-        /// <summary>
-        /// 罗布斯塔豆 - 浓烈型豆种
-        /// </summary>
-        Robusta
-    }
-
-    /// <summary>
     /// 研磨程度
     /// </summary>
     public enum GrindType
@@ -79,68 +58,6 @@ namespace InnsmouthCafe.Data
         /// 精磨 - 浓郁、强烈
         /// </summary>
         ExtraFine
-    }
-
-    /// <summary>
-    /// 辅助液类型
-    /// </summary>
-    public enum LiquidType
-    {
-        /// <summary>
-        /// 热水 - 稀释、美式
-        /// </summary>
-        HotWater,
-
-        /// <summary>
-        /// 牛奶 - 奶咖、柔和口味
-        /// </summary>
-        Milk,
-
-        /// <summary>
-        /// 奶泡 - 泡沫、顶部口感
-        /// </summary>
-        Foam,
-
-        /// <summary>
-        /// 冰水 - 冰咖啡、清爽口味
-        /// </summary>
-        IceWater
-    }
-
-    /// <summary>
-    /// 小料类型
-    /// </summary>
-    public enum ToppingType
-    {
-        /// <summary>
-        /// 焦糖碎 - 甜/脆
-        /// </summary>
-        CaramelCrisp,
-
-        /// <summary>
-        /// 巧克力粉 - 苦
-        /// </summary>
-        ChocolatePowder,
-
-        /// <summary>
-        /// 海星糖 - 咸/脆
-        /// </summary>
-        StarfishCandy,
-
-        /// <summary>
-        /// 眼球爆珠 - 爆珠/异香
-        /// </summary>
-        EyeballPoppingBoba,
-
-        /// <summary>
-        /// 月尘粉 - 异香
-        /// </summary>
-        MoonDust,
-
-        /// <summary>
-        /// 黑盐 - 咸/苦
-        /// </summary>
-        BlackSalt
     }
 
     /// <summary>

@@ -10,15 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b32b0fba1c71d74aa339d06c4160215, type: 3}
-  m_Name: "Bean_\u963F\u62C9\u6BD4\u5361"
-  m_EditorClassIdentifier: 
-  beanType: 1
+  m_Name: Bean_阿拉比卡
+  m_EditorClassIdentifier:
+  beanId: arabica
   beanName: "\u963F\u62C9\u6BD4\u5361"
-  description: 
-  beanIcon: {fileID: 21300000, guid: 1a6c39779eef0cc44a9a2b29ddd7d667, type: 3}
-  beanBarrelIcon: {fileID: 21300000, guid: be1a1ae572d1a2345ae69ad8b0315585, type: 3}
-  beanColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
-  isPermanent: 1
-  initialUseCount: -1
-  isSpecial: 0
-  specialTag: 
+  icon: {fileID: 0}
+  description: "\u7ECF\u5178\u54C1\u79CD\uFF0C\u53E3\u611F\u67D4\u548C\uFF0C\u9178\u5EA6\u9002\u4E2D"

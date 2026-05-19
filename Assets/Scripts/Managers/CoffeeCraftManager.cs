@@ -13,7 +13,7 @@ namespace InnsmouthCafe.Managers
         [Header("当前制作数据")]
         [SerializeField] private CoffeeData _currentCoffeeData;
         [SerializeField] private CurrentBeanBatchData _currentBatch;
-        [SerializeField] private OrderRequirementData _currentOrder;
+        private OrderRequirementData _currentOrder;  // 移除 SerializeField，只能通过代码设置
 
         [Header("制作状态")]
         [SerializeField] private CraftMainState _mainState = CraftMainState.None;
@@ -43,6 +43,10 @@ namespace InnsmouthCafe.Managers
         [SerializeField] [Tooltip("每次溢出扣除的理智值")]
         private float _overflowSanityPenalty = 0.2f;
 
+        [Header("萃取配置")]
+        [SerializeField] [Tooltip("萃取速度（ml/s）")]
+        private float _extractionSpeed = 20f;
+
         [Header("理智值惩罚")]
         [SerializeField] [Tooltip("倒掉豆子理智惩罚")]
         private float _clearBeansSanityPenalty = 0.2f;
@@ -55,8 +59,14 @@ namespace InnsmouthCafe.Managers
 
         /// 倒液状态
         private bool _isPouring = false;
-        private LiquidType _currentPouringLiquid;
+        private LiquidSO _currentPouringLiquid;
         private float _accumulatedOverflow = 0f;
+
+        /// 萃取状态
+        private bool _isExtracting = false;
+        private float _currentExtractionVolume = 0f;
+        private float _targetExtractionVolume = 0f;
+        private int _currentExtractingSegmentIndex = -1;
 
         /// 属性访问器
         public CoffeeData CurrentCoffeeData => _currentCoffeeData;
@@ -64,6 +74,8 @@ namespace InnsmouthCafe.Managers
         public OrderRequirementData CurrentOrder => _currentOrder;
         public CraftMainState MainState => _mainState;
         public CraftModuleState ModuleState => _moduleState;
+        public bool IsExtracting => _isExtracting;
+        public float ExtractionProgress => _targetExtractionVolume > 0 ? _currentExtractionVolume / _targetExtractionVolume : 0f;
 
         /// 事件
         public event Action<CoffeeData> OnCoffeeDataChanged;
@@ -71,6 +83,8 @@ namespace InnsmouthCafe.Managers
         public event Action<CraftMainState> OnMainStateChanged;
         public event Action<CraftModuleState> OnModuleStateChanged;
         public event Action OnOverflowed;
+        public event Action<float, float> OnExtractionProgressChanged; // 参数：当前萃取量, 目标萃取量
+        public event Action OnExtractionCompleted; // 萃取完成事件（用于播放音效等）
 
         protected override void Awake()
         {
@@ -119,6 +133,13 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
+            // 检查是否有订单
+            if (_currentOrder == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 没有订单，无法选择杯子");
+                return;
+            }
+
             if (_currentCoffeeData.coffeeSegments.Count > 0)
             {
                 Debug.LogWarning("[CoffeeCraft] 已经萃取咖啡液，无法更换杯子");
@@ -130,6 +151,9 @@ namespace InnsmouthCafe.Managers
 
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
             OnModuleStateChanged?.Invoke(_moduleState);
+
+            // 播放选择杯子音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeCupSelect);
 
             Debug.Log($"[CoffeeCraft] 选择杯子：{cup.cupName}，容量：{cup.capacity}ml");
         }
@@ -146,9 +170,22 @@ namespace InnsmouthCafe.Managers
         /// 添加咖啡豆到当前批次
         /// 每次添加固定克数
         /// </summary>
-        /// <param name="beanType">豆种类型</param>
-        public void AddBean(BeanType beanType)
+        /// <param name="bean">豆种配置</param>
+        public void AddBean(BeanSO bean)
         {
+            if (bean == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 豆配置为空");
+                return;
+            }
+
+            // 检查是否有订单
+            if (_currentOrder == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 没有订单，无法取豆");
+                return;
+            }
+
             // 检查是否已经研磨过（研磨后不能再取豆）
             if (_currentBatch.grindType.HasValue)
             {
@@ -163,20 +200,23 @@ namespace InnsmouthCafe.Managers
             }
 
             // 检查是否混合不同豆种
-            if (_currentBatch.beanType.HasValue && _currentBatch.beanType.Value != beanType)
+            if (_currentBatch.bean != null && _currentBatch.bean != bean)
             {
-                Debug.LogWarning($"[CoffeeCraft] 当前批次已有{_currentBatch.beanType.Value}豆，不能混合不同豆种");
+                Debug.LogWarning($"[CoffeeCraft] 当前批次已有{_currentBatch.bean.beanName}豆，不能混合不同豆种");
                 return;
             }
 
-            _currentBatch.beanType = beanType;
+            _currentBatch.bean = bean;
             _currentBatch.beanGram += _beanPerClick;
             _moduleState = CraftModuleState.GrindSelect;
 
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
 
-            Debug.Log($"[CoffeeCraft] 添加{beanType}豆{_beanPerClick}g，当前批次：{_currentBatch.beanGram}g");
+            // 播放取豆音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanAdd);
+
+            Debug.Log($"[CoffeeCraft] 添加{bean.beanName}豆{_beanPerClick}g，当前批次：{_currentBatch.beanGram}g");
         }
 
         /// <summary>
@@ -197,6 +237,9 @@ namespace InnsmouthCafe.Managers
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
 
+            // 播放倒掉豆子音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanClear);
+
             // TODO: 扣除理智值 -0.2
             Debug.Log($"[CoffeeCraft] 倒掉豆子：{oldGram}g，理智值-{_clearBeansSanityPenalty}");
         }
@@ -207,7 +250,7 @@ namespace InnsmouthCafe.Managers
         /// <param name="grindType">研磨程度</param>
         public void SelectGrind(GrindType grindType)
         {
-            if (!_currentBatch.beanType.HasValue || _currentBatch.beanGram <= 0f)
+            if (_currentBatch.bean == null || _currentBatch.beanGram <= 0f)
             {
                 Debug.LogWarning("[CoffeeCraft] 当前批次没有豆子，无法研磨");
                 return;
@@ -218,6 +261,9 @@ namespace InnsmouthCafe.Managers
 
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
+
+            // 播放研磨音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeGrind);
 
             Debug.Log($"[CoffeeCraft] 选择研磨程度：{grindType}");
         }
@@ -238,6 +284,9 @@ namespace InnsmouthCafe.Managers
 
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
+
+            // 播放倒掉咖啡粉音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeePowderClear);
 
             // TODO: 扣除理智值 -0.3
             Debug.Log($"[CoffeeCraft] 倒掉咖啡粉，理智值-{_clearPowderSanityPenalty}");
@@ -260,38 +309,57 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
-            // TODO: 播放萃取动画，动画结束后调用 FinishExtraction()
-            Debug.Log("[CoffeeCraft] 开始萃取...");
-        }
-
-        /// <summary>
-        /// 完成萃取
-        /// </summary>
-        public void FinishExtraction()
-        {
-            if (_currentCoffeeData.selectedCup == null)
+            if (_isExtracting)
             {
-                Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
+                Debug.LogWarning("[CoffeeCraft] 正在萃取中");
                 return;
             }
 
-            if (!_currentBatch.CanExtract())
-            {
-                Debug.LogWarning("[CoffeeCraft] 当前批次不满足萃取条件");
-                return;
-            }
+            // 计算目标萃取量
+            _targetExtractionVolume = _currentBatch.beanGram * _beanToLiquidRatio;
+            _currentExtractionVolume = 0f;
+            _isExtracting = true;
 
-            float extractedVolume = _currentBatch.beanGram * _beanToLiquidRatio;
-
+            // 创建咖啡液段（初始volume为0）
             var segment = new CoffeeExtractSegmentData
             {
-                beanType = _currentBatch.beanType.Value,
+                bean = _currentBatch.bean,
                 grindType = _currentBatch.grindType.Value,
                 beanGram = _currentBatch.beanGram,
-                extractedVolume = extractedVolume
+                extractedVolume = 0f
             };
 
             _currentCoffeeData.coffeeSegments.Add(segment);
+            _currentExtractingSegmentIndex = _currentCoffeeData.coffeeSegments.Count - 1;
+
+            OnExtractionProgressChanged?.Invoke(_currentExtractionVolume, _targetExtractionVolume);
+
+            // 播放开始萃取音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeExtractionStart);
+
+            Debug.Log($"[CoffeeCraft] 开始萃取，目标萃取量：{_targetExtractionVolume}ml");
+        }
+
+        /// <summary>
+        /// 完成萃取（内部调用，由Update自动触发）
+        /// </summary>
+        private void FinishExtraction()
+        {
+            if (!_isExtracting)
+            {
+                return;
+            }
+
+            _isExtracting = false;
+
+            // 确保最终volume精确等于目标值
+            if (_currentExtractingSegmentIndex >= 0 && _currentExtractingSegmentIndex < _currentCoffeeData.coffeeSegments.Count)
+            {
+                var segment = _currentCoffeeData.coffeeSegments[_currentExtractingSegmentIndex];
+                segment.extractedVolume = _targetExtractionVolume;
+                _currentCoffeeData.coffeeSegments[_currentExtractingSegmentIndex] = segment;
+            }
+
             _currentBatch.Clear();
             RefreshTotalVolume();
 
@@ -300,16 +368,31 @@ namespace InnsmouthCafe.Managers
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
+            OnExtractionCompleted?.Invoke(); // 触发完成事件（用于播放音效）
 
-            Debug.Log($"[CoffeeCraft] 萃取完成：{extractedVolume}ml咖啡液");
+            // 播放萃取完成音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeExtractionComplete);
+
+            Debug.Log($"[CoffeeCraft] 萃取完成：{_targetExtractionVolume}ml咖啡液");
+
+            // 重置萃取状态
+            _currentExtractionVolume = 0f;
+            _targetExtractionVolume = 0f;
+            _currentExtractingSegmentIndex = -1;
         }
 
         /// <summary>
         /// 开始倒入辅助液
         /// </summary>
-        /// <param name="liquidType">辅助液类型</param>
-        public void StartPourLiquid(LiquidType liquidType)
+        /// <param name="liquid">辅助液配置</param>
+        public void StartPourLiquid(LiquidSO liquid)
         {
+            if (liquid == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 辅助液配置为空");
+                return;
+            }
+
             if (_currentCoffeeData.selectedCup == null)
             {
                 Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
@@ -322,10 +405,13 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
-            _currentPouringLiquid = liquidType;
+            _currentPouringLiquid = liquid;
             _isPouring = true;
 
-            Debug.Log($"[CoffeeCraft] 开始倒入{liquidType}");
+            // 播放开始倒液音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeLiquidPourStart);
+
+            Debug.Log($"[CoffeeCraft] 开始倒入{liquid.liquidName}");
         }
 
         /// <summary>
@@ -339,11 +425,44 @@ namespace InnsmouthCafe.Managers
             }
 
             _isPouring = false;
+
+            // 播放停止倒液音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeLiquidPourStop);
+
             Debug.Log($"[CoffeeCraft] 停止倒入{_currentPouringLiquid}");
         }
 
         private void Update()
         {
+            // 处理萃取进度
+            if (_isExtracting)
+            {
+                float extractAmount = _extractionSpeed * Time.deltaTime;
+                _currentExtractionVolume += extractAmount;
+
+                // 更新当前萃取液段的volume
+                if (_currentExtractingSegmentIndex >= 0 && _currentExtractingSegmentIndex < _currentCoffeeData.coffeeSegments.Count)
+                {
+                    var segment = _currentCoffeeData.coffeeSegments[_currentExtractingSegmentIndex];
+                    segment.extractedVolume = Mathf.Min(_currentExtractionVolume, _targetExtractionVolume);
+                    _currentCoffeeData.coffeeSegments[_currentExtractingSegmentIndex] = segment;
+
+                    // 更新总容量
+                    RefreshTotalVolume();
+
+                    // 触发事件
+                    OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
+                    OnExtractionProgressChanged?.Invoke(_currentExtractionVolume, _targetExtractionVolume);
+                }
+
+                // 检查是否完成
+                if (_currentExtractionVolume >= _targetExtractionVolume)
+                {
+                    FinishExtraction();
+                }
+            }
+
+            // 处理倒液
             if (_isPouring)
             {
                 // 检查是否有杯子
@@ -365,8 +484,14 @@ namespace InnsmouthCafe.Managers
         /// <summary>
         /// 添加辅助液量（支持合并记录）
         /// </summary>
-        private void AddLiquidAmount(LiquidType liquidType, float amount)
+        private void AddLiquidAmount(LiquidSO liquid, float amount)
         {
+            if (liquid == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 辅助液配置为空");
+                return;
+            }
+
             if (_currentCoffeeData.isOverflowed)
             {
                 _accumulatedOverflow += amount;
@@ -386,7 +511,7 @@ namespace InnsmouthCafe.Managers
                 ? _currentCoffeeData.liquidSegments[_currentCoffeeData.liquidSegments.Count - 1]
                 : null;
 
-            if (lastSegment != null && lastSegment.liquidType == liquidType)
+            if (lastSegment != null && lastSegment.liquid == liquid)
             {
                 lastSegment.amountMl += amount;
             }
@@ -394,7 +519,7 @@ namespace InnsmouthCafe.Managers
             {
                 _currentCoffeeData.liquidSegments.Add(new LiquidSegmentData
                 {
-                    liquidType = liquidType,
+                    liquid = liquid,
                     amountMl = amount
                 });
             }
@@ -428,6 +553,10 @@ namespace InnsmouthCafe.Managers
                     _currentCoffeeData.isOverflowed = true;
                     _currentCoffeeData.currentTotalVolume = _currentCoffeeData.selectedCup.capacity;
                     OnOverflowed?.Invoke();
+
+                    // 播放溢出音效
+                    AudioManager.Instance?.PlaySfx(SoundId.CoffeeOverflow);
+
                     Debug.LogWarning("[CoffeeCraft] 咖啡溢出！");
                 }
             }
@@ -436,8 +565,14 @@ namespace InnsmouthCafe.Managers
         /// <summary>
         /// 添加小料
         /// </summary>
-        public void AddTopping(ToppingType toppingType)
+        public void AddTopping(ToppingSO topping)
         {
+            if (topping == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 小料配置为空");
+                return;
+            }
+
             if (_currentCoffeeData.coffeeSegments.Count == 0)
             {
                 Debug.LogWarning("[CoffeeCraft] 尚未萃取，不能添加小料");
@@ -452,32 +587,46 @@ namespace InnsmouthCafe.Managers
 
             _currentCoffeeData.toppings.Add(new ToppingInstanceData
             {
-                toppingType = toppingType,
+                topping = topping,
                 orderIndex = _currentCoffeeData.toppings.Count
             });
 
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
-            Debug.Log($"[CoffeeCraft] 添加小料：{toppingType}");
+
+            // 播放添加小料音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeToppingAdd);
+
+            Debug.Log($"[CoffeeCraft] 添加小料：{topping.toppingName}");
         }
 
         /// <summary>
         /// 移除指定类型的最后一个小料
         /// </summary>
-        public void RemoveLastToppingOfType(ToppingType toppingType)
+        public void RemoveLastToppingOfType(ToppingSO topping)
         {
+            if (topping == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 小料配置为空");
+                return;
+            }
+
             for (int i = _currentCoffeeData.toppings.Count - 1; i >= 0; i--)
             {
-                if (_currentCoffeeData.toppings[i].toppingType == toppingType)
+                if (_currentCoffeeData.toppings[i].topping == topping)
                 {
                     _currentCoffeeData.toppings.RemoveAt(i);
                     RefreshToppingIndices();
                     OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
-                    Debug.Log($"[CoffeeCraft] 移除小料：{toppingType}");
+
+                    // 播放移除小料音效
+                    AudioManager.Instance?.PlaySfx(SoundId.CoffeeToppingRemove);
+
+                    Debug.Log($"[CoffeeCraft] 移除小料：{topping.toppingName}");
                     return;
                 }
             }
 
-            Debug.LogWarning($"[CoffeeCraft] 未找到小料：{toppingType}");
+            Debug.LogWarning($"[CoffeeCraft] 未找到小料：{topping.toppingName}");
         }
 
         /// <summary>
@@ -506,6 +655,9 @@ namespace InnsmouthCafe.Managers
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
+
+            // 播放倒掉整杯音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeClearWhole);
 
             // TODO: 扣除理智值 -0.4
             Debug.Log($"[CoffeeCraft] 倒掉整杯，理智值-{_clearWholeCoffeeSanityPenalty}");
@@ -542,11 +694,48 @@ namespace InnsmouthCafe.Managers
                 return null;
             }
 
+            // 保存提交的咖啡数据
+            CoffeeData submittedCoffee = _currentCoffeeData.Clone();
+
             _mainState = CraftMainState.Submitted;
             OnMainStateChanged?.Invoke(_mainState);
 
+            // 播放提交咖啡音效
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeSubmit);
+
             Debug.Log("[CoffeeCraft] 咖啡已提交");
-            return _currentCoffeeData;
+
+            // 清理所有数据，准备下一单
+            ResetAfterSubmit();
+
+            return submittedCoffee;
+        }
+
+        /// <summary>
+        /// 提交后重置所有数据
+        /// </summary>
+        private void ResetAfterSubmit()
+        {
+            // 清空当前订单
+            _currentOrder = null;
+
+            // 重置咖啡数据
+            _currentCoffeeData = new CoffeeData();
+
+            // 重置批次数据
+            _currentBatch = new CurrentBeanBatchData();
+
+            // 重置状态
+            _mainState = CraftMainState.None;
+            _moduleState = CraftModuleState.CupSelect;
+
+            // 通知所有监听者
+            OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
+            OnBatchDataChanged?.Invoke(_currentBatch);
+            OnMainStateChanged?.Invoke(_mainState);
+            OnModuleStateChanged?.Invoke(_moduleState);
+
+            Debug.Log("[CoffeeCraft] 已重置所有数据，等待新订单");
         }
     }
 }

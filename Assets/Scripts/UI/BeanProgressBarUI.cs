@@ -102,9 +102,9 @@ namespace InnsmouthCafe.UI
             UpdateBeanAmountText(batch.beanGram, _maxBeanAmount);
 
             // 更新颜色
-            if (batch.beanType.HasValue)
+            if (batch.bean != null)
             {
-                Color beanColor = GetBeanColor(batch.beanType.Value);
+                Color beanColor = GetBeanColor(batch.bean);
                 UpdateFillColor(beanColor);
             }
             else
@@ -149,21 +149,29 @@ namespace InnsmouthCafe.UI
         /// <summary>
         /// 根据豆种获取颜色
         /// </summary>
-        private Color GetBeanColor(BeanType beanType)
+        private Color GetBeanColor(BeanSO bean)
         {
-            switch (beanType)
+            if (bean == null)
             {
-                case BeanType.Normal:
-                    return _normalBeanColor;
+                return _defaultColor;
+            }
 
-                case BeanType.Arabica:
-                    return _arabicaBeanColor;
-
-                case BeanType.Robusta:
-                    return _robustaBeanColor;
-
-                default:
-                    return _defaultColor;
+            // 根据 beanId 或 beanName 来判断豆种类型
+            if (bean.beanId == "normal" || bean.beanName.Contains("普通"))
+            {
+                return _normalBeanColor;
+            }
+            else if (bean.beanId == "arabica" || bean.beanName.Contains("阿拉比"))
+            {
+                return _arabicaBeanColor;
+            }
+            else if (bean.beanId == "robusta" || bean.beanName.Contains("罗布斯塔"))
+            {
+                return _robustaBeanColor;
+            }
+            else
+            {
+                return _defaultColor;
             }
         }
 

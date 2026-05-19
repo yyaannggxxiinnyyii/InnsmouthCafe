@@ -120,7 +120,7 @@ namespace InnsmouthCafe.UI
             foreach (var liquidSegment in data.liquidSegments)
             {
                 float widthPercent = liquidSegment.amountMl / cupCapacity;
-                Color liquidColor = GetLiquidColor(liquidSegment.liquidType);
+                Color liquidColor = GetLiquidColor(liquidSegment.liquid);
                 CreateLiquidSegment(currentX, widthPercent, liquidColor);
                 currentX += widthPercent;
             }
@@ -265,27 +265,17 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 根据液体类型获取颜色
+        /// 根据液体配置获取颜色
         /// </summary>
-        private Color GetLiquidColor(LiquidType liquidType)
+        private Color GetLiquidColor(LiquidSO liquid)
         {
-            switch (liquidType)
+            if (liquid == null)
             {
-                case LiquidType.HotWater:
-                    return new Color(0.7f, 0.7f, 0.8f, 0.6f); // 浅灰蓝
-
-                case LiquidType.Milk:
-                    return new Color(1f, 1f, 1f, 0.9f); // 白色
-
-                case LiquidType.Foam:
-                    return new Color(1f, 0.95f, 0.8f, 0.8f); // 淡黄色
-
-                case LiquidType.IceWater:
-                    return new Color(0.6f, 0.8f, 1f, 0.7f); // 浅蓝色
-
-                default:
-                    return Color.white;
+                return Color.white;
             }
+
+            // 使用 LiquidSO 的 displayColor 属性
+            return liquid.displayColor;
         }
     }
 }

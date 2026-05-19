@@ -14,8 +14,8 @@ namespace InnsmouthCafe.UI
     public class CupSelectorUI : MonoBehaviour
     {
         [Header("杯型配置")]
-        [SerializeField] [Tooltip("可选的杯型数据列表")]
-        private List<CupContainerData> _cupDataList = new List<CupContainerData>();
+        [SerializeField] [Tooltip("可选的杯型SO配置列表")]
+        private List<CupContainerSO> _cupSOList = new List<CupContainerSO>();
 
         [Header("UI引用")]
         [SerializeField] [Tooltip("杯型按钮列表")]
@@ -106,9 +106,9 @@ namespace InnsmouthCafe.UI
             _selectedIndex = -1;
             if (currentCup != null)
             {
-                for (int i = 0; i < _cupDataList.Count; i++)
+                for (int i = 0; i < _cupSOList.Count; i++)
                 {
-                    if (_cupDataList[i].cupId == currentCup.cupId)
+                    if (_cupSOList[i] != null && _cupSOList[i].cupId == currentCup.cupId)
                     {
                         _selectedIndex = i;
                         break;
@@ -127,7 +127,7 @@ namespace InnsmouthCafe.UI
         {
             for (int i = 0; i < _cupButtons.Count; i++)
             {
-                if (i >= _cupDataList.Count)
+                if (i >= _cupSOList.Count)
                 {
                     continue;
                 }
@@ -156,7 +156,7 @@ namespace InnsmouthCafe.UI
 
             for (int i = 0; i < _cupButtons.Count; i++)
             {
-                if (i >= _cupDataList.Count)
+                if (i >= _cupSOList.Count)
                 {
                     _cupButtons[i].interactable = false;
                     continue;
@@ -181,7 +181,7 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void OnCupButtonClick(int index)
         {
-            if (index < 0 || index >= _cupDataList.Count)
+            if (index < 0 || index >= _cupSOList.Count)
             {
                 Debug.LogWarning($"[CupSelectorUI] 无效的杯型索引: {index}");
                 return;
@@ -193,10 +193,16 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
-            var cupData = _cupDataList[index];
-            _manager.SelectCup(cupData);
+            var cupSO = _cupSOList[index];
+            if (cupSO == null)
+            {
+                Debug.LogWarning($"[CupSelectorUI] 杯型SO为空: {index}");
+                return;
+            }
 
-            Debug.Log($"[CupSelectorUI] 选择杯型: {cupData.cupName} ({cupData.capacity}ml)");
+            _manager.SelectCup(cupSO.ToData());
+
+            Debug.Log($"[CupSelectorUI] 选择杯型: {cupSO.cupName} ({cupSO.capacity}ml)");
         }
 
         /// <summary>
@@ -204,33 +210,33 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void RefreshCapacityTexts()
         {
-            for (int i = 0; i < _capacityTexts.Count && i < _cupDataList.Count; i++)
+            for (int i = 0; i < _capacityTexts.Count && i < _cupSOList.Count; i++)
             {
-                if (_capacityTexts[i] != null)
+                if (_capacityTexts[i] != null && _cupSOList[i] != null)
                 {
-                    _capacityTexts[i].text = $"{_cupDataList[i].capacity:F0}ml";
+                    _capacityTexts[i].text = $"{_cupSOList[i].capacity:F0}ml";
                 }
             }
         }
 
         /// <summary>
-        /// 设置杯型数据列表（运行时动态设置）
+        /// 设置杯型SO列表（运行时动态设置）
         /// </summary>
-        public void SetCupDataList(List<CupContainerData> cupDataList)
+        public void SetCupSOList(List<CupContainerSO> cupSOList)
         {
-            _cupDataList = cupDataList;
+            _cupSOList = cupSOList;
             RefreshCapacityTexts();
             RefreshDisplay();
         }
 
         /// <summary>
-        /// 添加杯型数据
+        /// 添加杯型SO
         /// </summary>
-        public void AddCupData(CupContainerData cupData)
+        public void AddCupSO(CupContainerSO cupSO)
         {
-            if (!_cupDataList.Contains(cupData))
+            if (cupSO != null && !_cupSOList.Contains(cupSO))
             {
-                _cupDataList.Add(cupData);
+                _cupSOList.Add(cupSO);
                 RefreshCapacityTexts();
                 RefreshDisplay();
             }
