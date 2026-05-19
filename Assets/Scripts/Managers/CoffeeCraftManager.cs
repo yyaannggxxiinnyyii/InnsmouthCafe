@@ -149,15 +149,16 @@ namespace InnsmouthCafe.Managers
         /// <param name="beanType">豆种类型</param>
         public void AddBean(BeanType beanType)
         {
-            if (_currentCoffeeData.selectedCup == null)
-            {
-                Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
-                return;
-            }
-
             if (_currentBatch.beanGram + _beanPerClick > _maxBeanPerBatch)
             {
                 Debug.LogWarning($"[CoffeeCraft] 单批次豆量已达上限：{_maxBeanPerBatch}g");
+                return;
+            }
+
+            // 检查是否混合不同豆种
+            if (_currentBatch.beanType.HasValue && _currentBatch.beanType.Value != beanType)
+            {
+                Debug.LogWarning($"[CoffeeCraft] 当前批次已有{_currentBatch.beanType.Value}豆，不能混合不同豆种");
                 return;
             }
 
@@ -240,6 +241,12 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         public void StartExtraction()
         {
+            if (_currentCoffeeData.selectedCup == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
+                return;
+            }
+
             if (!_currentBatch.CanExtract())
             {
                 Debug.LogWarning("[CoffeeCraft] 当前批次不满足萃取条件");
@@ -255,6 +262,12 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         public void FinishExtraction()
         {
+            if (_currentCoffeeData.selectedCup == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
+                return;
+            }
+
             if (!_currentBatch.CanExtract())
             {
                 Debug.LogWarning("[CoffeeCraft] 当前批次不满足萃取条件");
@@ -290,6 +303,12 @@ namespace InnsmouthCafe.Managers
         /// <param name="liquidType">辅助液类型</param>
         public void StartPourLiquid(LiquidType liquidType)
         {
+            if (_currentCoffeeData.selectedCup == null)
+            {
+                Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
+                return;
+            }
+
             if (_currentCoffeeData.coffeeSegments.Count == 0)
             {
                 Debug.LogWarning("[CoffeeCraft] 尚未萃取，不能倒入辅助液");
@@ -320,6 +339,14 @@ namespace InnsmouthCafe.Managers
         {
             if (_isPouring)
             {
+                // 检查是否有杯子
+                if (_currentCoffeeData.selectedCup == null)
+                {
+                    Debug.LogWarning("[CoffeeCraft] 没有杯子，停止倒液");
+                    StopPourLiquid();
+                    return;
+                }
+
                 bool isFastPour = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
                 float speed = isFastPour ? _fastPourSpeed : _slowPourSpeed;
                 float amount = speed * Time.deltaTime;
