@@ -12,42 +12,13 @@ namespace InnsmouthCafe.Managers
     /// 支持手动切换和根据制作状态自动切换
     /// 支持水平滑动切换动画
     /// </summary>
-    public class ViewSwitchManager : MonoBehaviour
+    public class ViewSwitchManager : Singleton<ViewSwitchManager>
     {
-        private static ViewSwitchManager _instance;
-
-        /// <summary>
-        /// 单例实例
-        /// </summary>
-        public static ViewSwitchManager Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = FindObjectOfType<ViewSwitchManager>();
-                    if (_instance == null)
-                    {
-                        GameObject go = new GameObject("ViewSwitchManager");
-                        _instance = go.AddComponent<ViewSwitchManager>();
-                    }
-                }
-                return _instance;
-            }
-        }
 
         [Header("界面面板")]
         [SerializeField] [Tooltip("场景容器（用于水平滑动）")]
         private RectTransform _scenePanelsContainer;
 
-        [SerializeField] [Tooltip("吧台接单界面")]
-        private CanvasGroup _barPanel;
-
-        [SerializeField] [Tooltip("制作界面1：基础咖啡制作")]
-        private CanvasGroup _craftBasePanel;
-
-        [SerializeField] [Tooltip("制作界面2：调味与完成")]
-        private CanvasGroup _craftMixPanel;
 
         [Header("杯子动画")]
         [SerializeField] [Tooltip("杯子动画管理器")]
@@ -100,10 +71,9 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         private bool _isSwitching = false;
 
-        /// <summary>
-        /// 屏幕宽度（用于计算滑动距离）
-        /// </summary>
-        private float _screenWidth;
+        private const float BarScenePosX = 0f;
+        private const float CraftBaseScenePosX = -1920f;
+        private const float CraftMixScenePosX = -3840f;
 
         /// <summary>
         /// 咖啡制作管理器引用
@@ -115,53 +85,30 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         public GameViewType CurrentViewType => _currentViewType;
 
-        private void Awake()
+        protected override void Awake()
         {
-            // 单例检查
-            if (_instance != null && _instance != this)
+            base.Awake();
+
+            if (Instance != this)
             {
-                Destroy(gameObject);
                 return;
             }
 
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
-
             InitializeViewList();
-            InitializeScreenWidth();
-        }
-
-        /// <summary>
-        /// 初始化屏幕宽度
-        /// </summary>
-        private void InitializeScreenWidth()
-        {
-            // 获取Canvas的宽度作为单个屏幕宽度
-            Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas != null)
-            {
-                RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-                _screenWidth = canvasRect.rect.width;
-            }
-            else
-            {
-                // 备用方案：使用屏幕宽度
-                _screenWidth = Screen.width;
-            }
-
-            if (_showDebugLog)
-            {
-                Debug.Log($"[ViewSwitchManager] 屏幕宽度初始化: {_screenWidth}");
-            }
         }
 
         private void Start()
         {
-            // 初始化场景容器位置
-            if (_enableSlideAnimation && _scenePanelsContainer != null)
+            if (Instance != this)
             {
-                // 设置初始位置为吧台场景（index=0）
-                _scenePanelsContainer.anchoredPosition = new Vector2(0, _scenePanelsContainer.anchoredPosition.y);
+                return;
+            }
+
+            // 初始化场景容器位置
+            if (_scenePanelsContainer != null)
+            {
+                float initialPosX = GetScenePanelPosX(GameViewType.Bar);
+                _scenePanelsContainer.anchoredPosition = new Vector2(initialPosX, _scenePanelsContainer.anchoredPosition.y);
 
                 if (_showDebugLog)
                 {
@@ -319,7 +266,7 @@ namespace InnsmouthCafe.Managers
             }
             else
             {
-                // 使用CanvasGroup淡入淡出
+                // 直接设置场景容器位置
                 ShowView(targetView);
             }
 
@@ -345,8 +292,8 @@ namespace InnsmouthCafe.Managers
             // 2. 等待杯子退出后，开始场景切换
             DOVirtual.DelayedCall(_cupAnimationManager != null ? 0.3f : 0f, () =>
             {
-                // 计算目标位置
-                float targetX = -_currentViewIndex * _screenWidth;
+                // 使用固定场景坐标
+                float targetX = GetScenePanelPosX(toView);
 
                 // 场景容器滑动
                 _scenePanelsContainer.DOAnchorPosX(targetX, _sceneSwitchDuration)
@@ -364,35 +311,19 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 显示指定界面
+        /// 显示指定界面（通过场景容器X坐标切换）
         /// </summary>
         /// <param name="viewType">界面类型</param>
         public void ShowView(GameViewType viewType)
         {
-            // 隐藏所有界面
-            HidePanel(_barPanel);
-            HidePanel(_craftBasePanel);
-            HidePanel(_craftMixPanel);
-
-            // 显示指定界面
-            switch (viewType)
-            {
-                case GameViewType.Bar:
-                    ShowPanel(_barPanel);
-                    break;
-
-                case GameViewType.CraftBase:
-                    ShowPanel(_craftBasePanel);
-                    break;
-
-                case GameViewType.CraftMix:
-                    ShowPanel(_craftMixPanel);
-                    break;
-            }
-
-            // 更新当前界面
             _currentViewType = viewType;
             _currentViewIndex = _viewList.IndexOf(viewType);
+
+            if (_scenePanelsContainer != null)
+            {
+                float targetX = GetScenePanelPosX(viewType);
+                _scenePanelsContainer.anchoredPosition = new Vector2(targetX, _scenePanelsContainer.anchoredPosition.y);
+            }
 
             if (_showDebugLog)
             {
@@ -400,31 +331,18 @@ namespace InnsmouthCafe.Managers
             }
         }
 
-        /// <summary>
-        /// 显示面板（使用CanvasGroup）
-        /// </summary>
-        /// <param name="panel">面板的CanvasGroup</param>
-        private void ShowPanel(CanvasGroup panel)
+        private float GetScenePanelPosX(GameViewType viewType)
         {
-            if (panel != null)
+            switch (viewType)
             {
-                panel.alpha = 1f;
-                panel.interactable = true;
-                panel.blocksRaycasts = true;
-            }
-        }
-
-        /// <summary>
-        /// 隐藏面板（使用CanvasGroup）
-        /// </summary>
-        /// <param name="panel">面板的CanvasGroup</param>
-        private void HidePanel(CanvasGroup panel)
-        {
-            if (panel != null)
-            {
-                panel.alpha = 0f;
-                panel.interactable = false;
-                panel.blocksRaycasts = false;
+                case GameViewType.Bar:
+                    return BarScenePosX;
+                case GameViewType.CraftBase:
+                    return CraftBaseScenePosX;
+                case GameViewType.CraftMix:
+                    return CraftMixScenePosX;
+                default:
+                    return BarScenePosX;
             }
         }
 
@@ -477,17 +395,13 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 设置界面面板引用（用于运行时动态设置）
+        /// 兼容旧调用：场景切换不再依赖 CanvasGroup 面板显隐
         /// </summary>
         public void SetPanelReferences(CanvasGroup barPanel, CanvasGroup craftBasePanel, CanvasGroup craftMixPanel)
         {
-            _barPanel = barPanel;
-            _craftBasePanel = craftBasePanel;
-            _craftMixPanel = craftMixPanel;
-
             if (_showDebugLog)
             {
-                Debug.Log("[ViewSwitchManager] 界面面板引用已设置");
+                Debug.Log("[ViewSwitchManager] 已忽略 SetPanelReferences：当前使用场景容器坐标切换");
             }
         }
 

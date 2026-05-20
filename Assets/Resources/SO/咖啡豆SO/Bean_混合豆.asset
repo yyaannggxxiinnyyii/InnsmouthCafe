@@ -10,9 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b32b0fba1c71d74aa339d06c4160215, type: 3}
-  m_Name: Bean_混合豆
-  m_EditorClassIdentifier:
+  m_Name: "Bean_\u6DF7\u5408\u8C46"
+  m_EditorClassIdentifier: 
   beanId: blend
   beanName: "\u6DF7\u5408\u8C46"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 1a6c39779eef0cc44a9a2b29ddd7d667, type: 3}
+  beanBarrelIcon: {fileID: 21300000, guid: d328b6f36b9da91439f68f6f650802d8, type: 3}
+  displayColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
   description: "\u5747\u8861\u914D\u65B9\uFF0C\u9002\u5408\u5927\u4F17\u53E3\u5473"

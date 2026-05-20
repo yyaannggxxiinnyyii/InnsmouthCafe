@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toppingId: conch
   toppingName: "\u6D77\u87BA"
-  icon: {fileID: 0}
-  instanceIcon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 34349a6a591d2e144af4f1217efd4280, type: 3}
+  instanceIcon: {fileID: 21300000, guid: 34349a6a591d2e144af4f1217efd4280, type: 3}
   tags:
   - {fileID: 11400000, guid: 2affbfc85fe3dfa4487416792aa0fe18, type: 2}
   - {fileID: 11400000, guid: b295c8ab78f005247b193b5c87ab786a, type: 2}
