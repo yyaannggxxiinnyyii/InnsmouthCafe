@@ -16,4 +16,3 @@ MonoBehaviour:
   cupName: "\u4E2D\u676F"
   capacity: 450
   cupSprite: {fileID: 21300000, guid: 72063f76eac20e341b23e63d6af81adf, type: 3}
-  cupPrefab: {fileID: 0}

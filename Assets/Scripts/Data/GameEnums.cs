@@ -424,4 +424,60 @@ namespace InnsmouthCafe.Data
         /// </summary>
         Review
     }
+
+    /// <summary>
+    /// 游戏流程状态
+    /// </summary>
+    public enum GameFlowState
+    {
+        /// <summary>
+        /// 未开始
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// 等待开始（延迟中）
+        /// </summary>
+        WaitingToStart,
+
+        /// <summary>
+        /// 顾客进入
+        /// </summary>
+        CustomerEntering,
+
+        /// <summary>
+        /// 顾客对话（点单）
+        /// </summary>
+        CustomerTalking,
+
+        /// <summary>
+        /// 等待制作（玩家制作咖啡中）
+        /// </summary>
+        WaitingForCraft,
+
+        /// <summary>
+        /// 评分中
+        /// </summary>
+        Scoring,
+
+        /// <summary>
+        /// 顾客反馈
+        /// </summary>
+        CustomerFeedback,
+
+        /// <summary>
+        /// 顾客离开
+        /// </summary>
+        CustomerLeaving,
+
+        /// <summary>
+        /// 当天结束
+        /// </summary>
+        DayEnd,
+
+        /// <summary>
+        /// 游戏结束
+        /// </summary>
+        GameEnd
+    }
 }

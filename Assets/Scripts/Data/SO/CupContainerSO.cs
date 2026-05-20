@@ -24,9 +24,6 @@ namespace InnsmouthCafe.Data
         [Tooltip("杯子图标")]
         public Sprite cupSprite;
 
-        [Tooltip("杯子3D模型预制体（可选）")]
-        public GameObject cupPrefab;
-
         /// <summary>
         /// 转换为CupContainerData
         /// </summary>
@@ -37,8 +34,7 @@ namespace InnsmouthCafe.Data
                 cupId = this.cupId,
                 cupName = this.cupName,
                 capacity = this.capacity,
-                cupSprite = this.cupSprite,
-                cupPrefab = this.cupPrefab
+                cupSprite = this.cupSprite
             };
         }
     }

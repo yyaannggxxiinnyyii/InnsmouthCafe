@@ -16,5 +16,5 @@ MonoBehaviour:
   beanName: "\u963F\u62C9\u6BD4\u5361"
   icon: {fileID: 21300000, guid: baba8b679bb31ec48b9f6719460c905b, type: 3}
   beanBarrelIcon: {fileID: 21300000, guid: 0e99fdff585db674aadb19d932dbc7ee, type: 3}
-  displayColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
+  displayColor: {r: 0.69411767, g: 0.57254905, b: 0.43921572, a: 1}
   description: "\u7ECF\u5178\u54C1\u79CD\uFF0C\u53E3\u611F\u67D4\u548C\uFF0C\u9178\u5EA6\u9002\u4E2D"

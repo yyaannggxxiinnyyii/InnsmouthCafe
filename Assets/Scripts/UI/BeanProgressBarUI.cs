@@ -29,18 +29,9 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("每格豆量（克）")]
         private float _beanPerGrid = 5f;
 
-        [Header("豆种颜色")]
-        [SerializeField] [Tooltip("普通豆颜色")]
-        private Color _normalBeanColor = new Color(0.545f, 0.353f, 0.169f); // 棕色
-
-        [SerializeField] [Tooltip("阿拉比卡豆颜色")]
-        private Color _arabicaBeanColor = new Color(0.706f, 0.549f, 0.392f); // 浅棕色
-
-        [SerializeField] [Tooltip("罗布斯塔豆颜色")]
-        private Color _robustaBeanColor = new Color(0.314f, 0.196f, 0.118f); // 深棕色
-
-        [SerializeField] [Tooltip("默认颜色（未选择豆种）")]
-        private Color _defaultColor = new Color(0.5f, 0.5f, 0.5f); // 灰色
+        [Header("颜色")]
+        [SerializeField] [Tooltip("默认颜色（未选择豆种时）")]
+        private Color _defaultColor = new Color(0.5f, 0.5f, 0.5f);
 
         private CoffeeCraftManager _manager;
 
@@ -95,14 +86,18 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
+            // 研磨完成后，取豆进度条应视为已清空
+            bool hasGround = batch.grindType.HasValue;
+            float displayAmount = hasGround ? 0f : batch.beanGram;
+
             // 更新填充量
-            UpdateFillAmount(batch.beanGram / _maxBeanAmount);
+            UpdateFillAmount(displayAmount / _maxBeanAmount);
 
             // 更新文本
-            UpdateBeanAmountText(batch.beanGram, _maxBeanAmount);
+            UpdateBeanAmountText(displayAmount, _maxBeanAmount);
 
             // 更新颜色
-            if (batch.bean != null)
+            if (batch.bean != null && !hasGround)
             {
                 Color beanColor = GetBeanColor(batch.bean);
                 UpdateFillColor(beanColor);
@@ -147,7 +142,7 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 根据豆种获取颜色
+        /// 根据豆种获取颜色（从BeanSO配置读取）
         /// </summary>
         private Color GetBeanColor(BeanSO bean)
         {
@@ -156,23 +151,7 @@ namespace InnsmouthCafe.UI
                 return _defaultColor;
             }
 
-            // 根据 beanId 或 beanName 来判断豆种类型
-            if (bean.beanId == "normal" || bean.beanName.Contains("普通"))
-            {
-                return _normalBeanColor;
-            }
-            else if (bean.beanId == "arabica" || bean.beanName.Contains("阿拉比"))
-            {
-                return _arabicaBeanColor;
-            }
-            else if (bean.beanId == "robusta" || bean.beanName.Contains("罗布斯塔"))
-            {
-                return _robustaBeanColor;
-            }
-            else
-            {
-                return _defaultColor;
-            }
+            return bean.displayColor;
         }
 
         /// <summary>

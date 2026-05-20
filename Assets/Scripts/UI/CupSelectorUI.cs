@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using System;
 using System.Collections.Generic;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
@@ -9,47 +9,72 @@ namespace InnsmouthCafe.UI
 {
     /// <summary>
     /// 杯型选择UI组件
-    /// 用于在制作界面1中选择杯子
+    /// 只负责按钮交互和选中状态，不处理杯子移动动画
     /// </summary>
     public class CupSelectorUI : MonoBehaviour
     {
+        [Serializable]
+        public class CupButtonBinding
+        {
+            [Tooltip("杯型SO配置")]
+            public CupContainerSO cup;
+
+            [Tooltip("对应按钮")]
+            public Button button;
+        }
+
         [Header("杯型配置")]
-        [SerializeField] [Tooltip("可选的杯型SO配置列表")]
-        private List<CupContainerSO> _cupSOList = new List<CupContainerSO>();
+        [SerializeField] [Tooltip("杯型与按钮的对应配置")]
+        private List<CupButtonBinding> _cupBindings = new List<CupButtonBinding>();
 
-        [Header("UI引用")]
-        [SerializeField] [Tooltip("杯型按钮列表")]
-        private List<Button> _cupButtons = new List<Button>();
-
-        [SerializeField] [Tooltip("容量文本列表（与按钮对应）")]
-        private List<TextMeshProUGUI> _capacityTexts = new List<TextMeshProUGUI>();
-
-        [Header("视觉配置")]
+        [Header("选中状态")]
         [SerializeField] [Tooltip("选中状态颜色")]
-        private Color _selectedColor = new Color(0.2f, 0.8f, 0.2f); // 绿色
+        private Color _selectedColor = new Color(0.8f, 1f, 0.8f);
 
         [SerializeField] [Tooltip("未选中状态颜色")]
         private Color _normalColor = Color.white;
 
-        [SerializeField] [Tooltip("不可选状态颜色")]
-        private Color _disabledColor = new Color(0.5f, 0.5f, 0.5f); // 灰色
+        [Header("调试")]
+        [SerializeField] [Tooltip("是否显示调试日志")]
+        private bool _showDebugLog = false;
+
+        /// <summary>
+        /// 杯子选中事件（参数：选中的CupContainerSO, 新索引, 旧索引）
+        /// 旧索引为-1表示第一次选择
+        /// </summary>
+        public event Action<CupContainerSO, int, int> OnCupSelected;
 
         private CoffeeCraftManager _manager;
         private int _selectedIndex = -1;
+
+        /// <summary>
+        /// 获取杯型绑定列表（供CupAnimationManager读取）
+        /// </summary>
+        public List<CupButtonBinding> CupBindings => _cupBindings;
+
+        /// <summary>
+        /// 当前选中索引
+        /// </summary>
+        public int SelectedIndex => _selectedIndex;
 
         private void Awake()
         {
             _manager = CoffeeCraftManager.Instance;
 
-            // 初始化按钮事件
-            for (int i = 0; i < _cupButtons.Count; i++)
+            for (int i = 0; i < _cupBindings.Count; i++)
             {
-                int index = i; // 闭包捕获
-                _cupButtons[i].onClick.AddListener(() => OnCupButtonClick(index));
-            }
+                var binding = _cupBindings[i];
+                if (binding == null || binding.button == null) continue;
 
-            // 初始化容量文本
-            RefreshCapacityTexts();
+                // 设置按钮图片为SO中配置的杯子Sprite
+                if (binding.cup != null && binding.cup.cupSprite != null && binding.button.image != null)
+                {
+                    binding.button.image.sprite = binding.cup.cupSprite;
+                }
+
+                int index = i;
+                binding.button.onClick.AddListener(() => OnCupButtonClick(index));
+            }
         }
 
         private void Start()
@@ -57,9 +82,10 @@ namespace InnsmouthCafe.UI
             if (_manager != null)
             {
                 _manager.OnCoffeeDataChanged += OnCoffeeDataChanged;
+                _manager.OnCraftReset += ResetSelection;
             }
 
-            RefreshDisplay();
+            RefreshButtonStates();
         }
 
         private void OnDestroy()
@@ -67,6 +93,7 @@ namespace InnsmouthCafe.UI
             if (_manager != null)
             {
                 _manager.OnCoffeeDataChanged -= OnCoffeeDataChanged;
+                _manager.OnCraftReset -= ResetSelection;
             }
         }
 
@@ -75,179 +102,72 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void OnCoffeeDataChanged(CoffeeData coffeeData)
         {
-            RefreshDisplay();
+            RefreshButtonStates();
         }
 
         /// <summary>
-        /// 刷新显示
-        /// </summary>
-        public void RefreshDisplay()
-        {
-            if (_manager == null || _manager.CurrentCoffeeData == null)
-            {
-                return;
-            }
-
-            // 更新选中状态
-            UpdateSelectedCup();
-
-            // 更新按钮状态（是否可选）
-            UpdateButtonStates();
-        }
-
-        /// <summary>
-        /// 更新选中的杯子
-        /// </summary>
-        private void UpdateSelectedCup()
-        {
-            var currentCup = _manager.CurrentCoffeeData.selectedCup;
-
-            // 查找当前选中的杯子索引
-            _selectedIndex = -1;
-            if (currentCup != null)
-            {
-                for (int i = 0; i < _cupSOList.Count; i++)
-                {
-                    if (_cupSOList[i] != null && _cupSOList[i].cupId == currentCup.cupId)
-                    {
-                        _selectedIndex = i;
-                        break;
-                    }
-                }
-            }
-
-            // 更新按钮颜色
-            HighlightSelectedCup();
-        }
-
-        /// <summary>
-        /// 高亮选中的杯子
-        /// </summary>
-        private void HighlightSelectedCup()
-        {
-            for (int i = 0; i < _cupButtons.Count; i++)
-            {
-                if (i >= _cupSOList.Count)
-                {
-                    continue;
-                }
-
-                var buttonImage = _cupButtons[i].GetComponent<Image>();
-                if (buttonImage != null)
-                {
-                    if (i == _selectedIndex)
-                    {
-                        buttonImage.color = _selectedColor;
-                    }
-                    else
-                    {
-                        buttonImage.color = _normalColor;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 更新按钮状态（可选/不可选）
-        /// </summary>
-        private void UpdateButtonStates()
-        {
-            bool canSelect = _manager.CanSelectCup();
-
-            for (int i = 0; i < _cupButtons.Count; i++)
-            {
-                if (i >= _cupSOList.Count)
-                {
-                    _cupButtons[i].interactable = false;
-                    continue;
-                }
-
-                _cupButtons[i].interactable = canSelect;
-
-                // 如果不可选，显示灰色
-                if (!canSelect && i != _selectedIndex)
-                {
-                    var buttonImage = _cupButtons[i].GetComponent<Image>();
-                    if (buttonImage != null)
-                    {
-                        buttonImage.color = _disabledColor;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 杯型按钮点击
+        /// 杯子按钮点击
         /// </summary>
         private void OnCupButtonClick(int index)
         {
-            if (index < 0 || index >= _cupSOList.Count)
+            if (index < 0 || index >= _cupBindings.Count) return;
+            if (_manager == null || !_manager.CanSelectCup()) return;
+
+            var binding = _cupBindings[index];
+            if (binding.cup == null) return;
+
+            // 点击已选中的杯子，忽略
+            if (index == _selectedIndex) return;
+
+            int oldIndex = _selectedIndex;
+            _selectedIndex = index;
+
+            // 通知管理器选择杯子
+            _manager.SelectCup(binding.cup.ToData());
+
+            // 触发选中事件（CupAnimationManager监听）
+            OnCupSelected?.Invoke(binding.cup, index, oldIndex);
+
+            // 更新按钮视觉
+            RefreshButtonStates();
+
+            if (_showDebugLog)
             {
-                Debug.LogWarning($"[CupSelectorUI] 无效的杯型索引: {index}");
-                return;
+                Debug.Log($"[CupSelector] 选择杯型: {binding.cup.cupName} ({binding.cup.capacity}ml)");
             }
-
-            if (!_manager.CanSelectCup())
-            {
-                Debug.LogWarning("[CupSelectorUI] 当前不能切换杯子");
-                return;
-            }
-
-            var cupSO = _cupSOList[index];
-            if (cupSO == null)
-            {
-                Debug.LogWarning($"[CupSelectorUI] 杯型SO为空: {index}");
-                return;
-            }
-
-            _manager.SelectCup(cupSO.ToData());
-
-            Debug.Log($"[CupSelectorUI] 选择杯型: {cupSO.cupName} ({cupSO.capacity}ml)");
         }
 
         /// <summary>
-        /// 刷新容量文本
+        /// 刷新按钮可交互状态和选中高亮
         /// </summary>
-        private void RefreshCapacityTexts()
+        private void RefreshButtonStates()
         {
-            for (int i = 0; i < _capacityTexts.Count && i < _cupSOList.Count; i++)
+            if (_manager == null) return;
+
+            bool canSelect = _manager.CanSelectCup();
+
+            for (int i = 0; i < _cupBindings.Count; i++)
             {
-                if (_capacityTexts[i] != null && _cupSOList[i] != null)
+                var binding = _cupBindings[i];
+                if (binding?.button == null) continue;
+
+                binding.button.interactable = canSelect;
+
+                // 高亮选中的按钮
+                if (binding.button.image != null)
                 {
-                    _capacityTexts[i].text = $"{_cupSOList[i].capacity:F0}ml";
+                    binding.button.image.color = (i == _selectedIndex) ? _selectedColor : _normalColor;
                 }
             }
         }
 
         /// <summary>
-        /// 设置杯型SO列表（运行时动态设置）
+        /// 重置选择状态（新一轮制作时调用）
         /// </summary>
-        public void SetCupSOList(List<CupContainerSO> cupSOList)
+        public void ResetSelection()
         {
-            _cupSOList = cupSOList;
-            RefreshCapacityTexts();
-            RefreshDisplay();
-        }
-
-        /// <summary>
-        /// 添加杯型SO
-        /// </summary>
-        public void AddCupSO(CupContainerSO cupSO)
-        {
-            if (cupSO != null && !_cupSOList.Contains(cupSO))
-            {
-                _cupSOList.Add(cupSO);
-                RefreshCapacityTexts();
-                RefreshDisplay();
-            }
-        }
-
-        /// <summary>
-        /// 手动刷新（用于测试）
-        /// </summary>
-        public void ManualRefresh()
-        {
-            RefreshDisplay();
+            _selectedIndex = -1;
+            RefreshButtonStates();
         }
     }
 }

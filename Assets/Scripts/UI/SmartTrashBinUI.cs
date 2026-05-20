@@ -15,6 +15,10 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("垃圾桶按钮")]
         private Button _trashButton;
 
+        [Header("杯子动画")]
+        [SerializeField] [Tooltip("杯子动画管理器（倒掉整杯时触发丢弃动画）")]
+        private CupAnimationManager _cupAnimationManager;
+
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = true;
@@ -84,16 +88,23 @@ namespace InnsmouthCafe.UI
             // 判断当前阶段并执行对应的倒掉操作
             if (coffeeData.coffeeSegments.Count > 0)
             {
-                // 已萃取阶段：倒掉整杯咖啡
+                // 已萃取阶段：倒掉整杯咖啡 + 杯子丢进垃圾桶动画
                 if (_showDebugLog)
                 {
                     Debug.Log("[SmartTrashBin] 倒掉整杯咖啡（已萃取）");
                 }
+
+                // 触发杯子丢弃动画
+                if (_cupAnimationManager != null)
+                {
+                    _cupAnimationManager.AnimateTrashCup();
+                }
+
                 _manager.ClearWholeCoffee();
             }
             else if (batch.grindType.HasValue)
             {
-                // 已研磨未萃取阶段：倒掉咖啡粉
+                // 已研磨未萃取阶段：倒掉咖啡粉（不重置杯子）
                 if (_showDebugLog)
                 {
                     Debug.Log("[SmartTrashBin] 倒掉咖啡粉（已研磨未萃取）");
@@ -102,7 +113,7 @@ namespace InnsmouthCafe.UI
             }
             else if (batch.beanGram > 0f)
             {
-                // 取豆未研磨阶段：倒掉豆子
+                // 取豆未研磨阶段：倒掉豆子（不重置杯子）
                 if (_showDebugLog)
                 {
                     Debug.Log("[SmartTrashBin] 倒掉豆子（取豆未研磨）");

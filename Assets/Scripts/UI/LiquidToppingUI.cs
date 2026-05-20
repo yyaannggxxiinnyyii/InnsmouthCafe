@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -12,69 +14,33 @@ namespace InnsmouthCafe.UI
     /// </summary>
     public class LiquidToppingUI : MonoBehaviour
     {
+        [Serializable]
+        private class LiquidButtonBinding
+        {
+            [Tooltip("辅助液配置")]
+            public LiquidSO liquid;
+
+            [Tooltip("对应按钮")]
+            public Button button;
+        }
+
+        [Serializable]
+        private class ToppingButtonBinding
+        {
+            [Tooltip("小料配置")]
+            public ToppingSO topping;
+
+            [Tooltip("对应按钮")]
+            public Button button;
+        }
+
         [Header("辅助液配置")]
-        [SerializeField] [Tooltip("热水配置")]
-        private LiquidSO _hotWaterConfig;
-
-        [SerializeField] [Tooltip("牛奶配置")]
-        private LiquidSO _milkConfig;
-
-        [SerializeField] [Tooltip("奶泡配置")]
-        private LiquidSO _foamConfig;
-
-        [SerializeField] [Tooltip("冰水配置")]
-        private LiquidSO _iceWaterConfig;
+        [SerializeField] [Tooltip("辅助液与按钮的对应配置")]
+        private List<LiquidButtonBinding> _liquidButtons = new List<LiquidButtonBinding>();
 
         [Header("小料配置")]
-        [SerializeField] [Tooltip("焦糖碎配置")]
-        private ToppingSO _caramelCrispConfig;
-
-        [SerializeField] [Tooltip("巧克力粉配置")]
-        private ToppingSO _chocolatePowderConfig;
-
-        [SerializeField] [Tooltip("海星糖配置")]
-        private ToppingSO _starfishCandyConfig;
-
-        [SerializeField] [Tooltip("眼球爆珠配置")]
-        private ToppingSO _eyeballPoppingBobaConfig;
-
-        [SerializeField] [Tooltip("月尘粉配置")]
-        private ToppingSO _moonDustConfig;
-
-        [SerializeField] [Tooltip("黑盐配置")]
-        private ToppingSO _blackSaltConfig;
-
-        [Header("辅助液按钮")]
-        [SerializeField] [Tooltip("热水按钮")]
-        private Button _hotWaterButton;
-
-        [SerializeField] [Tooltip("牛奶按钮")]
-        private Button _milkButton;
-
-        [SerializeField] [Tooltip("奶泡按钮")]
-        private Button _foamButton;
-
-        [SerializeField] [Tooltip("冰水按钮")]
-        private Button _iceWaterButton;
-
-        [Header("小料按钮")]
-        [SerializeField] [Tooltip("焦糖碎按钮")]
-        private Button _caramelCrispButton;
-
-        [SerializeField] [Tooltip("巧克力粉按钮")]
-        private Button _chocolatePowderButton;
-
-        [SerializeField] [Tooltip("海星糖按钮")]
-        private Button _starfishCandyButton;
-
-        [SerializeField] [Tooltip("眼球爆珠按钮")]
-        private Button _eyeballPoppingBobaButton;
-
-        [SerializeField] [Tooltip("月尘粉按钮")]
-        private Button _moonDustButton;
-
-        [SerializeField] [Tooltip("黑盐按钮")]
-        private Button _blackSaltButton;
+        [SerializeField] [Tooltip("小料与按钮的对应配置")]
+        private List<ToppingButtonBinding> _toppingButtons = new List<ToppingButtonBinding>();
 
         [Header("操作按钮")]
         [SerializeField] [Tooltip("提交按钮")]
@@ -90,19 +56,8 @@ namespace InnsmouthCafe.UI
         {
             _manager = CoffeeCraftManager.Instance;
 
-            // 设置辅助液按钮的按住/松开事件
-            SetupLiquidButton(_hotWaterButton, _hotWaterConfig);
-            SetupLiquidButton(_milkButton, _milkConfig);
-            SetupLiquidButton(_foamButton, _foamConfig);
-            SetupLiquidButton(_iceWaterButton, _iceWaterConfig);
-
-            // 设置小料按钮的左键/右键点击事件
-            SetupToppingButton(_caramelCrispButton, _caramelCrispConfig);
-            SetupToppingButton(_chocolatePowderButton, _chocolatePowderConfig);
-            SetupToppingButton(_starfishCandyButton, _starfishCandyConfig);
-            SetupToppingButton(_eyeballPoppingBobaButton, _eyeballPoppingBobaConfig);
-            SetupToppingButton(_moonDustButton, _moonDustConfig);
-            SetupToppingButton(_blackSaltButton, _blackSaltConfig);
+            BindLiquidButtons();
+            BindToppingButtons();
 
             // 设置提交按钮
             if (_submitButton != null)
@@ -132,74 +87,113 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 设置辅助液按钮的按住/松开事件
+        /// 绑定辅助液按钮、图标与事件
         /// </summary>
-        private void SetupLiquidButton(Button button, LiquidSO liquid)
+        private void BindLiquidButtons()
         {
-            if (button == null)
+            if (_liquidButtons == null)
             {
                 return;
             }
 
-            // 获取或添加EventTrigger组件
-            EventTrigger trigger = button.gameObject.GetComponent<EventTrigger>();
-            if (trigger == null)
+            foreach (var binding in _liquidButtons)
             {
-                trigger = button.gameObject.AddComponent<EventTrigger>();
+                if (binding == null || binding.button == null)
+                {
+                    continue;
+                }
+
+                binding.button.onClick.RemoveAllListeners();
+
+                if (binding.button.image != null && binding.liquid != null)
+                {
+                    Sprite buttonSprite = binding.liquid.containerIcon != null ? binding.liquid.containerIcon : binding.liquid.icon;
+                    if (buttonSprite != null)
+                    {
+                        binding.button.image.sprite = buttonSprite;
+                    }
+                }
+
+                EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>();
+                if (trigger == null)
+                {
+                    trigger = binding.button.gameObject.AddComponent<EventTrigger>();
+                }
+
+                trigger.triggers.Clear();
+
+                EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry
+                {
+                    eventID = EventTriggerType.PointerDown
+                };
+                LiquidSO liquid = binding.liquid;
+                pointerDownEntry.callback.AddListener((data) => { OnLiquidButtonDown(liquid); });
+                trigger.triggers.Add(pointerDownEntry);
+
+                EventTrigger.Entry pointerUpEntry = new EventTrigger.Entry
+                {
+                    eventID = EventTriggerType.PointerUp
+                };
+                pointerUpEntry.callback.AddListener((data) => { OnLiquidButtonUp(); });
+                trigger.triggers.Add(pointerUpEntry);
             }
-
-            // 添加PointerDown事件（按住）
-            EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerDown
-            };
-            pointerDownEntry.callback.AddListener((data) => { OnLiquidButtonDown(liquid); });
-            trigger.triggers.Add(pointerDownEntry);
-
-            // 添加PointerUp事件（松开）
-            EventTrigger.Entry pointerUpEntry = new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerUp
-            };
-            pointerUpEntry.callback.AddListener((data) => { OnLiquidButtonUp(); });
-            trigger.triggers.Add(pointerUpEntry);
         }
 
         /// <summary>
-        /// 设置小料按钮的左键/右键点击事件
+        /// 绑定小料按钮、图标与事件
         /// </summary>
-        private void SetupToppingButton(Button button, ToppingSO topping)
+        private void BindToppingButtons()
         {
-            if (button == null)
+            if (_toppingButtons == null)
             {
                 return;
             }
 
-            // 获取或添加EventTrigger组件
-            EventTrigger trigger = button.gameObject.GetComponent<EventTrigger>();
-            if (trigger == null)
+            foreach (var binding in _toppingButtons)
             {
-                trigger = button.gameObject.AddComponent<EventTrigger>();
-            }
+                if (binding == null || binding.button == null)
+                {
+                    continue;
+                }
 
-            // 添加PointerClick事件（点击）
-            EventTrigger.Entry pointerClickEntry = new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerClick
-            };
-            pointerClickEntry.callback.AddListener((data) =>
-            {
-                PointerEventData pointerData = (PointerEventData)data;
-                if (pointerData.button == PointerEventData.InputButton.Left)
+                binding.button.onClick.RemoveAllListeners();
+
+                if (binding.button.image != null && binding.topping != null)
                 {
-                    OnToppingButtonLeftClick(topping);
+                    Sprite buttonSprite = binding.topping.icon;
+                    if (buttonSprite != null)
+                    {
+                        binding.button.image.sprite = buttonSprite;
+                    }
                 }
-                else if (pointerData.button == PointerEventData.InputButton.Right)
+
+                EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>();
+                if (trigger == null)
                 {
-                    OnToppingButtonRightClick(topping);
+                    trigger = binding.button.gameObject.AddComponent<EventTrigger>();
                 }
-            });
-            trigger.triggers.Add(pointerClickEntry);
+
+                trigger.triggers.Clear();
+
+                EventTrigger.Entry pointerClickEntry = new EventTrigger.Entry
+                {
+                    eventID = EventTriggerType.PointerClick
+                };
+                ToppingSO topping = binding.topping;
+                pointerClickEntry.callback.AddListener((data) =>
+                {
+                    PointerEventData pointerData = (PointerEventData)data;
+                    if (pointerData.button == PointerEventData.InputButton.Left)
+                    {
+                        OnToppingButtonLeftClick(topping);
+                    }
+                    else if (pointerData.button == PointerEventData.InputButton.Right)
+                    {
+                        OnToppingButtonRightClick(topping);
+                    }
+                });
+                trigger.triggers.Add(pointerClickEntry);
+            }
         }
 
         /// <summary>
@@ -279,12 +273,19 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void OnSubmitButtonClick()
         {
-            if (_manager == null)
+            // 通过GameFlowManager提交，由流程管理器驱动后续评分和反馈
+            if (GameFlowManager.Instance != null)
             {
-                return;
+                GameFlowManager.Instance.OnPlayerSubmitCoffee();
             }
-
-            _manager.SubmitCoffee();
+            else
+            {
+                // 无流程管理器时直接提交（兼容独立测试）
+                if (_manager != null)
+                {
+                    _manager.SubmitCoffee();
+                }
+            }
 
             if (_showDebugLog)
             {
@@ -325,19 +326,29 @@ namespace InnsmouthCafe.UI
             bool hasExtracted = coffeeData.coffeeSegments.Count > 0;
 
             // 更新辅助液按钮状态
-            SetButtonInteractable(_hotWaterButton, hasExtracted);
-            SetButtonInteractable(_milkButton, hasExtracted);
-            SetButtonInteractable(_foamButton, hasExtracted);
-            SetButtonInteractable(_iceWaterButton, hasExtracted);
+            if (_liquidButtons != null)
+            {
+                foreach (var binding in _liquidButtons)
+                {
+                    if (binding != null)
+                    {
+                        SetButtonInteractable(binding.button, hasExtracted);
+                    }
+                }
+            }
 
             // 更新小料按钮状态
             bool canAddTopping = hasExtracted && coffeeData.toppings.Count < 20;
-            SetButtonInteractable(_caramelCrispButton, canAddTopping);
-            SetButtonInteractable(_chocolatePowderButton, canAddTopping);
-            SetButtonInteractable(_starfishCandyButton, canAddTopping);
-            SetButtonInteractable(_eyeballPoppingBobaButton, canAddTopping);
-            SetButtonInteractable(_moonDustButton, canAddTopping);
-            SetButtonInteractable(_blackSaltButton, canAddTopping);
+            if (_toppingButtons != null)
+            {
+                foreach (var binding in _toppingButtons)
+                {
+                    if (binding != null)
+                    {
+                        SetButtonInteractable(binding.button, canAddTopping);
+                    }
+                }
+            }
 
             // 更新提交按钮状态
             if (_submitButton != null)

@@ -23,8 +23,5 @@ namespace InnsmouthCafe.Data
         [Header("视觉资源")]
         [Tooltip("杯子图标")]
         public Sprite cupSprite;
-
-        [Tooltip("杯子3D模型预制体（可选）")]
-        public GameObject cupPrefab;
     }
 }

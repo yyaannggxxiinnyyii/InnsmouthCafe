@@ -54,7 +54,7 @@ public class ScoringManager : Singleton<ScoringManager>
                 {
                     float overflowVolume = Mathf.Max(0, totalVolume - coffee.selectedCup.capacity);
                     score.overflowSanityLoss = (overflowVolume / 25f) * _sanityLossPerOverflow25ml;
-                    Debug.Log("[Scoring] 溢出 {overflowVolume:F1}ml，理智损失 {score.overflowSanityLoss:F1}");
+                    Debug.Log($"[Scoring] 溢出 {overflowVolume:F1}ml，理智损失 {score.overflowSanityLoss:F1}");
                 }
             }
 
@@ -64,13 +64,15 @@ public class ScoringManager : Singleton<ScoringManager>
             score.volumeMatchScore = CalculateVolumeMatchScore(order, coffee, gameMode);
             score.cupAdaptationScore = CalculateCupAdaptationScore(coffee);
 
-            score.finalScore = Mathf.Clamp01(
+            // 各子评分为0-100，先除以100归一化到0-1再加权，最终乘100得到百分制
+            score.finalScore = Mathf.Clamp(
                 score.coffeeMatchScore * _coffeeMatchWeight +
                 score.liquidMatchScore * _liquidMatchWeight +
                 score.toppingMatchScore * _toppingMatchWeight +
                 score.volumeMatchScore * _volumeMatchWeight +
-                score.cupAdaptationScore * _cupAdaptationWeight
-            ) * 100f;
+                score.cupAdaptationScore * _cupAdaptationWeight,
+                0f, 100f
+            );
 
             if (coffee.isOverflowed)
             {
@@ -116,7 +118,7 @@ public class ScoringManager : Singleton<ScoringManager>
 
             float averageError = matchCount > 0 ? totalErrorRatio / matchCount : 1.0f;
             float score = Mathf.Clamp01(1.0f - averageError) * 100f;
-            Debug.Log("[Scoring] 咖啡液匹配得分: {score:F1} (平均偏差: {averageError * 100:F1}%)");
+            Debug.Log($"[Scoring] 咖啡液匹配得分: {score:F1} (平均偏差: {averageError * 100:F1}%)");
             return score;
         }
 
@@ -149,7 +151,7 @@ public class ScoringManager : Singleton<ScoringManager>
 
             float averageError = matchCount > 0 ? totalErrorRatio / matchCount : 0f;
             float score = Mathf.Clamp01(1.0f - averageError) * 100f;
-            Debug.Log("[Scoring] 辅助液匹配得分: {score:F1}");
+            Debug.Log($"[Scoring] 辅助液匹配得分: {score:F1}");
             return score;
         }
 
@@ -257,7 +259,7 @@ public class ScoringManager : Singleton<ScoringManager>
         private string GenerateScoringDetail(OrderSO order, CoffeeData coffee, CoffeeScoringData score)
         {
             var orderData = order.ToData();
-            string detail = "订单目标: {orderData.targetTotalVolume:F0}ml\n实际总量: {coffee.currentTotalVolume:F1}ml\n杯子容量: {(coffee.selectedCup?.capacity ?? 0):F0}ml\n";
+            string detail = $"订单目标: {orderData.targetTotalVolume:F0}ml\n实际总量: {coffee.currentTotalVolume:F1}ml\n杯子容量: {(coffee.selectedCup?.capacity ?? 0):F0}ml\n";
             if (score.hasOverflow)
                 detail += $"⚠️ 发生溢出\n";
             if (score.hasMissingComponents)

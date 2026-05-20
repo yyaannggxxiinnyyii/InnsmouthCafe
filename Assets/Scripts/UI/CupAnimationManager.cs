@@ -8,315 +8,477 @@ namespace InnsmouthCafe.UI
 {
     /// <summary>
     /// 杯子动画管理器
-    /// 负责管理杯子的所有动画效果
+    /// 管理独立的"工作杯子"实例（和场景容器同级），处理跨场景穿越移动
+    /// 选择杯子时从按钮位置取出，切换时先放回旧按钮再从新按钮取出
     /// </summary>
     public class CupAnimationManager : MonoBehaviour
     {
-        [Header("杯子实例")]
-        [SerializeField] [Tooltip("当前杯子的Image组件")]
-        private Image _cupImage;
+        [Header("工作杯子实例")]
+        [SerializeField] [Tooltip("工作杯子的Image组件（和场景容器同级）")]
+        private Image _workCupImage;
 
-        [SerializeField] [Tooltip("杯子的RectTransform")]
-        private RectTransform _cupRect;
+        [SerializeField] [Tooltip("工作杯子的RectTransform")]
+        private RectTransform _workCupRect;
 
-        [Header("锚点配置")]
-        [SerializeField] [Tooltip("杯子锚点配置")]
-        private CupAnchorPoints _anchorPoints;
+        [Header("杯子选择器引用")]
+        [SerializeField] [Tooltip("杯型选择UI组件")]
+        private CupSelectorUI _cupSelector;
+
+        [Header("场景工作位置锚点")]
+        [SerializeField] [Tooltip("CraftBase场景中杯子的工作位置")]
+        private RectTransform _craftBaseAnchor;
+
+        [SerializeField] [Tooltip("CraftMix场景中杯子的工作位置")]
+        private RectTransform _craftMixAnchor;
+
+        [SerializeField] [Tooltip("Bar场景中杯子的工作位置（可选，为空则隐藏）")]
+        private RectTransform _barAnchor;
+
+        [Header("边界过渡锚点")]
+        [SerializeField] [Tooltip("左边界锚点（屏幕左侧外）")]
+        private RectTransform _leftBoundaryAnchor;
+
+        [SerializeField] [Tooltip("右边界锚点（屏幕右侧外）")]
+        private RectTransform _rightBoundaryAnchor;
+
+        [Header("垃圾桶")]
+        [SerializeField] [Tooltip("垃圾桶锚点位置")]
+        private RectTransform _trashBinAnchor;
+
+        [SerializeField] [Tooltip("丢弃动画时长")]
+        private float _trashDuration = 0.4f;
+
+        [SerializeField] [Tooltip("抛物线弧度高度（相对于起点和终点中点的偏移）")]
+        private float _trashArcHeight = 150f;
 
         [Header("动画配置")]
-        [SerializeField] [Tooltip("选择杯子飞行时长")]
-        private float _selectionFlyDuration = 0.5f;
+        [SerializeField] [Tooltip("杯子从按钮飞到工作位置的时长")]
+        private float _pickUpDuration = 0.35f;
 
-        [SerializeField] [Tooltip("场景切换-杯子退出时长")]
-        private float _sceneExitDuration = 0.3f;
+        [SerializeField] [Tooltip("杯子飞回按钮位置的时长")]
+        private float _putBackDuration = 0.25f;
 
-        [SerializeField] [Tooltip("场景切换-杯子进入时长")]
-        private float _sceneEnterDuration = 0.3f;
+        [SerializeField] [Tooltip("杯子飞出到边界的时长")]
+        private float _exitDuration = 0.2f;
+
+        [SerializeField] [Tooltip("杯子从边界飞入的时长")]
+        private float _enterDuration = 0.25f;
 
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
-        private bool _showDebugLog = true;
+        private bool _showDebugLog = false;
 
-        private CoffeeCraftManager _craftManager;
-        private ViewSwitchManager _viewManager;
-        private CupContainerData _currentCupData;
+        private bool _hasCup = false;
         private bool _isAnimating = false;
+        private int _lastSelectedIndex = -1;
 
         private void Start()
         {
-            _craftManager = CoffeeCraftManager.Instance;
-            _viewManager = ViewSwitchManager.Instance;
-
-            if (_craftManager != null)
+            // 初始隐藏工作杯子
+            if (_workCupImage != null)
             {
-                _craftManager.OnCoffeeDataChanged += OnCoffeeDataChanged;
+                SetCupVisible(false);
             }
 
-            // 初始透明（无杯子）
-            if (_cupImage != null)
+            // 监听杯子选择事件
+            if (_cupSelector != null)
             {
-                SetCupAlpha(0f);
+                _cupSelector.OnCupSelected += OnCupSelected;
+            }
+
+            // 监听场景切换开始事件（带方向）
+            if (ViewSwitchManager.Instance != null)
+            {
+                ViewSwitchManager.Instance.OnViewSwitchStarted += OnViewSwitchStarted;
+                ViewSwitchManager.Instance.OnViewSwitched += OnViewSwitched;
+            }
+
+            // 监听制作重置事件（咖啡提交后，隐藏工作杯子并重置状态）
+            if (CoffeeCraftManager.Instance != null)
+            {
+                CoffeeCraftManager.Instance.OnCraftReset += ResetWorkCup;
             }
         }
 
         private void OnDestroy()
         {
-            if (_craftManager != null)
+            if (_cupSelector != null)
             {
-                _craftManager.OnCoffeeDataChanged -= OnCoffeeDataChanged;
+                _cupSelector.OnCupSelected -= OnCupSelected;
             }
 
-            // 清理所有动画
-            _cupRect?.DOKill();
+            if (ViewSwitchManager.Instance != null)
+            {
+                ViewSwitchManager.Instance.OnViewSwitchStarted -= OnViewSwitchStarted;
+                ViewSwitchManager.Instance.OnViewSwitched -= OnViewSwitched;
+            }
+
+            if (CoffeeCraftManager.Instance != null)
+            {
+                CoffeeCraftManager.Instance.OnCraftReset -= ResetWorkCup;
+            }
+
+            _workCupRect?.DOKill();
         }
 
         /// <summary>
-        /// 咖啡数据变化回调
+        /// 杯子选中回调
         /// </summary>
-        private void OnCoffeeDataChanged(CoffeeData coffeeData)
+        /// <param name="cup">选中的杯型SO</param>
+        /// <param name="newIndex">新选中的索引</param>
+        /// <param name="oldIndex">旧选中的索引（-1表示第一次选择）</param>
+        private void OnCupSelected(CupContainerSO cup, int newIndex, int oldIndex)
         {
-            // 检查杯子是否变化
-            if (coffeeData.selectedCup != _currentCupData)
-            {
-                OnCupChanged(coffeeData.selectedCup);
-            }
+            if (cup == null || _isAnimating) return;
 
-            // 检查是否需要显示杯子（萃取后才显示）
-            bool shouldShow = coffeeData.coffeeSegments.Count > 0;
-            if (_cupImage != null)
+            if (oldIndex < 0)
             {
-                SetCupAlpha(shouldShow ? 1f : 0f);
-            }
-        }
-
-        /// <summary>
-        /// 杯子变化处理
-        /// </summary>
-        private void OnCupChanged(CupContainerData newCup)
-        {
-            if (newCup == null)
-            {
-                _currentCupData = null;
-                if (_cupImage != null)
-                {
-                    SetCupAlpha(0f);
-                }
-                return;
-            }
-
-            CupContainerData oldCup = _currentCupData;
-            _currentCupData = newCup;
-
-            // 更新杯子图片
-            if (_cupImage != null && newCup.cupSprite != null)
-            {
-                _cupImage.sprite = newCup.cupSprite;
-                // 选择杯子时显示（透明度=1）
-                SetCupAlpha(1f);
-            }
-
-            // 执行飞行动画
-            if (oldCup != null)
-            {
-                // 有旧杯子，执行交换动画
-                AnimateCupSwap(oldCup, newCup);
+                // 第一次选择：从按钮位置取出杯子
+                AnimateFirstPick(cup, newIndex);
             }
             else
             {
-                // 第一次选择杯子，直接飞到萃取机
-                AnimateCupToExtraction(newCup);
+                // 切换杯子：放回旧位置，从新位置取出
+                AnimateCupSwap(cup, newIndex, oldIndex);
             }
+
+            _lastSelectedIndex = newIndex;
         }
 
         /// <summary>
-        /// 杯子飞到萃取机动画
+        /// 第一次选择杯子动画：定位到按钮 → 显示 → 飞到工作位置
         /// </summary>
-        private void AnimateCupToExtraction(CupContainerData cup)
+        private void AnimateFirstPick(CupContainerSO cup, int index)
         {
-            if (_cupRect == null || _anchorPoints == null)
-            {
-                return;
-            }
+            Vector2 buttonPos = GetButtonLocalPosition(index);
+            RectTransform targetAnchor = GetAnchorForCurrentView();
 
-            RectTransform startAnchor = _anchorPoints.GetSelectionAnchor(cup.cupId);
-            RectTransform endAnchor = _anchorPoints.GetExtractionAnchor();
-
-            if (startAnchor == null || endAnchor == null)
-            {
-                Debug.LogWarning("[CupAnimationManager] 锚点未配置");
-                return;
-            }
+            if (targetAnchor == null) return;
 
             _isAnimating = true;
-            _cupRect.DOKill();
+            _workCupRect.DOKill();
 
-            // 设置起始位置
-            _cupRect.anchoredPosition = startAnchor.anchoredPosition;
+            // 定位到按钮位置
+            _workCupRect.anchoredPosition = buttonPos;
 
-            // 飞到萃取机
-            _cupRect.DOAnchorPos(endAnchor.anchoredPosition, _selectionFlyDuration)
+            // 设置贴图并显示
+            if (_workCupImage != null && cup.cupSprite != null)
+            {
+                _workCupImage.sprite = cup.cupSprite;
+            }
+            SetCupVisible(true);
+
+            // 飞到工作位置
+            _workCupRect.DOAnchorPos(targetAnchor.anchoredPosition, _pickUpDuration)
                 .SetEase(Ease.OutBack)
                 .OnComplete(() =>
                 {
                     _isAnimating = false;
+                    _hasCup = true;
+
                     if (_showDebugLog)
                     {
-                        Debug.Log($"[CupAnimationManager] 杯子飞到萃取机：{cup.cupName}");
+                        Debug.Log($"[CupAnimation] 取出杯子: {cup.cupName}");
                     }
                 });
         }
 
         /// <summary>
-        /// 杯子交换动画（旧杯子飞回，新杯子飞来）
+        /// 切换杯子动画：飞回旧按钮 → 隐藏 → 闪现到新按钮 → 显示新贴图 → 飞到工作位置
         /// </summary>
-        private void AnimateCupSwap(CupContainerData oldCup, CupContainerData newCup)
+        private void AnimateCupSwap(CupContainerSO newCup, int newIndex, int oldIndex)
         {
-            if (_cupRect == null || _anchorPoints == null)
-            {
-                return;
-            }
+            Vector2 oldButtonPos = GetButtonLocalPosition(oldIndex);
+            Vector2 newButtonPos = GetButtonLocalPosition(newIndex);
+            RectTransform targetAnchor = GetAnchorForCurrentView();
 
-            RectTransform oldAnchor = _anchorPoints.GetSelectionAnchor(oldCup.cupId);
-            RectTransform newAnchor = _anchorPoints.GetSelectionAnchor(newCup.cupId);
-            RectTransform extractionAnchor = _anchorPoints.GetExtractionAnchor();
-
-            if (oldAnchor == null || newAnchor == null || extractionAnchor == null)
-            {
-                Debug.LogWarning("[CupAnimationManager] 锚点未配置");
-                return;
-            }
+            if (targetAnchor == null) return;
 
             _isAnimating = true;
-            _cupRect.DOKill();
+            _workCupRect.DOKill();
 
-            // 阶段1：旧杯子飞回选择区
-            _cupRect.DOAnchorPos(oldAnchor.anchoredPosition, _selectionFlyDuration * 0.5f)
-                .SetEase(Ease.InBack)
+            // 阶段1：飞回旧杯子按钮位置
+            _workCupRect.DOAnchorPos(oldButtonPos, _putBackDuration)
+                .SetEase(Ease.InQuad)
                 .OnComplete(() =>
                 {
-                    // 阶段2：切换到新杯子图片
-                    if (_cupImage != null && newCup.cupSprite != null)
+                    // 阶段2：隐藏，闪现到新按钮位置
+                    SetCupVisible(false);
+                    _workCupRect.anchoredPosition = newButtonPos;
+
+                    // 阶段3：设置新贴图并显示
+                    if (_workCupImage != null && newCup.cupSprite != null)
                     {
-                        _cupImage.sprite = newCup.cupSprite;
+                        _workCupImage.sprite = newCup.cupSprite;
                     }
+                    SetCupVisible(true);
 
-                    // 设置新杯子起始位置
-                    _cupRect.anchoredPosition = newAnchor.anchoredPosition;
-
-                    // 阶段3：新杯子飞到萃取机
-                    _cupRect.DOAnchorPos(extractionAnchor.anchoredPosition, _selectionFlyDuration)
+                    // 阶段4：飞到工作位置
+                    _workCupRect.DOAnchorPos(targetAnchor.anchoredPosition, _pickUpDuration)
                         .SetEase(Ease.OutBack)
                         .OnComplete(() =>
                         {
                             _isAnimating = false;
+
                             if (_showDebugLog)
                             {
-                                Debug.Log($"[CupAnimationManager] 杯子交换完成：{oldCup.cupName} → {newCup.cupName}");
+                                Debug.Log($"[CupAnimation] 切换杯子: {newCup.cupName}");
                             }
                         });
                 });
         }
 
         /// <summary>
-        /// 场景切换时的杯子移动动画
+        /// 获取按钮在工作杯子父级坐标系中的位置
         /// </summary>
-        /// <param name="fromView">起始场景</param>
-        /// <param name="toView">目标场景</param>
-        /// <param name="isNext">是否向下一个场景切换</param>
-        public void AnimateCupSceneTransition(GameViewType fromView, GameViewType toView, bool isNext)
+        private Vector2 GetButtonLocalPosition(int index)
         {
-            if (_cupRect == null || _anchorPoints == null || _cupImage == null)
+            if (_cupSelector == null || index < 0 || index >= _cupSelector.CupBindings.Count)
             {
-                return;
+                return Vector2.zero;
             }
 
-            // 检查杯子是否可见（透明度>0）
-            if (_cupImage.color.a <= 0f)
-            {
-                return;
-            }
+            var binding = _cupSelector.CupBindings[index];
+            if (binding?.button == null) return Vector2.zero;
 
-            RectTransform targetAnchor = _anchorPoints.GetSceneAnchor(toView);
+            RectTransform buttonRect = binding.button.GetComponent<RectTransform>();
+            if (buttonRect == null) return Vector2.zero;
+
+            return GetLocalPositionOf(buttonRect);
+        }
+
+        /// <summary>
+        /// 将任意RectTransform的世界坐标转换为工作杯子父级坐标系中的本地坐标
+        /// </summary>
+        private Vector2 GetLocalPositionOf(RectTransform target)
+        {
+            RectTransform parentRect = _workCupRect.parent as RectTransform;
+            if (parentRect == null || target == null) return Vector2.zero;
+
+            Vector3 worldPos = target.position;
+            Vector2 localPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                parentRect,
+                RectTransformUtility.WorldToScreenPoint(null, worldPos),
+                null,
+                out localPos
+            );
+
+            return localPos;
+        }
+
+        /// <summary>
+        /// 场景切换开始回调（执行穿越动画）
+        /// </summary>
+        private void OnViewSwitchStarted(GameViewType fromView, GameViewType toView, bool isNext)
+        {
+            if (!_hasCup || _isAnimating) return;
+
+            RectTransform targetAnchor = GetAnchorForView(toView);
+
+            // 目标场景没有杯子位置，直接隐藏
             if (targetAnchor == null)
             {
-                Debug.LogWarning($"[CupAnimationManager] 目标场景锚点未配置：{toView}");
+                SetCupVisible(false);
+                return;
+            }
+
+            // 来源场景没有杯子位置，直接定位显示
+            RectTransform fromAnchor = GetAnchorForView(fromView);
+            if (fromAnchor == null)
+            {
+                _workCupRect.anchoredPosition = targetAnchor.anchoredPosition;
+                SetCupVisible(true);
+                return;
+            }
+
+            // 执行穿越动画
+            AnimateCrossingTransition(targetAnchor, isNext);
+        }
+
+        /// <summary>
+        /// 场景切换完成回调（用于非动画的直接切换）
+        /// </summary>
+        private void OnViewSwitched(GameViewType viewType)
+        {
+            if (_isAnimating) return;
+            if (!_hasCup) return;
+
+            RectTransform targetAnchor = GetAnchorForView(viewType);
+            if (targetAnchor == null)
+            {
+                SetCupVisible(false);
+            }
+            else
+            {
+                _workCupRect.anchoredPosition = targetAnchor.anchoredPosition;
+                SetCupVisible(true);
+            }
+        }
+
+        /// <summary>
+        /// 穿越动画：飞出边界 → 闪现到另一侧 → 飞入目标位置
+        /// </summary>
+        private void AnimateCrossingTransition(RectTransform targetAnchor, bool isNext)
+        {
+            if (_workCupRect == null || _leftBoundaryAnchor == null || _rightBoundaryAnchor == null)
+            {
+                _workCupRect.anchoredPosition = targetAnchor.anchoredPosition;
                 return;
             }
 
             _isAnimating = true;
-            _cupRect.DOKill();
+            _workCupRect.DOKill();
 
-            // 计算退出和进入位置
-            float screenWidth = ((RectTransform)transform.parent).rect.width;
-            Vector2 currentPos = _cupRect.anchoredPosition;
-            Vector2 exitPos;
-            Vector2 enterPos;
+            // 向下一个场景：杯子向右飞出 → 从左侧飞入
+            // 向上一个场景：杯子向左飞出 → 从右侧飞入
+            RectTransform exitAnchor = isNext ? _rightBoundaryAnchor : _leftBoundaryAnchor;
+            RectTransform enterAnchor = isNext ? _leftBoundaryAnchor : _rightBoundaryAnchor;
 
-            if (isNext)
+            // 阶段1：飞出到边界
+            _workCupRect.DOAnchorPos(exitAnchor.anchoredPosition, _exitDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() =>
+                {
+                    // 阶段2：闪现到另一侧边界
+                    _workCupRect.anchoredPosition = enterAnchor.anchoredPosition;
+
+                    // 阶段3：从边界飞入目标位置
+                    _workCupRect.DOAnchorPos(targetAnchor.anchoredPosition, _enterDuration)
+                        .SetEase(Ease.OutQuad)
+                        .OnComplete(() =>
+                        {
+                            _isAnimating = false;
+
+                            if (_showDebugLog)
+                            {
+                                Debug.Log($"[CupAnimation] 穿越动画完成");
+                            }
+                        });
+                });
+        }
+
+        /// <summary>
+        /// 设置工作杯子可见性
+        /// </summary>
+        private void SetCupVisible(bool visible)
+        {
+            if (_workCupImage != null)
             {
-                // 向右切换：杯子向右退出，从左侧进入
-                exitPos = new Vector2(screenWidth + 200f, currentPos.y);
-                enterPos = new Vector2(-200f, targetAnchor.anchoredPosition.y);
+                _workCupImage.enabled = visible;
             }
-            else
-            {
-                // 向左切换：杯子向左退出，从右侧进入
-                exitPos = new Vector2(-200f, currentPos.y);
-                enterPos = new Vector2(screenWidth + 200f, targetAnchor.anchoredPosition.y);
-            }
+        }
 
-            // 创建动画序列
+        /// <summary>
+        /// 获取当前场景对应的锚点
+        /// </summary>
+        private RectTransform GetAnchorForCurrentView()
+        {
+            if (ViewSwitchManager.Instance == null) return _craftBaseAnchor;
+            return GetAnchorForView(ViewSwitchManager.Instance.CurrentViewType);
+        }
+
+        /// <summary>
+        /// 获取指定场景对应的锚点
+        /// </summary>
+        private RectTransform GetAnchorForView(GameViewType viewType)
+        {
+            switch (viewType)
+            {
+                case GameViewType.CraftBase:
+                    return _craftBaseAnchor;
+                case GameViewType.CraftMix:
+                    return _craftMixAnchor;
+                case GameViewType.Bar:
+                    return _barAnchor;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// 杯子丢进垃圾桶动画（带弧度抛物线 + 缩小）
+        /// 动画结束后自动重置杯子状态
+        /// </summary>
+        public void AnimateTrashCup()
+        {
+            if (!_hasCup || _isAnimating) return;
+            if (_workCupRect == null || _trashBinAnchor == null) return;
+
+            _isAnimating = true;
+            _workCupRect.DOKill();
+
+            Vector2 startPos = _workCupRect.anchoredPosition;
+            Vector2 endPos = _trashBinAnchor.anchoredPosition;
+
+            // 计算中间控制点（在起点和终点中间偏上方）
+            Vector2 midPoint = (startPos + endPos) * 0.5f;
+            midPoint.y += _trashArcHeight;
+
+            // 用DOVirtual手动沿二次贝塞尔曲线插值anchoredPosition
+            // DOPath操作的是transform.position（世界坐标），不适合UI的anchoredPosition
             Sequence seq = DOTween.Sequence();
 
-            // 阶段1：杯子退出
-            seq.Append(_cupRect.DOAnchorPos(exitPos, _sceneExitDuration).SetEase(Ease.InBack));
-
-            // 阶段2：等待场景切换（这里可以添加回调通知场景开始切换）
-            seq.AppendCallback(() =>
+            seq.Append(DOVirtual.Float(0f, 1f, _trashDuration, t =>
             {
-                if (_showDebugLog)
-                {
-                    Debug.Log("[CupAnimationManager] 杯子退出完成，场景可以切换");
-                }
-            });
+                // 二次贝塞尔: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+                float oneMinusT = 1f - t;
+                Vector2 pos = oneMinusT * oneMinusT * startPos
+                            + 2f * oneMinusT * t * midPoint
+                            + t * t * endPos;
+                _workCupRect.anchoredPosition = pos;
+            }).SetEase(Ease.InQuad));
 
-            // 阶段3：设置进入位置
-            seq.AppendCallback(() =>
-            {
-                _cupRect.anchoredPosition = enterPos;
-            });
+            seq.Join(_workCupRect.DOScale(Vector3.zero, _trashDuration)
+                .SetEase(Ease.InQuad));
 
-            // 阶段4：杯子进入
-            seq.Append(_cupRect.DOAnchorPos(targetAnchor.anchoredPosition, _sceneEnterDuration).SetEase(Ease.OutBack));
+            seq.Join(_workCupRect.DORotate(new Vector3(0f, 0f, -45f), _trashDuration, RotateMode.FastBeyond360)
+                .SetEase(Ease.InQuad));
 
             seq.OnComplete(() =>
             {
                 _isAnimating = false;
+                _hasCup = false;
+                _lastSelectedIndex = -1;
+                SetCupVisible(false);
+
+                // 恢复缩放和旋转
+                _workCupRect.localScale = Vector3.one;
+                _workCupRect.localEulerAngles = Vector3.zero;
+
+                // 通知选择器重置
+                if (_cupSelector != null)
+                {
+                    _cupSelector.ResetSelection();
+                }
+
                 if (_showDebugLog)
                 {
-                    Debug.Log($"[CupAnimationManager] 场景切换动画完成：{fromView} → {toView}");
+                    Debug.Log("[CupAnimation] 杯子丢进垃圾桶");
                 }
             });
         }
 
         /// <summary>
-        /// 检查是否正在动画中
+        /// 重置工作杯子（新一轮制作时调用）
         /// </summary>
-        public bool IsAnimating()
+        public void ResetWorkCup()
         {
-            return _isAnimating;
+            _hasCup = false;
+            _isAnimating = false;
+            _lastSelectedIndex = -1;
+            SetCupVisible(false);
+
+            if (_workCupRect != null)
+            {
+                _workCupRect.DOKill();
+                _workCupRect.localScale = Vector3.one;
+            }
         }
 
         /// <summary>
-        /// 设置杯子透明度
+        /// 是否已有工作杯子
         /// </summary>
-        private void SetCupAlpha(float alpha)
-        {
-            if (_cupImage == null) return;
-
-            Color color = _cupImage.color;
-            color.a = alpha;
-            _cupImage.color = color;
-        }
+        public bool HasWorkCup => _hasCup;
     }
 }

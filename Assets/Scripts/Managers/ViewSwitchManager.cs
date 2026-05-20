@@ -1,8 +1,8 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using InnsmouthCafe.Data;
-using InnsmouthCafe.UI;
 
 namespace InnsmouthCafe.Managers
 {
@@ -18,11 +18,6 @@ namespace InnsmouthCafe.Managers
         [Header("界面面板")]
         [SerializeField] [Tooltip("场景容器（用于水平滑动）")]
         private RectTransform _scenePanelsContainer;
-
-
-        [Header("杯子动画")]
-        [SerializeField] [Tooltip("杯子动画管理器")]
-        private CupAnimationManager _cupAnimationManager;
 
         [Header("动画配置")]
         [SerializeField] [Tooltip("场景切换动画时长")]
@@ -84,6 +79,16 @@ namespace InnsmouthCafe.Managers
         /// 获取当前界面类型
         /// </summary>
         public GameViewType CurrentViewType => _currentViewType;
+
+        /// <summary>
+        /// 场景切换完成事件（参数：目标场景类型）
+        /// </summary>
+        public event Action<GameViewType> OnViewSwitched;
+
+        /// <summary>
+        /// 场景切换开始事件（参数：起始场景, 目标场景, 是否向右切换）
+        /// </summary>
+        public event Action<GameViewType, GameViewType, bool> OnViewSwitchStarted;
 
         protected override void Awake()
         {
@@ -283,31 +288,23 @@ namespace InnsmouthCafe.Managers
         {
             _isSwitching = true;
 
-            // 1. 先触发杯子退出动画
-            if (_cupAnimationManager != null)
-            {
-                _cupAnimationManager.AnimateCupSceneTransition(fromView, toView, isNext);
-            }
+            // 通知杯子动画开始（在场景滑动之前）
+            OnViewSwitchStarted?.Invoke(fromView, toView, isNext);
 
-            // 2. 等待杯子退出后，开始场景切换
-            DOVirtual.DelayedCall(_cupAnimationManager != null ? 0.3f : 0f, () =>
-            {
-                // 使用固定场景坐标
-                float targetX = GetScenePanelPosX(toView);
+            float targetX = GetScenePanelPosX(toView);
 
-                // 场景容器滑动
-                _scenePanelsContainer.DOAnchorPosX(targetX, _sceneSwitchDuration)
-                    .SetEase(Ease.InOutQuad)
-                    .OnComplete(() =>
+            _scenePanelsContainer.DOAnchorPosX(targetX, _sceneSwitchDuration)
+                .SetEase(Ease.InOutQuad)
+                .OnComplete(() =>
+                {
+                    _isSwitching = false;
+                    OnViewSwitched?.Invoke(toView);
+
+                    if (_showDebugLog)
                     {
-                        _isSwitching = false;
-
-                        if (_showDebugLog)
-                        {
-                            Debug.Log($"[ViewSwitchManager] 场景切换完成: {toView}");
-                        }
-                    });
-            });
+                        Debug.Log($"[ViewSwitchManager] 场景切换完成: {toView}");
+                    }
+                });
         }
 
         /// <summary>
@@ -324,6 +321,8 @@ namespace InnsmouthCafe.Managers
                 float targetX = GetScenePanelPosX(viewType);
                 _scenePanelsContainer.anchoredPosition = new Vector2(targetX, _scenePanelsContainer.anchoredPosition.y);
             }
+
+            OnViewSwitched?.Invoke(viewType);
 
             if (_showDebugLog)
             {

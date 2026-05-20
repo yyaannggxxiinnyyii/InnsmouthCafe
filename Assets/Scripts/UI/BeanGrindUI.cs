@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -12,25 +14,19 @@ namespace InnsmouthCafe.UI
     /// </summary>
     public class BeanGrindUI : MonoBehaviour
     {
+        [Serializable]
+        private class BeanButtonBinding
+        {
+            [Tooltip("豆种配置")]
+            public BeanSO bean;
+
+            [Tooltip("对应按钮")]
+            public Button button;
+        }
+
         [Header("豆种配置")]
-        [SerializeField] [Tooltip("普通豆配置")]
-        private BeanSO _normalBeanConfig;
-
-        [SerializeField] [Tooltip("阿拉比卡豆配置")]
-        private BeanSO _arabicaBeanConfig;
-
-        [SerializeField] [Tooltip("罗布斯塔豆配置")]
-        private BeanSO _robustaBeanConfig;
-
-        [Header("豆种选择")]
-        [SerializeField] [Tooltip("普通豆按钮")]
-        private Button _normalBeanButton;
-
-        [SerializeField] [Tooltip("阿拉比卡豆按钮")]
-        private Button _arabicaBeanButton;
-
-        [SerializeField] [Tooltip("罗布斯塔豆按钮")]
-        private Button _robustaBeanButton;
+        [SerializeField] [Tooltip("豆种与按钮的对应配置，按列表一一绑定")]
+        private List<BeanButtonBinding> _beanButtons = new List<BeanButtonBinding>();
 
         [Header("操作按钮")]
         [SerializeField] [Tooltip("萃取按钮")]
@@ -50,21 +46,7 @@ namespace InnsmouthCafe.UI
         {
             _manager = CoffeeCraftManager.Instance;
 
-            // 绑定豆种按钮
-            if (_normalBeanButton != null)
-            {
-                _normalBeanButton.onClick.AddListener(() => OnBeanButtonClick(_normalBeanConfig));
-            }
-
-            if (_arabicaBeanButton != null)
-            {
-                _arabicaBeanButton.onClick.AddListener(() => OnBeanButtonClick(_arabicaBeanConfig));
-            }
-
-            if (_robustaBeanButton != null)
-            {
-                _robustaBeanButton.onClick.AddListener(() => OnBeanButtonClick(_robustaBeanConfig));
-            }
+            BindBeanButtons();
 
             // 绑定操作按钮
             if (_extractButton != null)
@@ -90,6 +72,37 @@ namespace InnsmouthCafe.UI
             {
                 _manager.OnBatchDataChanged -= OnBatchDataChanged;
                 _manager.OnModuleStateChanged -= OnModuleStateChanged;
+            }
+        }
+
+        /// <summary>
+        /// 绑定豆种按钮与图标
+        /// </summary>
+        private void BindBeanButtons()
+        {
+            if (_beanButtons == null)
+            {
+                return;
+            }
+
+            foreach (var binding in _beanButtons)
+            {
+                if (binding == null || binding.button == null)
+                {
+                    continue;
+                }
+
+                binding.button.onClick.RemoveAllListeners();
+                binding.button.onClick.AddListener(() => OnBeanButtonClick(binding.bean));
+
+                if (binding.button.image != null && binding.bean != null)
+                {
+                    Sprite buttonSprite = binding.bean.beanBarrelIcon != null ? binding.bean.beanBarrelIcon : binding.bean.icon;
+                    if (buttonSprite != null)
+                    {
+                        binding.button.image.sprite = buttonSprite;
+                    }
+                }
             }
         }
 
@@ -192,31 +205,28 @@ namespace InnsmouthCafe.UI
             }
 
             var batch = _manager.CurrentBatch;
-            var moduleState = _manager.ModuleState;
+            bool isCrafting = _manager.MainState == CraftMainState.Crafting;
 
             // 更新豆种按钮状态
-            bool canAddBean = !batch.grindType.HasValue; // 未研磨才能取豆
+            bool canAddBean = isCrafting && !batch.grindType.HasValue; // 制作中且未研磨才能取豆
             bool beanLimitReached = batch.beanGram >= 20f;
 
-            if (_normalBeanButton != null)
+            if (_beanButtons != null)
             {
-                _normalBeanButton.interactable = canAddBean && !beanLimitReached;
-            }
-
-            if (_arabicaBeanButton != null)
-            {
-                _arabicaBeanButton.interactable = canAddBean && !beanLimitReached;
-            }
-
-            if (_robustaBeanButton != null)
-            {
-                _robustaBeanButton.interactable = canAddBean && !beanLimitReached;
+                foreach (var binding in _beanButtons)
+                {
+                    if (binding != null && binding.button != null)
+                    {
+                        binding.button.interactable = canAddBean && !beanLimitReached && binding.bean != null;
+                    }
+                }
             }
 
             // 更新萃取按钮状态
             if (_extractButton != null)
             {
-                bool canExtract = batch.CanExtract() &&
+                bool canExtract = isCrafting &&
+                                  batch.CanExtract() &&
                                   _manager.CurrentCoffeeData.selectedCup != null &&
                                   !_manager.IsExtracting;
                 _extractButton.interactable = canExtract;

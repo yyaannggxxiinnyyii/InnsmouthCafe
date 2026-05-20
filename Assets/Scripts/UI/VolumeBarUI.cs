@@ -107,11 +107,13 @@ namespace InnsmouthCafe.UI
             float cupCapacity = data.selectedCup.capacity;
             float currentX = 0f;
 
-            // 显示咖啡液段
+            // 显示咖啡液段（使用BeanSO中配置的颜色）
             foreach (var coffeeSegment in data.coffeeSegments)
             {
                 float widthPercent = coffeeSegment.extractedVolume / cupCapacity;
-                Color coffeeColor = new Color(0.4f, 0.2f, 0.1f, 1f); // 深棕色
+                Color coffeeColor = coffeeSegment.bean != null
+                    ? coffeeSegment.bean.displayColor
+                    : new Color(0.4f, 0.2f, 0.1f, 1f);
                 CreateLiquidSegment(currentX, widthPercent, coffeeColor);
                 currentX += widthPercent;
             }

@@ -85,6 +85,7 @@ namespace InnsmouthCafe.Managers
         public event Action OnOverflowed;
         public event Action<float, float> OnExtractionProgressChanged; // 参数：当前萃取量, 目标萃取量
         public event Action OnExtractionCompleted; // 萃取完成事件（用于播放音效等）
+        public event Action OnCraftReset; // 提交后重置，UI组件可监听此事件清理自身状态
 
         protected override void Awake()
         {
@@ -240,7 +241,8 @@ namespace InnsmouthCafe.Managers
             // 播放倒掉豆子音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanClear);
 
-            // TODO: 扣除理智值 -0.2
+            // 扣除理智值
+            SanityManager.Instance?.ReduceSanity(_clearBeansSanityPenalty, "浪费咖啡豆");
             Debug.Log($"[CoffeeCraft] 倒掉豆子：{oldGram}g，理智值-{_clearBeansSanityPenalty}");
         }
 
@@ -279,8 +281,8 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
-            _currentBatch.grindType = null;
-            _moduleState = CraftModuleState.GrindSelect;
+            _currentBatch.Clear();
+            _moduleState = CraftModuleState.BeanSelect;
 
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
@@ -288,7 +290,8 @@ namespace InnsmouthCafe.Managers
             // 播放倒掉咖啡粉音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeePowderClear);
 
-            // TODO: 扣除理智值 -0.3
+            // 扣除理智值
+            SanityManager.Instance?.ReduceSanity(_clearPowderSanityPenalty, "倒掉咖啡粉");
             Debug.Log($"[CoffeeCraft] 倒掉咖啡粉，理智值-{_clearPowderSanityPenalty}");
         }
 
@@ -297,6 +300,12 @@ namespace InnsmouthCafe.Managers
         /// </summary>
         public void StartExtraction()
         {
+            if (_mainState != CraftMainState.Crafting)
+            {
+                Debug.LogWarning("[CoffeeCraft] 当前不在制作状态，无法萃取");
+                return;
+            }
+
             if (_currentCoffeeData.selectedCup == null)
             {
                 Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
@@ -501,7 +510,8 @@ namespace InnsmouthCafe.Managers
                     int penaltyCount = Mathf.FloorToInt(_accumulatedOverflow / _overflowPenaltyInterval);
                     _accumulatedOverflow -= penaltyCount * _overflowPenaltyInterval;
 
-                    // TODO: 扣除理智值
+                    // 扣除理智值
+                    SanityManager.Instance?.ReduceSanity(penaltyCount * _overflowSanityPenalty, "咖啡溢出");
                     Debug.Log($"[CoffeeCraft] 溢出惩罚：理智值-{penaltyCount * _overflowSanityPenalty}");
                 }
                 return;
@@ -659,7 +669,8 @@ namespace InnsmouthCafe.Managers
             // 播放倒掉整杯音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeClearWhole);
 
-            // TODO: 扣除理智值 -0.4
+            // 扣除理智值
+            SanityManager.Instance?.ReduceSanity(_clearWholeCoffeeSanityPenalty, "倒掉整杯咖啡");
             Debug.Log($"[CoffeeCraft] 倒掉整杯，理智值-{_clearWholeCoffeeSanityPenalty}");
         }
 
@@ -734,6 +745,7 @@ namespace InnsmouthCafe.Managers
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnMainStateChanged?.Invoke(_mainState);
             OnModuleStateChanged?.Invoke(_moduleState);
+            OnCraftReset?.Invoke();
 
             Debug.Log("[CoffeeCraft] 已重置所有数据，等待新订单");
         }
