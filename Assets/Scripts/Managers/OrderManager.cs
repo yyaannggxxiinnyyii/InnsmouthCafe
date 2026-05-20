@@ -8,7 +8,7 @@ namespace InnsmouthCafe.Managers
     /// 订单管理器
     /// 负责订单生成、订单池选择、避免重复订单
     /// </summary>
-    public class OrderManager : MonoBehaviour
+    public class OrderManager : Singleton<OrderManager>
     {
         [Header("默认订单池")]
         [SerializeField]
