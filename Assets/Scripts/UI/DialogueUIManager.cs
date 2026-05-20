@@ -35,6 +35,16 @@ namespace InnsmouthCafe.UI
         private float _fadeDuration = 0.3f;
 
         [SerializeField]
+        [Tooltip("对话完成后自动隐藏等待时间（秒）")]
+        [Range(0.5f, 3f)]
+        private float _autoHideDelay = 1f;
+
+        [SerializeField]
+        [Tooltip("多段对话时，每句之间的间隔时间（秒）")]
+        [Range(0.3f, 2f)]
+        private float _dialogueInterval = 0.5f;
+
+        [SerializeField]
         [Tooltip("是否启用打字机效果")]
         private bool _enableTypewriter = true;
 
@@ -72,6 +82,16 @@ namespace InnsmouthCafe.UI
         /// 打字机协程引用
         /// </summary>
         private Coroutine _typewriterCoroutine;
+
+        /// <summary>
+        /// 自动隐藏协程引用
+        /// </summary>
+        private Coroutine _autoHideCoroutine;
+
+        /// <summary>
+        /// 自动继续协程引用
+        /// </summary>
+        private Coroutine _autoContinueCoroutine;
 
         /// <summary>
         /// 是否可以点击继续
@@ -193,6 +213,20 @@ namespace InnsmouthCafe.UI
                 _typewriterCoroutine = null;
             }
 
+            // 停止自动隐藏协程
+            if (_autoHideCoroutine != null)
+            {
+                StopCoroutine(_autoHideCoroutine);
+                _autoHideCoroutine = null;
+            }
+
+            // 停止自动继续协程
+            if (_autoContinueCoroutine != null)
+            {
+                StopCoroutine(_autoContinueCoroutine);
+                _autoContinueCoroutine = null;
+            }
+
             // 清空队列
             _dialogueQueue.Clear();
 
@@ -243,14 +277,28 @@ namespace InnsmouthCafe.UI
         {
             if (_dialogueQueue.Count == 0)
             {
-                // 所有对话完成
-                CompleteDialogue();
+                // 所有对话完成，启动自动隐藏
+                StartAutoHide();
                 return;
             }
 
             string dialogue = _dialogueQueue.Dequeue();
             _currentFullText = dialogue;
             _canClickToContinue = false;
+
+            // 停止之前的自动隐藏协程（如果有）
+            if (_autoHideCoroutine != null)
+            {
+                StopCoroutine(_autoHideCoroutine);
+                _autoHideCoroutine = null;
+            }
+
+            // 停止之前的自动继续协程（如果有）
+            if (_autoContinueCoroutine != null)
+            {
+                StopCoroutine(_autoContinueCoroutine);
+                _autoContinueCoroutine = null;
+            }
 
             if (_showDebugLog)
             {
@@ -273,6 +321,18 @@ namespace InnsmouthCafe.UI
                 _isTyping = false;
                 _canClickToContinue = true;
                 OnDialogueLineComplete?.Invoke(dialogue);
+
+                // 判断是否还有下一句
+                if (_dialogueQueue.Count > 0)
+                {
+                    // 还有下一句，启动自动继续
+                    StartAutoContinue();
+                }
+                else
+                {
+                    // 最后一句，启动自动隐藏
+                    StartAutoHide();
+                }
             }
         }
 
@@ -303,6 +363,18 @@ namespace InnsmouthCafe.UI
             {
                 Debug.Log("[DialogueUI] 打字机效果完成");
             }
+
+            // 判断是否还有下一句
+            if (_dialogueQueue.Count > 0)
+            {
+                // 还有下一句，启动自动继续
+                StartAutoContinue();
+            }
+            else
+            {
+                // 最后一句，启动自动隐藏
+                StartAutoHide();
+            }
         }
 
         /// <summary>
@@ -312,13 +384,32 @@ namespace InnsmouthCafe.UI
         {
             if (_isTyping)
             {
-                // 第一次点击：跳过打字机效果
+                // 打字机播放中：跳过打字机效果
                 SkipTypewriter();
             }
             else if (_canClickToContinue)
             {
-                // 第二次点击：继续下一句对话
-                ShowNextDialogue();
+                // 打字机完成后：点击可以加速
+                if (_dialogueQueue.Count > 0)
+                {
+                    // 还有下一句：立即显示下一句（跳过间隔等待）
+                    if (_autoContinueCoroutine != null)
+                    {
+                        StopCoroutine(_autoContinueCoroutine);
+                        _autoContinueCoroutine = null;
+                    }
+                    ShowNextDialogue();
+                }
+                else
+                {
+                    // 最后一句：立即隐藏（跳过自动隐藏等待）
+                    if (_autoHideCoroutine != null)
+                    {
+                        StopCoroutine(_autoHideCoroutine);
+                        _autoHideCoroutine = null;
+                    }
+                    CompleteDialogue();
+                }
             }
         }
 
@@ -345,6 +436,64 @@ namespace InnsmouthCafe.UI
             {
                 Debug.Log("[DialogueUI] 跳过打字机效果");
             }
+        }
+
+        /// <summary>
+        /// 启动自动继续（多段对话时）
+        /// </summary>
+        private void StartAutoContinue()
+        {
+            if (_autoContinueCoroutine != null)
+            {
+                StopCoroutine(_autoContinueCoroutine);
+            }
+
+            _autoContinueCoroutine = StartCoroutine(AutoContinueCoroutine());
+
+            if (_showDebugLog)
+            {
+                Debug.Log($"[DialogueUI] 启动自动继续，{_dialogueInterval}秒后显示下一句");
+            }
+        }
+
+        /// <summary>
+        /// 自动继续协程
+        /// </summary>
+        private IEnumerator AutoContinueCoroutine()
+        {
+            yield return new WaitForSeconds(_dialogueInterval);
+
+            _autoContinueCoroutine = null;
+            ShowNextDialogue();
+        }
+
+        /// <summary>
+        /// 启动自动隐藏
+        /// </summary>
+        private void StartAutoHide()
+        {
+            if (_autoHideCoroutine != null)
+            {
+                StopCoroutine(_autoHideCoroutine);
+            }
+
+            _autoHideCoroutine = StartCoroutine(AutoHideCoroutine());
+
+            if (_showDebugLog)
+            {
+                Debug.Log($"[DialogueUI] 启动自动隐藏，{_autoHideDelay}秒后隐藏");
+            }
+        }
+
+        /// <summary>
+        /// 自动隐藏协程
+        /// </summary>
+        private IEnumerator AutoHideCoroutine()
+        {
+            yield return new WaitForSeconds(_autoHideDelay);
+
+            _autoHideCoroutine = null;
+            CompleteDialogue();
         }
 
         /// <summary>
