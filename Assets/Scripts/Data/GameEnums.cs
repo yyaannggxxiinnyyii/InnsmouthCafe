@@ -175,6 +175,47 @@ namespace InnsmouthCafe.Data
     }
 
     /// <summary>
+    /// 顾客状态
+    /// </summary>
+    public enum CustomerState
+    {
+        /// <summary>
+        /// 未生成
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// 进入中
+        /// </summary>
+        Entering,
+
+        /// <summary>
+        /// 对话中
+        /// </summary>
+        Talking,
+
+        /// <summary>
+        /// 等待中
+        /// </summary>
+        Waiting,
+
+        /// <summary>
+        /// 愤怒
+        /// </summary>
+        Angry,
+
+        /// <summary>
+        /// 反馈中
+        /// </summary>
+        Feedback,
+
+        /// <summary>
+        /// 离开中
+        /// </summary>
+        Leaving
+    }
+
+    /// <summary>
     /// 订单状态
     /// </summary>
     public enum OrderState
