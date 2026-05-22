@@ -739,8 +739,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 456767242}
   m_HandleRect: {fileID: 456767241}
   m_Direction: 2
-  m_Value: 0.99999976
-  m_Size: 0.54690087
+  m_Value: 1.0000002
+  m_Size: 0.5469009
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1813,7 +1813,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e802b29e86b4ef74abe728250ecaf37c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: dd992353dbad5e749b602f254e07cabd, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1822,7 +1822,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 16.88
+  m_PixelsPerUnitMultiplier: 116.5
 --- !u!222 &272969165
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10145,7 +10145,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.3254902}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -10524,7 +10524,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: "\u63D0\u4EA4\u8BA2\u5355"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 034d17bb5b49b3648809aa2a0b9665a2, type: 2}
   m_sharedMaterial: {fileID: 1595279912121955130, guid: 034d17bb5b49b3648809aa2a0b9665a2, type: 2}
@@ -11035,6 +11035,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1561760481}
+  - component: {fileID: 1561760482}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -11066,6 +11067,21 @@ Transform:
   - {fileID: 1183338824}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1561760482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1561760480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 732ba7100713f7743ac03befe846307b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _targetWidth: 1920
+  _targetHeight: 1080
+  _fullScreenMode: 3
 --- !u!1 &1566039278
 GameObject:
   m_ObjectHideFlags: 0
