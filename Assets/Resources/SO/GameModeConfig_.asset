@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745319fb89c610e4d8d85eb31e3ba737, type: 3}
+  m_Name: GameModeConfig_
+  m_EditorClassIdentifier: 
+  gameMode: 0
+  totalDays: 7
+  dayConfigs: []
+  startDelay: 2
