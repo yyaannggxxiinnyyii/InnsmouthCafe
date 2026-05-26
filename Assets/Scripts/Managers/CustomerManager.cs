@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using InnsmouthCafe.Data;
+using InnsmouthCafe.Managers;
 /// <summary>
 /// 顾客系统管理器
 /// 负责顾客队列生成、排队管理和单例
@@ -118,6 +119,7 @@ public class CustomerManager : Singleton<CustomerManager>
 
             ChangeState(CustomerState.Entering);
             OnCustomerSpawned?.Invoke(_currentCustomer);
+            TutorialEventBus.Publish(TutorialEvents.CustomerEnter);
             return true;
         }
 
@@ -191,6 +193,7 @@ public class CustomerManager : Singleton<CustomerManager>
         {
             ChangeState(CustomerState.Leaving);
             OnCustomerLeft?.Invoke(_currentCustomer);
+            TutorialEventBus.Publish(TutorialEvents.CustomerLeave);
             _currentCustomer = null;
             Debug.Log("[Customer] 顾客已离开");
         }

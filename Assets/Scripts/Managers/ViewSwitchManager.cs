@@ -148,6 +148,23 @@ namespace InnsmouthCafe.Managers
             }
         }
 
+        /// <summary>向教学事件总线发布视图切换事件</summary>
+        private void PublishViewEvent(GameViewType viewType)
+        {
+            switch (viewType)
+            {
+                case GameViewType.Bar:
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchBar);
+                    break;
+                case GameViewType.CraftBase:
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftBase);
+                    break;
+                case GameViewType.CraftMix:
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftMix);
+                    break;
+            }
+        }
+
         /// <summary>
         /// 初始化界面列表
         /// </summary>
@@ -299,6 +316,7 @@ namespace InnsmouthCafe.Managers
                 {
                     _isSwitching = false;
                     OnViewSwitched?.Invoke(toView);
+                    PublishViewEvent(toView);
 
                     if (_showDebugLog)
                     {
@@ -323,6 +341,7 @@ namespace InnsmouthCafe.Managers
             }
 
             OnViewSwitched?.Invoke(viewType);
+            PublishViewEvent(viewType);
 
             if (_showDebugLog)
             {

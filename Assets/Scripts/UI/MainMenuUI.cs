@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
 
 namespace InnsmouthCafe.UI
@@ -46,6 +47,14 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("设置面板 UI 脚本（用于打开/关闭回调）")]
         private SettingsPanelUI _settingsPanel;
 
+        [Header("模式选择面板")]
+        [SerializeField] [Tooltip("模式选择面板 UI 脚本")]
+        private ModeSelectPanelUI _modeSelectPanel;
+
+        [Header("教学模式配置")]
+        [SerializeField] [Tooltip("教学模式配置SO（首次游戏直接使用）")]
+        private GameModeConfigSO _tutorialConfig;
+
         [Header("过渡设置")]
         [SerializeField] [Tooltip("页面切换淡入淡出时长")]
         private float _fadeDuration = 0.25f;
@@ -59,6 +68,8 @@ namespace InnsmouthCafe.UI
             ShowGroup(_mainMenuGroup, true);
             if (_settingsPanel != null)
                 _settingsPanel.Hide(immediate: true);
+            if (_modeSelectPanel != null)
+                _modeSelectPanel.Hide(immediate: true);
         }
 
         // ── 按钮绑定 ──────────────────────────────────────────
@@ -94,7 +105,25 @@ namespace InnsmouthCafe.UI
 
         private void OnStartClicked()
         {
-            GameManager.Instance?.StartNewGame();
+            // 教学模式未完成：直接进入教学
+            if (GameManager.Instance != null && !GameManager.Instance.IsTutorialCompleted())
+            {
+                if (_tutorialConfig != null)
+                {
+                    GameManager.Instance.StartGameWithConfig(_tutorialConfig);
+                }
+                else
+                {
+                    Debug.LogError("[MainMenu] 教学模式配置未设置");
+                }
+                return;
+            }
+
+            // 教学已完成：打开模式选择面板
+            FadeGroup(_mainMenuGroup, false, () =>
+            {
+                _modeSelectPanel?.Show();
+            });
         }
 
         private void OnSettingsClicked()
@@ -121,6 +150,14 @@ namespace InnsmouthCafe.UI
         public void OnSettingsClosed()
         {
             _settingsPanel?.Hide(immediate: false);
+            FadeGroup(_mainMenuGroup, true);
+        }
+
+        // ── 模式选择面板关闭回调（由 ModeSelectPanelUI 调用）──
+
+        public void OnModeSelectClosed()
+        {
+            _modeSelectPanel?.Hide(immediate: false);
             FadeGroup(_mainMenuGroup, true);
         }
 

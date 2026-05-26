@@ -134,7 +134,13 @@ namespace InnsmouthCafe.Managers
             // 订阅系统事件
             SubscribeEvents();
 
-            // 如果Inspector中配置了GameModeConfig，延迟自动开始（测试用）
+            // 优先从 GameManager 获取选中的模式配置
+            if (_gameModeConfig == null && GameManager.Instance != null)
+            {
+                _gameModeConfig = GameManager.Instance.SelectedModeConfig;
+            }
+
+            // 如果有配置，延迟自动开始
             if (_gameModeConfig != null)
             {
                 float delay = _gameModeConfig.startDelay;
@@ -364,6 +370,7 @@ namespace InnsmouthCafe.Managers
             ViewSwitchManager.Instance.SetCanSwitch(false);
 
             OnDayStart?.Invoke(_currentDay);
+            TutorialEventBus.Publish(TutorialEvents.DayStart);
 
             if (_showDebugLog)
             {
@@ -595,6 +602,7 @@ namespace InnsmouthCafe.Managers
         private void StartDayEnd()
         {
             SetState(GameFlowState.DayEnd);
+            TutorialEventBus.Publish(TutorialEvents.DayEnd);
 
             if (_showDebugLog)
             {
@@ -696,12 +704,48 @@ namespace InnsmouthCafe.Managers
             SetState(GameFlowState.GameEnd);
             _isGameRunning = false;
 
+            float finalSanity = SanityManager.Instance.CurrentSanity;
+
+            // 判定结局类型并处理模式解锁
+            HandleModeUnlock(finalSanity);
+
             OnGameEnd?.Invoke(_currentDay);
 
             if (_showDebugLog)
             {
-                float finalSanity = SanityManager.Instance.CurrentSanity;
                 Debug.Log($"[GameFlow] === 游戏结束 === 天数: {_currentDay}, 最终理智值: {finalSanity:F1}");
+            }
+        }
+
+        /// <summary>
+        /// 根据结局判定处理模式解锁
+        /// 好结局：理智值>=60  中等结局：理智值>=30  坏结局：理智值<30
+        /// </summary>
+        private void HandleModeUnlock(float finalSanity)
+        {
+            if (GameManager.Instance == null || _gameModeConfig == null) return;
+
+            // 坏结局不解锁任何东西
+            bool isGoodOrNeutralEnding = finalSanity >= 30f;
+
+            switch (_gameModeConfig.gameMode)
+            {
+                case GameMode.Tutorial:
+                    // 教学模式完成即解锁新手模式（不论结局）
+                    GameManager.Instance.MarkTutorialCompleted();
+                    break;
+
+                case GameMode.Beginner:
+                    // 新手模式好/中结局 → 解锁普通模式
+                    if (isGoodOrNeutralEnding)
+                    {
+                        GameManager.Instance.UnlockMode(GameMode.Normal);
+                    }
+                    break;
+
+                case GameMode.Normal:
+                    // 普通模式暂无后续解锁（无尽模式暂不实现）
+                    break;
             }
         }
 

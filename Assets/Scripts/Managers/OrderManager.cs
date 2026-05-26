@@ -237,6 +237,7 @@ namespace InnsmouthCafe.Managers
 
             // 触发订单生成事件
             OnOrderGenerated?.Invoke(selectedOrder);
+            TutorialEventBus.Publish(TutorialEvents.OrderGenerated);
 
             return selectedOrder;
         }
@@ -345,6 +346,7 @@ namespace InnsmouthCafe.Managers
 
             // 触发订单提交事件
             OnOrderSubmitted?.Invoke(order, coffeeData);
+            TutorialEventBus.Publish(TutorialEvents.CoffeeSubmit);
         }
 
         /// <summary>
