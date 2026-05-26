@@ -154,13 +154,13 @@ namespace InnsmouthCafe.Managers
             switch (viewType)
             {
                 case GameViewType.Bar:
-                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchBar);
+                    TutorialEventBus.Publish("ViewSwitchBar");
                     break;
                 case GameViewType.CraftBase:
-                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftBase);
+                    TutorialEventBus.Publish("ViewSwitchCraftBase");
                     break;
                 case GameViewType.CraftMix:
-                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftMix);
+                    TutorialEventBus.Publish("ViewSwitchCraftMix");
                     break;
             }
         }

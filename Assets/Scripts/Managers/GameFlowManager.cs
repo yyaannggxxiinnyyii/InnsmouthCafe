@@ -370,7 +370,7 @@ namespace InnsmouthCafe.Managers
             ViewSwitchManager.Instance.SetCanSwitch(false);
 
             OnDayStart?.Invoke(_currentDay);
-            TutorialEventBus.Publish(TutorialEvents.DayStart);
+            TutorialEventBus.Publish("DayStart");
 
             if (_showDebugLog)
             {
@@ -602,7 +602,7 @@ namespace InnsmouthCafe.Managers
         private void StartDayEnd()
         {
             SetState(GameFlowState.DayEnd);
-            TutorialEventBus.Publish(TutorialEvents.DayEnd);
+            TutorialEventBus.Publish("DayEnd");
 
             if (_showDebugLog)
             {

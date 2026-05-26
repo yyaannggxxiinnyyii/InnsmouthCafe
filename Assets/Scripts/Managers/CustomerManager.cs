@@ -119,7 +119,7 @@ public class CustomerManager : Singleton<CustomerManager>
 
             ChangeState(CustomerState.Entering);
             OnCustomerSpawned?.Invoke(_currentCustomer);
-            TutorialEventBus.Publish(TutorialEvents.CustomerEnter);
+            TutorialEventBus.Publish("CustomerEnter");
             return true;
         }
 
@@ -193,7 +193,7 @@ public class CustomerManager : Singleton<CustomerManager>
         {
             ChangeState(CustomerState.Leaving);
             OnCustomerLeft?.Invoke(_currentCustomer);
-            TutorialEventBus.Publish(TutorialEvents.CustomerLeave);
+            TutorialEventBus.Publish("CustomerLeave");
             _currentCustomer = null;
             Debug.Log("[Customer] 顾客已离开");
         }
