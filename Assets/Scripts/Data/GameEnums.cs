@@ -97,6 +97,21 @@ namespace InnsmouthCafe.Data
     }
 
     /// <summary>
+    /// 游戏结局类型
+    /// </summary>
+    public enum GameEnding
+    {
+        /// <summary>迷失结局 — 理智值 0~60</summary>
+        Lost,
+
+        /// <summary>回归结局 — 理智值 60~90</summary>
+        Return,
+
+        /// <summary>好结局 — 理智值 90~100</summary>
+        Good
+    }
+
+    /// <summary>
     /// 游戏模式
     /// </summary>
     public enum GameMode

@@ -105,9 +105,14 @@ namespace InnsmouthCafe.Managers
         public event Action OnGameStart;
 
         /// <summary>
-        /// 游戏结束事件
+        /// 游戏结束事件，参数为最终天数和结局类型
         /// </summary>
         public event Action<int> OnGameEnd;
+
+        /// <summary>
+        /// 结局确定事件，参数为结局类型
+        /// </summary>
+        public event Action<GameEnding> OnGameEnding;
 
         /// <summary>
         /// 新一天开始事件
@@ -605,19 +610,10 @@ namespace InnsmouthCafe.Managers
             TutorialEventBus.Publish("DayEnd");
 
             if (_showDebugLog)
-            {
                 Debug.Log($"[GameFlow] === 第 {_currentDay} 天结束 ===");
-            }
 
-            // 收集当天结算数据
             DaySettlementData settlementData = CollectDaySettlementData();
-
-            // 显示结算界面
-            DaySettlementManager.Instance.ShowSettlement(settlementData, () =>
-            {
-                // 结算回调：检查游戏是否结束
-                CheckGameEnd();
-            });
+            DaySettlementManager.Instance.ShowSettlement(settlementData, null);
         }
 
         /// <summary>
@@ -654,28 +650,18 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 检查游戏是否结束
-        /// </summary>
-        private void CheckGameEnd()
-        {
-            if (_currentDay >= _gameModeConfig.totalDays)
-            {
-                // 达到总天数，游戏结束
-                EndGame();
-            }
-            else
-            {
-                // 还有天数，等待日结算的下一天事件
-                // （由DaySettlementManager的OnNextDayStart触发）
-            }
-        }
-
-        /// <summary>
         /// 日结算管理器触发的下一天事件
         /// </summary>
         private void OnNextDayFromSettlement(int nextDay)
         {
             if (!_isGameRunning) return;
+
+            // 已到最后一天，触发结局
+            if (_currentDay >= _gameModeConfig.totalDays)
+            {
+                EndGame();
+                return;
+            }
 
             StartNewDay();
         }
@@ -705,46 +691,50 @@ namespace InnsmouthCafe.Managers
             _isGameRunning = false;
 
             float finalSanity = SanityManager.Instance.CurrentSanity;
+            GameEnding ending = DetermineEnding(finalSanity);
 
-            // 判定结局类型并处理模式解锁
             HandleModeUnlock(finalSanity);
 
+            OnGameEnding?.Invoke(ending);
             OnGameEnd?.Invoke(_currentDay);
 
             if (_showDebugLog)
-            {
-                Debug.Log($"[GameFlow] === 游戏结束 === 天数: {_currentDay}, 最终理智值: {finalSanity:F1}");
-            }
+                Debug.Log($"[GameFlow] === 游戏结束 === 天数: {_currentDay}, 最终理智值: {finalSanity:F1}, 结局: {ending}");
+        }
+
+        /// <summary>
+        /// 根据理智值判定结局
+        /// 0~60 迷失结局，60~90 回归结局，90~100 好结局
+        /// </summary>
+        private GameEnding DetermineEnding(float sanity)
+        {
+            if (sanity >= 90f) return GameEnding.Good;
+            if (sanity >= 60f) return GameEnding.Return;
+            return GameEnding.Lost;
         }
 
         /// <summary>
         /// 根据结局判定处理模式解锁
-        /// 好结局：理智值>=60  中等结局：理智值>=30  坏结局：理智值<30
         /// </summary>
         private void HandleModeUnlock(float finalSanity)
         {
             if (GameManager.Instance == null || _gameModeConfig == null) return;
 
-            // 坏结局不解锁任何东西
-            bool isGoodOrNeutralEnding = finalSanity >= 30f;
+            GameEnding ending = DetermineEnding(finalSanity);
 
             switch (_gameModeConfig.gameMode)
             {
                 case GameMode.Tutorial:
-                    // 教学模式完成即解锁新手模式（不论结局）
                     GameManager.Instance.MarkTutorialCompleted();
                     break;
 
                 case GameMode.Beginner:
-                    // 新手模式好/中结局 → 解锁普通模式
-                    if (isGoodOrNeutralEnding)
-                    {
+                    // 回归或好结局 → 解锁普通模式
+                    if (ending == GameEnding.Return || ending == GameEnding.Good)
                         GameManager.Instance.UnlockMode(GameMode.Normal);
-                    }
                     break;
 
                 case GameMode.Normal:
-                    // 普通模式暂无后续解锁（无尽模式暂不实现）
                     break;
             }
         }

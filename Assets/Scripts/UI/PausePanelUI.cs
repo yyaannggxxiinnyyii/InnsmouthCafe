@@ -102,7 +102,7 @@ namespace InnsmouthCafe.UI
             if (GameManager.Instance != null)
                 GameManager.Instance.GoToMainMenu();
             else
-                SceneManager.LoadScene("MainMenu");
+                SceneManager.LoadScene("MainScene");
         }
 
         // ── ESC 键支持 ────────────────────────────────────────

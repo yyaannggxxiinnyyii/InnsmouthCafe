@@ -13,7 +13,7 @@ namespace InnsmouthCafe.Managers
     {
         [Header("场景名称")]
         [SerializeField] [Tooltip("主菜单场景名")]
-        private string _mainMenuSceneName = "MainMenu";
+        private string _mainMenuSceneName = "MainScene";
 
         [SerializeField] [Tooltip("游戏场景名")]
         private string _gameSceneName = "GameScene";
