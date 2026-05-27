@@ -1,5 +1,8 @@
 using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using InnsmouthCafe.Data;
 
 namespace InnsmouthCafe.UI
@@ -7,6 +10,7 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 订单小票UI组件
     /// 显示咖啡液需求、辅助液需求、小料需求
+    /// 支持点击把手收起/展开（向上滑出，把手常驻）
     /// </summary>
     public class OrderTicketUI : MonoBehaviour
     {
@@ -30,6 +34,77 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("小料需求项预制体（需挂载ToppingRequirementItemUI）")]
         private GameObject _toppingRequirementItemPrefab;
 
+        [Header("收起/展开")]
+        [SerializeField] [Tooltip("把手按钮（位于小票底部，点击触发收起/展开）")]
+        private Button _toggleButton;
+
+        [SerializeField] [Tooltip("收起/展开动画时长")]
+        private float _toggleDuration = 0.3f;
+
+        [SerializeField] [Tooltip("动画曲线")]
+        private Ease _toggleEase = Ease.OutQuart;
+
+        private RectTransform _ticketRect;
+        private Vector2 _expandedPosition;
+        private bool _isCollapsed = false;
+        private bool _isAnimating = false;
+
+        private void Awake()
+        {
+            _ticketRect = GetComponent<RectTransform>();
+            _toggleButton?.onClick.AddListener(OnToggleClicked);
+        }
+
+        private void Start()
+        {
+            // 记录展开位置（Start时布局已稳定）
+            _expandedPosition = _ticketRect.anchoredPosition;
+        }
+
+        // ── 收起/展开 ─────────────────────────────────────────
+
+        private void OnToggleClicked()
+        {
+            if (_isAnimating) return;
+
+            if (_isCollapsed)
+                Expand();
+            else
+                Collapse();
+        }
+
+        /// <summary>收起小票（向上滑出，把手留在原位）</summary>
+        public void Collapse()
+        {
+            if (_isCollapsed || _isAnimating) return;
+
+            _isAnimating = true;
+            _isCollapsed = true;
+
+            float offset = _ticketRect.rect.height * 2f;
+
+            _ticketRect.DOKill();
+            _ticketRect.DOAnchorPosY(_expandedPosition.y + offset, _toggleDuration)
+                .SetEase(_toggleEase)
+                .OnComplete(() => _isAnimating = false);
+        }
+
+        /// <summary>展开小票（滑回原位）</summary>
+        public void Expand()
+        {
+            if (!_isCollapsed || _isAnimating) return;
+
+            _isAnimating = true;
+            _isCollapsed = false;
+
+            _ticketRect.DOKill();
+            _ticketRect.DOAnchorPosY(_expandedPosition.y, _toggleDuration)
+                .SetEase(_toggleEase)
+                .OnComplete(() => _isAnimating = false);
+        }
+
+        // ── 刷新小票 ──────────────────────────────────────────
+
         /// <summary>
         /// 刷新订单小票显示
         /// </summary>
@@ -47,20 +122,20 @@ namespace InnsmouthCafe.UI
             DisplayLiquidRequirements(order);
             DisplayToppingRequirements(order);
 
-            // 使用协程延迟刷新布局
             StartCoroutine(RefreshLayoutNextFrame());
         }
 
         /// <summary>
-        /// 在下一帧刷新布局
+        /// 在下一帧刷新布局，并更新展开位置记录
         /// </summary>
-        private System.Collections.IEnumerator RefreshLayoutNextFrame()
+        private IEnumerator RefreshLayoutNextFrame()
         {
-            // 等待一帧，让Unity完成子对象的实例化
             yield return null;
 
-            // 强制刷新布局
             ForceRebuildLayout();
+
+            // 布局重建后更新展开位置（内容高度可能变化）
+            _expandedPosition = _ticketRect.anchoredPosition;
         }
 
         /// <summary>
