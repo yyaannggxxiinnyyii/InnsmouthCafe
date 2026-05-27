@@ -9,7 +9,7 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 杯子动画管理器
     /// 管理独立的"工作杯子"实例（和场景容器同级），处理跨场景穿越移动
-    /// 选择杯子时从按钮位置取出，切换时先放回旧按钮再从新按钮取出
+    /// 同时管理杯子上的小料图标显示（6个固定锚点，跟随杯子移动）
     /// </summary>
     public class CupAnimationManager : MonoBehaviour
     {
@@ -64,6 +64,10 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("杯子从边界飞入的时长")]
         private float _enterDuration = 0.25f;
 
+        [Header("小料显示")]
+        [SerializeField] [Tooltip("6个小料锚点（挂在 _workCupRect 下，跟随杯子移动）")]
+        private RectTransform[] _toppingAnchors = new RectTransform[6];
+
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = false;
@@ -72,6 +76,9 @@ namespace InnsmouthCafe.UI
         private bool _isAnimating = false;
         private int _lastSelectedIndex = -1;
 
+        // 小料图标 Image 数组，与锚点一一对应
+        private Image[] _toppingImages = new Image[6];
+
         private void Start()
         {
             // 初始隐藏工作杯子
@@ -79,6 +86,9 @@ namespace InnsmouthCafe.UI
             {
                 SetCupVisible(false);
             }
+
+            // 初始化小料图标
+            InitToppingImages();
 
             // 监听杯子选择事件
             if (_cupSelector != null)
@@ -97,6 +107,7 @@ namespace InnsmouthCafe.UI
             if (CoffeeCraftManager.Instance != null)
             {
                 CoffeeCraftManager.Instance.OnCraftReset += ResetWorkCup;
+                CoffeeCraftManager.Instance.OnCoffeeDataChanged += OnCoffeeDataChanged;
             }
         }
 
@@ -116,6 +127,7 @@ namespace InnsmouthCafe.UI
             if (CoffeeCraftManager.Instance != null)
             {
                 CoffeeCraftManager.Instance.OnCraftReset -= ResetWorkCup;
+                CoffeeCraftManager.Instance.OnCoffeeDataChanged -= OnCoffeeDataChanged;
             }
 
             _workCupRect?.DOKill();
@@ -161,11 +173,9 @@ namespace InnsmouthCafe.UI
             // 定位到按钮位置
             _workCupRect.anchoredPosition = buttonPos;
 
-            // 设置贴图并显示
-            if (_workCupImage != null && cup.cupSprite != null)
-            {
-                _workCupImage.sprite = cup.cupSprite;
-            }
+            // 设置贴图并显示（空杯状态）
+            if (_workCupImage != null)
+                _workCupImage.sprite = cup.GetSpriteForFillRatio(0f);
             SetCupVisible(true);
 
             // 飞到工作位置
@@ -206,11 +216,9 @@ namespace InnsmouthCafe.UI
                     SetCupVisible(false);
                     _workCupRect.anchoredPosition = newButtonPos;
 
-                    // 阶段3：设置新贴图并显示
-                    if (_workCupImage != null && newCup.cupSprite != null)
-                    {
-                        _workCupImage.sprite = newCup.cupSprite;
-                    }
+                    // 设置新贴图并显示（空杯状态）
+                    if (_workCupImage != null)
+                        _workCupImage.sprite = newCup.GetSpriteForFillRatio(0f);
                     SetCupVisible(true);
 
                     // 阶段4：飞到工作位置
@@ -459,6 +467,109 @@ namespace InnsmouthCafe.UI
             });
         }
 
+        // ── 小料显示 ──────────────────────────────────────────
+
+        /// <summary>
+        /// 初始化小料图标：在每个锚点下创建 Image 组件
+        /// </summary>
+        private void InitToppingImages()
+        {
+            _toppingImages = new Image[6];
+
+            for (int i = 0; i < _toppingAnchors.Length && i < 6; i++)
+            {
+                if (_toppingAnchors[i] == null) continue;
+
+                // 在锚点下创建 Image 子节点
+                var go = new GameObject($"ToppingIcon_{i}");
+                go.transform.SetParent(_toppingAnchors[i], false);
+
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = _toppingAnchors[i].sizeDelta;
+
+                _toppingImages[i] = go.AddComponent<Image>();
+                _toppingImages[i].enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// 咖啡数据变化时同步刷新小料图标和杯子贴图
+        /// </summary>
+        private void OnCoffeeDataChanged(CoffeeData data)
+        {
+            RefreshToppings(data);
+            RefreshCupSprite(data);
+        }
+
+        /// <summary>
+        /// 根据当前填充量更新杯子贴图
+        /// </summary>
+        private void RefreshCupSprite(CoffeeData data)
+        {
+            if (_workCupImage == null || data == null || data.selectedCup == null) return;
+
+            float capacity = data.selectedCup.capacity;
+            if (capacity <= 0f) return;
+
+            float totalVolume = 0f;
+            foreach (var seg in data.coffeeSegments)
+                totalVolume += seg.extractedVolume;
+            foreach (var seg in data.liquidSegments)
+                totalVolume += seg.amountMl;
+
+            float ratio = Mathf.Clamp01(totalVolume / capacity);
+
+            // 从 SO 获取对应阶段贴图（未配置时回退到 cupSprite）
+            var cup = data.selectedCup;
+            _workCupImage.sprite = cup.GetSpriteForFillRatio(ratio);
+        }
+
+        /// <summary>
+        /// 刷新杯子上的小料图标
+        /// </summary>
+        private void RefreshToppings(CoffeeData data)
+        {
+            // 先全部隐藏
+            for (int i = 0; i < _toppingImages.Length; i++)
+            {
+                if (_toppingImages[i] != null)
+                    _toppingImages[i].enabled = false;
+            }
+
+            if (data == null) return;
+
+            // 按顺序填入
+            for (int i = 0; i < data.toppings.Count && i < _toppingImages.Length; i++)
+            {
+                if (_toppingImages[i] == null) continue;
+
+                var topping = data.toppings[i].topping;
+                if (topping == null || topping.instanceIcon == null) continue;
+
+                _toppingImages[i].sprite  = topping.instanceIcon;
+                _toppingImages[i].enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// 清空所有小料图标
+        /// </summary>
+        private void ClearToppings()
+        {
+            for (int i = 0; i < _toppingImages.Length; i++)
+            {
+                if (_toppingImages[i] != null)
+                {
+                    _toppingImages[i].sprite  = null;
+                    _toppingImages[i].enabled = false;
+                }
+            }
+        }
+
+        // ── 重置 ──────────────────────────────────────────────
+
         /// <summary>
         /// 重置工作杯子（新一轮制作时调用）
         /// </summary>
@@ -468,6 +579,7 @@ namespace InnsmouthCafe.UI
             _isAnimating = false;
             _lastSelectedIndex = -1;
             SetCupVisible(false);
+            ClearToppings();
 
             if (_workCupRect != null)
             {

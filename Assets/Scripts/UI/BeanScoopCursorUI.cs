@@ -21,17 +21,20 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("勺子RectTransform")]
         private RectTransform _scoopRect;
 
-        [Header("进度贴图（按顺序：0g, 5g, 15g, 20g）")]
-        [SerializeField] [Tooltip("空勺 (0/20)")]
+        [Header("进度贴图（按顺序：0g, 5g, 10g, 15g, 20g）")]
+        [SerializeField] [Tooltip("空勺 (0g)")]
         private Sprite _scoopEmpty;
 
-        [SerializeField] [Tooltip("少量 (5/20)")]
+        [SerializeField] [Tooltip("少量 (5g)")]
         private Sprite _scoopLight;
 
-        [SerializeField] [Tooltip("大半 (15/20)")]
+        [SerializeField] [Tooltip("半勺 (10g)")]
+        private Sprite _scoopMedium;
+
+        [SerializeField] [Tooltip("大半 (15g)")]
         private Sprite _scoopHeavy;
 
-        [SerializeField] [Tooltip("满勺 (20/20)")]
+        [SerializeField] [Tooltip("满勺 (20g)")]
         private Sprite _scoopFull;
 
         [Header("跟随设置")]
@@ -212,14 +215,15 @@ namespace InnsmouthCafe.UI
 
         /// <summary>
         /// 根据克数获取贴图索引
-        /// 0g→0, 1-5g→1, 6-15g→2, 16-20g→3
+        /// 0g→0, 1-5g→1, 6-10g→2, 11-15g→3, 16-20g→4
         /// </summary>
         private int GetSpriteIndex(float gram)
         {
-            if (gram <= 0f) return 0;
-            if (gram <= 5f) return 1;
-            if (gram <= 15f) return 2;
-            return 3;
+            if (gram <= 0f)  return 0;
+            if (gram <= 5f)  return 1;
+            if (gram <= 10f) return 2;
+            if (gram <= 15f) return 3;
+            return 4;
         }
 
         /// <summary>
@@ -231,8 +235,9 @@ namespace InnsmouthCafe.UI
             {
                 case 0: return _scoopEmpty;
                 case 1: return _scoopLight;
-                case 2: return _scoopHeavy;
-                case 3: return _scoopFull;
+                case 2: return _scoopMedium;
+                case 3: return _scoopHeavy;
+                case 4: return _scoopFull;
                 default: return _scoopEmpty;
             }
         }

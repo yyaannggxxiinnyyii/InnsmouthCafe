@@ -15,5 +15,8 @@ MonoBehaviour:
   cupId: cpu_small
   cupName: "\u5C0F\u676F"
   capacity: 350
-  cupSprite: {fileID: 21300000, guid: 389f82b0e9afbd041af20b7ea8e3648f, type: 3}
-  cupPrefab: {fileID: 0}
+  cupSprite: {fileID: 21300000, guid: 17e532db33fa55e4f82827b54a717074, type: 3}
+  fillSprite_0_25: {fileID: 21300000, guid: aa194654634d98341b1b665e5d1a0ad3, type: 3}
+  fillSprite_25_50: {fileID: 21300000, guid: c88f5463d50a0cd4d80d9b9e5917c66c, type: 3}
+  fillSprite_50_75: {fileID: 21300000, guid: 1a2fe31b4bafb33488a91df98c1348f1, type: 3}
+  fillSprite_75_100: {fileID: 21300000, guid: eacb515f63cc1874abe49ea3c3dbe985, type: 3}

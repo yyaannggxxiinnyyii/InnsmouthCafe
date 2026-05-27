@@ -21,8 +21,47 @@ namespace InnsmouthCafe.Data
         public float capacity;
 
         [Header("视觉资源")]
-        [Tooltip("杯子图标")]
+        [Tooltip("杯子图标（按钮/空杯显示）")]
         public Sprite cupSprite;
+
+        [Header("填充阶段贴图")]
+        [Tooltip("0% ~ 25% 填充时显示的贴图")]
+        public Sprite fillSprite_0_25;
+
+        [Tooltip("25% ~ 50% 填充时显示的贴图")]
+        public Sprite fillSprite_25_50;
+
+        [Tooltip("50% ~ 75% 填充时显示的贴图")]
+        public Sprite fillSprite_50_75;
+
+        [Tooltip("75% ~ 100% 填充时显示的贴图")]
+        public Sprite fillSprite_75_100;
+
+        /// <summary>
+        /// 根据填充比例（0~1）返回对应阶段贴图，未配置时回退到 cupSprite
+        /// 0        → cupSprite（空杯）
+        /// 0~25%    → fillSprite_0_25
+        /// 25%~50%  → fillSprite_25_50
+        /// 50%~75%  → fillSprite_50_75
+        /// 75%~100% → fillSprite_75_100
+        /// </summary>
+        public Sprite GetSpriteForFillRatio(float ratio)
+        {
+            Sprite result;
+
+            if (ratio <= 0f)
+                result = cupSprite;
+            else if (ratio >= 0.75f)
+                result = fillSprite_75_100;
+            else if (ratio >= 0.5f)
+                result = fillSprite_50_75;
+            else if (ratio >= 0.25f)
+                result = fillSprite_25_50;
+            else
+                result = fillSprite_0_25;
+
+            return result != null ? result : cupSprite;
+        }
 
         /// <summary>
         /// 转换为CupContainerData
@@ -31,10 +70,14 @@ namespace InnsmouthCafe.Data
         {
             return new CupContainerData
             {
-                cupId = this.cupId,
-                cupName = this.cupName,
-                capacity = this.capacity,
-                cupSprite = this.cupSprite
+                cupId              = this.cupId,
+                cupName            = this.cupName,
+                capacity           = this.capacity,
+                cupSprite          = this.cupSprite,
+                fillSprite_0_25    = this.fillSprite_0_25,
+                fillSprite_25_50   = this.fillSprite_25_50,
+                fillSprite_50_75   = this.fillSprite_50_75,
+                fillSprite_75_100  = this.fillSprite_75_100,
             };
         }
     }
