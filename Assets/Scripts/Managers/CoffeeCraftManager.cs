@@ -589,9 +589,9 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
-            if (_currentCoffeeData.toppings.Count >= 20)
+            if (_currentCoffeeData.toppings.Count >= 6)
             {
-                Debug.LogWarning("[CoffeeCraft] 小料锚点已满（20个）");
+                Debug.LogWarning("[CoffeeCraft] 小料锚点已满（6个）");
                 return;
             }
 
