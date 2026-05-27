@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e481af26167224dad52c9023112ecb, type: 3}
-  m_Name: Liquid_水
-  m_EditorClassIdentifier:
+  m_Name: "Liquid_\u6C34"
+  m_EditorClassIdentifier: 
   liquidId: water
   liquidName: "\u6C34"
-  icon: {fileID: 0}
-  containerIcon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d5d2f8106be424c4ca42336025af4957, type: 3}
+  containerIcon: {fileID: 21300000, guid: d5d2f8106be424c4ca42336025af4957, type: 3}
   displayColor: {r: 0.7, g: 0.8, b: 0.9, a: 0.5}
   description: "\u7528\u4E8E\u7A00\u91CA\u5496\u5561\u6D53\u5EA6"
   particleColor: {r: 0.7, g: 0.8, b: 0.9, a: 1}

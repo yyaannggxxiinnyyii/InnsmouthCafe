@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -56,6 +57,9 @@ namespace InnsmouthCafe.UI
         private MainMenuUI _mainMenu;
         private bool _isFullscreen;
         private int  _resolutionIndex;
+
+        /// <summary>关闭按钮回调，由外部设置（MainMenuUI 或 PausePanelUI）</summary>
+        public Action OnCloseCallback { get; set; }
 
         private void Awake()
         {
@@ -175,7 +179,10 @@ namespace InnsmouthCafe.UI
 
         private void OnCloseClicked()
         {
-            _mainMenu?.OnSettingsClosed();
+            if (OnCloseCallback != null)
+                OnCloseCallback.Invoke();
+            else
+                _mainMenu?.OnSettingsClosed();
         }
 
         // ── UI 刷新 ───────────────────────────────────────────
@@ -227,6 +234,7 @@ namespace InnsmouthCafe.UI
                 _canvasGroup.blocksRaycasts = true;
                 _canvasGroup.DOFade(1f, _fadeDuration)
                     .SetEase(Ease.InOutQuad)
+                    .SetUpdate(true)
                     .OnComplete(() => _canvasGroup.interactable = true);
             }
             else
@@ -234,6 +242,7 @@ namespace InnsmouthCafe.UI
                 _canvasGroup.interactable = false;
                 _canvasGroup.DOFade(0f, _fadeDuration)
                     .SetEase(Ease.InOutQuad)
+                    .SetUpdate(true)
                     .OnComplete(() => _canvasGroup.blocksRaycasts = false);
             }
         }

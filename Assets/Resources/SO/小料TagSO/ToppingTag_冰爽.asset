@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1eaff58d114cde8458549e0e78d6b416, type: 3}
-  m_Name: ToppingTag_冰爽
-  m_EditorClassIdentifier:
+  m_Name: "ToppingTag_\u51B0\u723D"
+  m_EditorClassIdentifier: 
   tagId: icy
   tagName: "\u51B0\u723D"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: bebdbfff5e2be1145850f53f5498c86d, type: 3}
   description: "\u5E26\u6765\u51B0\u51C9\u53E3\u611F\u7684\u5C0F\u6599"
