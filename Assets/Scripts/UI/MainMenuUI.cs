@@ -105,17 +105,21 @@ namespace InnsmouthCafe.UI
 
         private void OnStartClicked()
         {
+            bool tutorialCompleted = GameManager.Instance != null && GameManager.Instance.IsTutorialCompleted();
+
             // 教学模式未完成：直接进入教学
-            if (GameManager.Instance != null && !GameManager.Instance.IsTutorialCompleted())
+            if (!tutorialCompleted)
             {
-                if (_tutorialConfig != null)
-                {
-                    GameManager.Instance.StartGameWithConfig(_tutorialConfig);
-                }
-                else
+                if (_tutorialConfig == null)
                 {
                     Debug.LogError("[MainMenu] 教学模式配置未设置");
+                    return;
                 }
+
+                if (GameManager.Instance != null)
+                    GameManager.Instance.StartGameWithConfig(_tutorialConfig);
+                else
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
                 return;
             }
 

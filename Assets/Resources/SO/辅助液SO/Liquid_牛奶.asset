@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   liquidId: milk
   liquidName: "\u725B\u5976"
-  icon: {fileID: 21300000, guid: 1f84e2cc9bad1194db59944cc2c29692, type: 3}
-  containerIcon: {fileID: 21300000, guid: 1f84e2cc9bad1194db59944cc2c29692, type: 3}
+  icon: {fileID: 21300000, guid: cf441ecc4b4cbf6498611ac265813a62, type: 3}
+  containerIcon: {fileID: 21300000, guid: cf441ecc4b4cbf6498611ac265813a62, type: 3}
   displayColor: {r: 1, g: 1, b: 1, a: 0.9}
   description: "\u589E\u52A0\u5976\u9999\u548C\u4E1D\u6ED1\u53E3\u611F"
   particleColor: {r: 1, g: 1, b: 1, a: 1}

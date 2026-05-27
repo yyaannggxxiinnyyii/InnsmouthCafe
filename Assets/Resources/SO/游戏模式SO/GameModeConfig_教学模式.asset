@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 745319fb89c610e4d8d85eb31e3ba737, type: 3}
   m_Name: "GameModeConfig_\u6559\u5B66\u6A21\u5F0F"
   m_EditorClassIdentifier: 
-  gameMode: 2
-  totalDays: 2
+  gameMode: 0
+  totalDays: 1
   dayConfigs:
-  - {fileID: 11400000, guid: 77191963a4233594ba45c3fa7549f833, type: 2}
-  - {fileID: 11400000, guid: 77191963a4233594ba45c3fa7549f833, type: 2}
-  startDelay: 2
+  - {fileID: 11400000, guid: a609f622017e6ac469bb953920d79f1f, type: 2}
+  startDelay: 1

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 745319fb89c610e4d8d85eb31e3ba737, type: 3}
   m_Name: "GameModeConfig_\u65B0\u624B\u6A21\u5F0F"
   m_EditorClassIdentifier: 
-  gameMode: 2
+  gameMode: 1
   totalDays: 2
   dayConfigs:
   - {fileID: 11400000, guid: 77191963a4233594ba45c3fa7549f833, type: 2}

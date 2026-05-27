@@ -139,11 +139,9 @@ namespace InnsmouthCafe.Managers
             // 订阅系统事件
             SubscribeEvents();
 
-            // 优先从 GameManager 获取选中的模式配置
-            if (_gameModeConfig == null && GameManager.Instance != null)
-            {
+            // GameManager.SelectedModeConfig 是玩家主动选择的，优先级最高
+            if (GameManager.Instance != null && GameManager.Instance.SelectedModeConfig != null)
                 _gameModeConfig = GameManager.Instance.SelectedModeConfig;
-            }
 
             // 如果有配置，延迟自动开始
             if (_gameModeConfig != null)
