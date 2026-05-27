@@ -19,6 +19,11 @@ namespace InnsmouthCafe.Managers
         [Tooltip("当前游戏模式配置（测试用，正式版由外部传入）")]
         private GameModeConfigSO _gameModeConfig;
 
+        [Header("顾客动画")]
+        [SerializeField]
+        [Tooltip("顾客立绘动画组件（用于同步进场/退场动画与流程推进）")]
+        private InnsmouthCafe.UI.CustomerDisplayUI _customerDisplayUI;
+
         [Header("调试")]
         [SerializeField]
         [Tooltip("是否显示调试日志")]
@@ -217,7 +222,7 @@ namespace InnsmouthCafe.Managers
             if (CustomerManager.Instance != null)
             {
                 CustomerManager.Instance.OnCustomerSpawned += OnCustomerSpawned;
-                CustomerManager.Instance.OnCustomerLeft += OnCustomerLeft;
+                CustomerManager.Instance.OnCustomerLeft    += OnCustomerLeft;
             }
 
             // 理智值归零事件
@@ -231,6 +236,13 @@ namespace InnsmouthCafe.Managers
             {
                 DaySettlementManager.Instance.OnNextDayStart += OnNextDayFromSettlement;
             }
+
+            // 顾客动画事件（有组件才订阅）
+            if (_customerDisplayUI != null)
+            {
+                _customerDisplayUI.OnEnterAnimationComplete += OnCustomerEnterAnimationComplete;
+                _customerDisplayUI.OnExitAnimationComplete  += OnCustomerExitAnimationComplete;
+            }
         }
 
         /// <summary>
@@ -241,7 +253,7 @@ namespace InnsmouthCafe.Managers
             if (CustomerManager.Instance != null)
             {
                 CustomerManager.Instance.OnCustomerSpawned -= OnCustomerSpawned;
-                CustomerManager.Instance.OnCustomerLeft -= OnCustomerLeft;
+                CustomerManager.Instance.OnCustomerLeft    -= OnCustomerLeft;
             }
 
             if (SanityManager.Instance != null)
@@ -252,6 +264,12 @@ namespace InnsmouthCafe.Managers
             if (DaySettlementManager.Instance != null)
             {
                 DaySettlementManager.Instance.OnNextDayStart -= OnNextDayFromSettlement;
+            }
+
+            if (_customerDisplayUI != null)
+            {
+                _customerDisplayUI.OnEnterAnimationComplete -= OnCustomerEnterAnimationComplete;
+                _customerDisplayUI.OnExitAnimationComplete  -= OnCustomerExitAnimationComplete;
             }
         }
 
@@ -401,12 +419,24 @@ namespace InnsmouthCafe.Managers
             if (_currentState != GameFlowState.CustomerEntering) return;
 
             if (_showDebugLog)
-            {
                 Debug.Log($"[GameFlow] 顾客到达: {customer.customerName}");
-            }
 
-            // 进入对话阶段
-            StartCustomerDialogue(customer);
+            // 有动画组件：等进场动画完成后再开始对话
+            // 无动画组件：直接开始对话
+            if (_customerDisplayUI == null)
+                StartCustomerDialogue(customer);
+        }
+
+        /// <summary>
+        /// 进场动画完成回调 — 此时顾客已到位，开始对话
+        /// </summary>
+        private void OnCustomerEnterAnimationComplete()
+        {
+            if (_currentState != GameFlowState.CustomerEntering) return;
+
+            var customer = CustomerManager.Instance?.CurrentCustomer;
+            if (customer != null)
+                StartCustomerDialogue(customer);
         }
 
         /// <summary>
@@ -568,34 +598,45 @@ namespace InnsmouthCafe.Managers
             _remainingCustomers--;
 
             if (_showDebugLog)
-            {
                 Debug.Log($"[GameFlow] 顾客已离开，剩余: {_remainingCustomers}");
-            }
 
             // 重置订单
             OrderManager.Instance.ResetOrder();
-            _currentOrderSO = null;
+            _currentOrderSO   = null;
             _currentOrderData = null;
 
-            // 检查是否还有顾客
-            if (_remainingCustomers > 0)
-            {
-                // 还有顾客，延迟一小段时间后生成下一位
-                StartCoroutine(DelayedSpawnNext());
-            }
-            else
-            {
-                // 当天顾客全部完成，进入日结算
-                StartDayEnd();
-            }
+            // 有动画组件：等退场动画完成后再推进
+            // 无动画组件：直接推进
+            if (_customerDisplayUI == null)
+                ProceedAfterCustomerLeft();
         }
 
         /// <summary>
-        /// 延迟生成下一位顾客
+        /// 退场动画完成回调 — 此时顾客已离屏，推进到下一位或日结算
+        /// </summary>
+        private void OnCustomerExitAnimationComplete()
+        {
+            if (_currentState != GameFlowState.CustomerLeaving) return;
+            ProceedAfterCustomerLeft();
+        }
+
+        /// <summary>
+        /// 退场完成后的流程推进（生成下一位顾客或进入日结算）
+        /// </summary>
+        private void ProceedAfterCustomerLeft()
+        {
+            if (_remainingCustomers > 0)
+                StartCoroutine(DelayedSpawnNext());
+            else
+                StartDayEnd();
+        }
+
+        /// <summary>
+        /// 延迟生成下一位顾客（退场动画已完成，此处仅作短暂间隔）
         /// </summary>
         private IEnumerator DelayedSpawnNext()
         {
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.3f);
             SpawnNextCustomer();
         }
 

@@ -17,6 +17,16 @@ namespace InnsmouthCafe.Data
         [Tooltip("顾客显示名称")]
         public string customerName;
 
+        [Header("立绘")]
+        [Tooltip("正常/等待状态立绘")]
+        public Sprite normalSprite;
+
+        [Tooltip("不耐烦状态立绘（为空则使用 normalSprite）")]
+        public Sprite impatientSprite;
+
+        [Tooltip("愤怒状态立绘（为空则使用 normalSprite）")]
+        public Sprite angrySprite;
+
         [Header("耐心时间")]
         [Tooltip("基础耐心时间（秒）")]
         public float basePatienceTime = 60f;

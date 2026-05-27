@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
-  m_Name: Customer_渔夫
-  m_EditorClassIdentifier:
+  m_Name: "Customer_\u6F5C\u6C34\u5458"
+  m_EditorClassIdentifier: 
   customerId: Customer_Fisherman_001
   customerName: "\u6E14\u592B"
+  normalSprite: {fileID: 21300000, guid: 922f962b4855b9e4393294c35d1438b0, type: 3}
+  impatientSprite: {fileID: 21300000, guid: 4215d0b642289004287e7769e2fc02a4, type: 3}
+  angrySprite: {fileID: 21300000, guid: 81caf1e5dda758e4bbe633978526c9e0, type: 3}
   basePatienceTime: 75
   orderPoolEntries:
   - orderPool: {fileID: 11400000, guid: b32d38cce17b3584287765556e45b11c, type: 2}

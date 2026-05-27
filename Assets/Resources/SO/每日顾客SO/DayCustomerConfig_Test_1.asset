@@ -12,10 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9eb545944db6b4b42928cfc2a3e52cd5, type: 3}
   m_Name: DayCustomerConfig_Test_1
   m_EditorClassIdentifier: 
-  baseCustomerCount: 1
+  baseCustomerCount: 2
   normalCustomerPool:
-  - {fileID: 11400000, guid: 3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f, type: 2}
-  - {fileID: 11400000, guid: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e, type: 2}
   - {fileID: 11400000, guid: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d, type: 2}
+  - {fileID: 11400000, guid: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e, type: 2}
   extraCustomers: []
   fixedCustomers: []

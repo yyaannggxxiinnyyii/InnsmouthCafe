@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
-  m_Name: Customer_深潜者
-  m_EditorClassIdentifier:
+  m_Name: "Customer_\u73CA\u745A\u592B\u4EBA"
+  m_EditorClassIdentifier: 
   customerId: Customer_DeepOne_001
   customerName: "\u6DF1\u6F5C\u8005"
+  normalSprite: {fileID: 21300000, guid: 19e9cb24635851242ab5388fa3a84cb8, type: 3}
+  impatientSprite: {fileID: 21300000, guid: 1ec005d9793eb024b804040bb7c9f2e6, type: 3}
+  angrySprite: {fileID: 21300000, guid: af73f3ff9821f854e812ab7ca2697633, type: 3}
   basePatienceTime: 50
   orderPoolEntries:
   - orderPool: {fileID: 11400000, guid: 7dbec63c3b9237a48bfe96f9b6c068ef, type: 2}
