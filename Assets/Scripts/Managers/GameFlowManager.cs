@@ -623,28 +623,39 @@ namespace InnsmouthCafe.Managers
         {
             SetState(GameFlowState.CustomerFeedback);
 
-            // 顾客显示反馈表情/动画
-            CustomerManager.Instance.FinishOrderAndShowFeedback(scoringData.feedbackLevel);
+            int cappedLevel = CustomerManager.Instance.FinishOrderAndShowFeedback(scoringData.feedbackLevel);
 
-            // 确保反馈对白不会被上一段残留内容覆盖
             DialogueUIManager.Instance?.ForceClearDialogue();
 
-            // 显示反馈对话（从CustomerManager获取反馈文本）
-            string feedbackText = CustomerManager.Instance.GetRandomFeedbackText(scoringData.feedbackLevel);
+            string feedbackText = CustomerManager.Instance.GetRandomFeedbackText(cappedLevel);
 
-            if (!string.IsNullOrEmpty(feedbackText))
+            if (string.IsNullOrEmpty(feedbackText))
             {
-                DialogueUIManager.Instance.ShowDialogue(feedbackText, () =>
-                {
-                    // 反馈对话完成，顾客离开
-                    StartCustomerLeaving();
-                });
-            }
-            else
-            {
-                // 没有反馈文本，直接离开
                 StartCustomerLeaving();
+                return;
             }
+
+            DialogueUIManager.Instance.ShowDialogue(feedbackText, () =>
+            {
+                if (cappedLevel >= 2)
+                {
+                    CustomerManager.Instance.SetHappy();
+                }
+
+                string specialText = CustomerManager.Instance.GetRandomSpecialFeedbackText();
+
+                if (!string.IsNullOrEmpty(specialText) && cappedLevel >= 1)
+                {
+                    DialogueUIManager.Instance.ShowDialogue(specialText, () =>
+                    {
+                        StartCustomerLeaving();
+                    });
+                }
+                else
+                {
+                    StartCustomerLeaving();
+                }
+            });
         }
 
         /// <summary>

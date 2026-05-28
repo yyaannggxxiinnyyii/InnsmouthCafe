@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
+  m_Name: "Customer_\u6C89\u6EBA"
+  m_EditorClassIdentifier: 
+  customerId: C04
+  customerName: "\u6C89\u6EBA"
+  normalSprite: {fileID: 21300000, guid: 7bf5db7fbf2044844a72f4768e6c5158, type: 3}
+  impatientSprite: {fileID: 21300000, guid: bf942730089978046b4637a127547a5d, type: 3}
+  angrySprite: {fileID: 21300000, guid: 227fa49c7c131194bb198520d166fd57, type: 3}
+  happySprite: {fileID: 21300000, guid: 4ed6341878ac00d47bc5d393437fe57e, type: 3}
+  basePatienceTime: 60
+  orderPoolEntries:
+  - orderPool: {fileID: 11400000, guid: b32d38cce17b3584287765556e45b11c, type: 2}
+    weight: 100
+  enterDialogueTexts:
+  - "\"\n\u201C\u2026\u2026\u4E00\u5207\u90FD\u67D3\u4E0A\u4E86\u6C34\u7684\u8165\u5473\uFF0C\u545C\u545C\u545C\uFF0C\u6211\u60F3\u5FF5\u4E00\u676F\u5496\u5561\u7684\u6E29\u5EA6\u2026\u2026\u201D\""
+  satisfiedFeedbackTexts:
+  - "\u201C\u6211\u7684\u7F8E\u4E3D\u7684\u68A6\u5E7B\u6CE1\u5F71\uFF0C\u4E00\u676F\u53EF\u4EE5\u8BA9\u6211\u5FD8\u5374\u8FD9\u5BD2\u51B7\u6C34\u5E95\u7684\u996E\u54C1\uFF0C\u60A8\u7684\u624B\u827A\u771F\u662F\u7F8E\u4E3D\u52A8\u4EBA\u3002\u201D"
+  neutralFeedbackTexts:
+  - "\u201C\u77ED\u6682\u7684\u82E6\u5473\uFF0C\u7136\u540E\u662F\u719F\u6089\u7684\u9ED1\u6697\u3002\u201D"
+  dissatisfiedFeedbackTexts:
+  - "\u201C\u5C31\u50CF\u6D77\u6C34\u4E00\u6837\u82E6\u6DA9\uFF01\u4EC0\u4E48\u90FD\u6CA1\u80FD\u6539\u53D8\uFF01\u4F60\u8FD9\u4E2A\u6765\u81EA\u6DF1\u6D77\u7684\u6076\u9B54\uFF01\u5C3C\u83AB\uFF0C\u4F60\u4E3A\u4F55\u4E0D\u4EB2\u81EA\u73B0\u8EAB\uFF01\u201D"
+  SpecialFeedbackTexts:
+  - "\"\n\u201C\u6CA1\u6709\u65F6\u95F4\u4E86\u2026\u2026\u53EF\u4EE5\uFF0C\u63E1\u4F4F\u6211\u7684\u624B\u5417\uFF1F\u201D\""

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
+  m_Name: "Customer_\u5C0F\u5E05"
+  m_EditorClassIdentifier: 
+  customerId: C99
+  customerName: "\u5C0F\u5E05"
+  normalSprite: {fileID: 21300000, guid: 3e4e7aad7db0dc340aee6e613b5eeb1b, type: 3}
+  impatientSprite: {fileID: 21300000, guid: b19865a6972cd8347bb81a5e504e2337, type: 3}
+  angrySprite: {fileID: 21300000, guid: 3752b9d3f36dbbf4eb011bd288e49fa0, type: 3}
+  happySprite: {fileID: 21300000, guid: f5896a22752813e4eacca22176102b32, type: 3}
+  basePatienceTime: 60
+  orderPoolEntries:
+  - orderPool: {fileID: 11400000, guid: b32d38cce17b3584287765556e45b11c, type: 2}
+    weight: 100
+  enterDialogueTexts:
+  - "\u6765\u676F\u5496\u5561"
+  satisfiedFeedbackTexts:
+  - "\u597D"
+  neutralFeedbackTexts:
+  - "\u4E00\u822C"
+  dissatisfiedFeedbackTexts:
+  - "\u5DEE"
+  SpecialFeedbackTexts: []

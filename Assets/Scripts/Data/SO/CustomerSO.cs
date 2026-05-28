@@ -27,6 +27,9 @@ namespace InnsmouthCafe.Data
         [Tooltip("愤怒状态立绘（为空则使用 normalSprite）")]
         public Sprite angrySprite;
 
+        [Tooltip("开心状态立绘（为空则使用 normalSprite）")]
+        public Sprite happySprite;
+
         [Header("耐心时间")]
         [Tooltip("基础耐心时间（秒）")]
         public float basePatienceTime = 60f;
@@ -52,6 +55,10 @@ namespace InnsmouthCafe.Data
         [TextArea(3, 5)]
         [Tooltip("不满意时的评价文本列表（随机一条）")]
         public List<string> dissatisfiedFeedbackTexts = new List<string>();
+
+        [TextArea(3, 5)]
+        [Tooltip("特殊评价文本列表（随机一条）")]
+        public List<string> SpecialFeedbackTexts = new List<string>();
 
 #if UNITY_EDITOR
         /// <summary>

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
+  m_Name: "Customer_\u53CC\u5934\u9CA8"
+  m_EditorClassIdentifier: 
+  customerId: C07
+  customerName: "\u53CC\u5934\u9CA8"
+  normalSprite: {fileID: 21300000, guid: 68192d6bb93c9114b82da33f59dfd68f, type: 3}
+  impatientSprite: {fileID: 21300000, guid: 3bab830a1cb2fcb4a88292deefbd2a35, type: 3}
+  angrySprite: {fileID: 21300000, guid: b3f76394f909e5647914ff75c042613c, type: 3}
+  happySprite: {fileID: 21300000, guid: 9aedb4f4cba718442b6e5ff5f4aa67fc, type: 3}
+  basePatienceTime: 60
+  orderPoolEntries:
+  - orderPool: {fileID: 11400000, guid: a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2, type: 2}
+    weight: 100
+  enterDialogueTexts:
+  - "\"\n\u201C\u4F60\u597D\uFF0C\u9EBB\u70E6\u7ED9\u6211\u4E00\u676F\u770B\u8D77\u6765\u662F\u90A3\u79CD\u7ECF\u5178\u7535\u5F71\u7684\u7537\u4E3B\u4F1A\u70B9\u7684\u70ED\u5496\u5561\u3002\u2014\u2014\u9EBB\u70E6\u7ED9\u6211\u4E00\u676F\u82E6\u5F97\u80FD\u591F\u5C01\u4F4F\u8FD9\u4E2A\u5BB6\u4F19\u5634\u7684\u51B0\u5496\u5561\u2014\u2014\u5C11\u751C\u2014\u2014\u591A\u7CD6\u2014\u2014\u563F\uFF01\uFF08\u62F3\u6253\u811A\u8E22\uFF09\u6211\u53EA\u4ED8\u4E00\u676F\uFF01\uFF08\u5F02\u53E3\u540C\u58F0\uFF09\uFF08\u62F3\u6253\u811A\u8E22\uFF09\u201C\""
+  satisfiedFeedbackTexts:
+  - "\"\n\u201C\u8FD9\u5473\u9053\u53EF\u771F\u591F\u65F6\u5C1A\u54C8\u54C8\u54C8\uFF0C\u4E0B\u6B21\u6253\u5305\u4E24\u676F\u56DE\u53BB\u4E00\u8FB9\u770B\u7535\u5F71\u4E00\u8FB9\u559D\u5427\uFF1F\u201D\""
+  neutralFeedbackTexts:
+  - "\"\n\u201C\u6211\u5C31\u8BF4\u4F60\u5C0F\u5B50\u4F1A\u540E\u6094\u7684\u5427\uFF1F\u2014\u2014\u4F46\u81F3\u5C11\u5305\u88C5\u548C\u5E97\u9762\u90FD\u5F88\u5B8C\u7F8E\u554A\u3002\u201D\""
+  dissatisfiedFeedbackTexts:
+  - "\"\n\u201C\u54C7\uFF0C\u8FD9\u79CD\u4E1C\u897F\u4E5F\u80FD\u559D\uFF1F\u4F60\u4E5F\u60F3\u548C\u6211\u6253\u4E00\u67B6\u5417\uFF1F\u2014\u2014\u54E6\uFF0C\u96BE\u559D\u3002\u201D\""
+  SpecialFeedbackTexts:
+  - "\"\u201C\u5982\u679C\u4E00\u5934\u9CA8\u9C7C\u770B\u8D77\u6765\u4E0D\u591F\u523A\u6FC0\uFF0C\u90A3\u5C31\u5230\u6211\u4EEC\u51FA\u573A\u7684\u65F6\u5019\u5566\uFF01\u201C\n\u201C\u4F60\u6709\u6CA1\u6709\u89C1\u8FC7\u6211\u88AB\u9F99\u5377\u98CE\u5439\u8D70\u7684\u4EB2\u621A\uFF1F\u4ED6\u4EEC\u53EF\u662F\u5F53\u7EA2\u5F71\u89C6\u660E\u661F\u3002\u201C\n\u201C\u4E00\u751F\u6709\u7231\u4F55\u60E7\u98CE\u98DE\u9CA8\u2014\u2014\u80FD\u522B\u5E26\u7740\u6211\u4E00\u8D77\u72AF\u75C5\u5417\uFF1F\uFF08\u62F3\u6253\u811A\u8E22\uFF09
+    \u201C\""

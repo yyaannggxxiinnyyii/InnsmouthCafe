@@ -136,6 +136,10 @@ namespace InnsmouthCafe.UI
                 _lastPatienceStage = 4;
                 UpdateSpriteForStage(4);
             }
+            else if (state == CustomerState.Happy)
+            {
+                UpdateSpriteForHappy();
+            }
         }
 
         private void OnViewSwitched(GameViewType viewType)
@@ -284,6 +288,13 @@ namespace InnsmouthCafe.UI
                 _    => customer.normalSprite
             };
             return sprite != null ? sprite : customer.normalSprite;
+        }
+
+        private void UpdateSpriteForHappy()
+        {
+            if (_customerImage == null || _currentCustomer == null) return;
+            if (_currentCustomer.happySprite != null)
+                _customerImage.sprite = _currentCustomer.happySprite;
         }
 
         private void SetVisible(bool visible)
