@@ -45,7 +45,9 @@ namespace InnsmouthCafe.UI
         private Ease _toggleEase = Ease.OutQuart;
 
         private RectTransform _ticketRect;
+        private Vector2 _defaultPosition;
         private Vector2 _expandedPosition;
+        private bool _hasRecordedDefaultPosition = false;
         private bool _isCollapsed = false;
         private bool _isAnimating = false;
 
@@ -57,8 +59,10 @@ namespace InnsmouthCafe.UI
 
         private void Start()
         {
-            // 记录展开位置（Start时布局已稳定）
-            _expandedPosition = _ticketRect.anchoredPosition;
+            // 记录场景中的原始默认位置，作为小票基准位置
+            _defaultPosition = _ticketRect.anchoredPosition;
+            _expandedPosition = _defaultPosition;
+            _hasRecordedDefaultPosition = true;
         }
 
         // ── 收起/展开 ─────────────────────────────────────────
@@ -135,7 +139,10 @@ namespace InnsmouthCafe.UI
             ForceRebuildLayout();
 
             // 布局重建后更新展开位置（内容高度可能变化）
-            _expandedPosition = _ticketRect.anchoredPosition;
+            if (_hasRecordedDefaultPosition)
+            {
+                _expandedPosition = _ticketRect.anchoredPosition;
+            }
         }
 
         /// <summary>
@@ -257,6 +264,38 @@ namespace InnsmouthCafe.UI
             ClearContainer(_coffeeRequirementsContainer);
             ClearContainer(_liquidRequirementsContainer);
             ClearContainer(_toppingRequirementsContainer);
+        }
+
+        /// <summary>
+        /// 隐藏前重置小票状态，确保下一单重新记录展开基准
+        /// </summary>
+        public void ResetTicketState()
+        {
+            StopAllCoroutines();
+            _ticketRect.DOKill();
+            _isAnimating = false;
+            _isCollapsed = false;
+
+            ClearTicket();
+
+            if (_ticketRect != null && _hasRecordedDefaultPosition)
+            {
+                _ticketRect.anchoredPosition = _defaultPosition;
+                _expandedPosition = _defaultPosition;
+            }
+        }
+
+        /// <summary>
+        /// 重置并重新记录当前展开位置
+        /// </summary>
+        public void RebuildExpandedPosition()
+        {
+            if (_ticketRect == null)
+            {
+                return;
+            }
+
+            _expandedPosition = _ticketRect.anchoredPosition;
         }
     }
 }

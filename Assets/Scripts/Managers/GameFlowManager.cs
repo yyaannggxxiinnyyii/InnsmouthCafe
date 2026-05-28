@@ -24,6 +24,11 @@ namespace InnsmouthCafe.Managers
         [Tooltip("顾客立绘动画组件（用于同步进场/退场动画与流程推进）")]
         private InnsmouthCafe.UI.CustomerDisplayUI _customerDisplayUI;
 
+        [Header("订单小票")]
+        [SerializeField]
+        [Tooltip("订单小票控制器（提交订单和重置时使用）")]
+        private OrderTicketController _orderTicketController;
+
         [Header("调试")]
         [SerializeField]
         [Tooltip("是否显示调试日志")]
@@ -143,6 +148,7 @@ namespace InnsmouthCafe.Managers
 
             // 订阅系统事件
             SubscribeEvents();
+            CacheReferences();
 
             // GameManager.SelectedModeConfig 是玩家主动选择的，优先级最高
             if (GameManager.Instance != null && GameManager.Instance.SelectedModeConfig != null)
@@ -242,6 +248,17 @@ namespace InnsmouthCafe.Managers
             {
                 _customerDisplayUI.OnEnterAnimationComplete += OnCustomerEnterAnimationComplete;
                 _customerDisplayUI.OnExitAnimationComplete  += OnCustomerExitAnimationComplete;
+            }
+        }
+
+        /// <summary>
+        /// 缓存场景引用，避免依赖 Inspector 逐个手动拖拽
+        /// </summary>
+        private void CacheReferences()
+        {
+            if (_orderTicketController == null)
+            {
+                _orderTicketController = FindObjectOfType<OrderTicketController>();
             }
         }
 
@@ -360,6 +377,9 @@ namespace InnsmouthCafe.Managers
 
             _currentDay++;
 
+            _orderTicketController?.HideTicket();
+            DialogueUIManager.Instance?.ForceClearDialogue();
+
             // 重置当天统计
             _todayCustomersServed = 0;
             _todaySatisfiedCount = 0;
@@ -421,14 +441,21 @@ namespace InnsmouthCafe.Managers
             if (_showDebugLog)
                 Debug.Log($"[GameFlow] 顾客到达: {customer.customerName}");
 
-            // 有动画组件：等进场动画完成后再开始对话
-            // 无动画组件：直接开始对话
+            // 进入顾客流程时，先禁止切换，直到订单确认后再开启
+            ViewSwitchManager.Instance.SetCanSwitch(false);
+
+            // 先强制清空残留对话，再由入场动画完成事件触发进店对白
+            DialogueUIManager.Instance?.ForceClearDialogue();
+
+            // 没有动画组件时，直接进入进店对白
             if (_customerDisplayUI == null)
-                StartCustomerDialogue(customer);
+            {
+                StartCustomerEnterDialogue(customer);
+            }
         }
 
         /// <summary>
-        /// 进场动画完成回调 — 此时顾客已到位，开始对话
+        /// 进场动画完成回调 — 此时顾客已到位，开始进店对白
         /// </summary>
         private void OnCustomerEnterAnimationComplete()
         {
@@ -436,30 +463,56 @@ namespace InnsmouthCafe.Managers
 
             var customer = CustomerManager.Instance?.CurrentCustomer;
             if (customer != null)
-                StartCustomerDialogue(customer);
+                StartCustomerEnterDialogue(customer);
         }
 
         /// <summary>
-        /// 开始顾客对话（点单）
+        /// 开始顾客进店对白
+        /// </summary>
+        private void StartCustomerEnterDialogue(CustomerSO customer)
+        {
+            if (customer == null) return;
+
+            SetState(GameFlowState.CustomerEntering);
+
+            CustomerManager.Instance.StartTalking();
+
+            string enterDialogue = CustomerManager.Instance.GetRandomEnterDialogue();
+            DialogueUIManager.Instance.ShowDialogue(enterDialogue, () =>
+            {
+                StartCustomerDialogue(customer);
+            });
+        }
+
+        /// <summary>
+        /// 开始顾客点单对白
         /// </summary>
         private void StartCustomerDialogue(CustomerSO customer)
         {
             SetState(GameFlowState.CustomerTalking);
 
-            // 生成订单
-            _currentOrderSO = OrderManager.Instance.GenerateOrderForCustomer(customer);
-            _currentOrderData = _currentOrderSO.ToData();
+            // 先预生成订单，用于点单对白内容，但暂不触发小票显示
+            _currentOrderSO = OrderManager.Instance.PrepareOrderForCustomer(customer);
+            if (_currentOrderSO == null)
+            {
+                Debug.LogError($"[GameFlow] 为顾客 {customer.customerName} 预生成订单失败");
+                return;
+            }
 
             // 获取点单对话
             string orderDialogue = OrderManager.Instance.GetRandomOrderDialogue(_currentOrderSO);
 
-            // 顾客开始说话
-            CustomerManager.Instance.StartTalking();
-
-            // 显示对话气泡
+            // 显示对话气泡，结束后正式确认订单并进入等待制作阶段
             DialogueUIManager.Instance.ShowDialogue(orderDialogue, () =>
             {
-                // 对话完成，进入等待制作阶段
+                _currentOrderSO = OrderManager.Instance.ConfirmPreparedOrder();
+                if (_currentOrderSO == null)
+                {
+                    Debug.LogError($"[GameFlow] 为顾客 {customer.customerName} 确认订单失败");
+                    return;
+                }
+
+                _currentOrderData = _currentOrderSO.ToData();
                 StartWaitingForCraft();
             });
         }
@@ -502,8 +555,20 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
+            CacheReferences();
+
             // 提交咖啡，获取数据
             CoffeeData coffeeData = CoffeeCraftManager.Instance.SubmitCoffee();
+
+            // 提交后立即隐藏并重置小票
+            if (_orderTicketController != null)
+            {
+                _orderTicketController.HideTicket();
+            }
+            else if (_showDebugLog)
+            {
+                Debug.LogWarning("[GameFlow] 未找到 OrderTicketController，无法自动隐藏小票");
+            }
 
             // 禁止视图切换
             ViewSwitchManager.Instance.SetCanSwitch(false);
@@ -561,6 +626,9 @@ namespace InnsmouthCafe.Managers
             // 顾客显示反馈表情/动画
             CustomerManager.Instance.FinishOrderAndShowFeedback(scoringData.feedbackLevel);
 
+            // 确保反馈对白不会被上一段残留内容覆盖
+            DialogueUIManager.Instance?.ForceClearDialogue();
+
             // 显示反馈对话（从CustomerManager获取反馈文本）
             string feedbackText = CustomerManager.Instance.GetRandomFeedbackText(scoringData.feedbackLevel);
 
@@ -585,6 +653,11 @@ namespace InnsmouthCafe.Managers
         private void StartCustomerLeaving()
         {
             SetState(GameFlowState.CustomerLeaving);
+
+            // 本单结束时再做一次兜底重置，避免下位顾客复用上一单的小票状态
+            _orderTicketController?.ResetTicket();
+            DialogueUIManager.Instance?.ForceClearDialogue();
+
             CustomerManager.Instance.Leave();
         }
 

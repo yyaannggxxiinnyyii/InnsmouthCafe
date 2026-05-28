@@ -206,26 +206,7 @@ namespace InnsmouthCafe.UI
         /// </summary>
         public void HideDialogue()
         {
-            // 停止打字机协程
-            if (_typewriterCoroutine != null)
-            {
-                StopCoroutine(_typewriterCoroutine);
-                _typewriterCoroutine = null;
-            }
-
-            // 停止自动隐藏协程
-            if (_autoHideCoroutine != null)
-            {
-                StopCoroutine(_autoHideCoroutine);
-                _autoHideCoroutine = null;
-            }
-
-            // 停止自动继续协程
-            if (_autoContinueCoroutine != null)
-            {
-                StopCoroutine(_autoContinueCoroutine);
-                _autoContinueCoroutine = null;
-            }
+            StopDialogueRoutine();
 
             // 清空队列
             _dialogueQueue.Clear();
@@ -241,6 +222,63 @@ namespace InnsmouthCafe.UI
             if (_showDebugLog)
             {
                 Debug.Log("[DialogueUI] 对话已隐藏");
+            }
+        }
+
+        /// <summary>
+        /// 强制打断并立即清空当前对话
+        /// </summary>
+        public void ForceClearDialogue()
+        {
+            StopDialogueRoutine();
+
+            _dialogueQueue.Clear();
+            _currentOnComplete = null;
+            _currentFullText = string.Empty;
+            _isShowingDialogue = false;
+            _isTyping = false;
+            _canClickToContinue = false;
+
+            if (_dialogueBubbleCanvasGroup != null)
+            {
+                _dialogueBubbleCanvasGroup.DOKill();
+                _dialogueBubbleCanvasGroup.alpha = 0f;
+                _dialogueBubbleCanvasGroup.interactable = false;
+                _dialogueBubbleCanvasGroup.blocksRaycasts = false;
+            }
+
+            if (_dialogueText != null)
+            {
+                _dialogueText.text = string.Empty;
+            }
+
+            if (_showDebugLog)
+            {
+                Debug.Log("[DialogueUI] 对话已强制清空");
+            }
+        }
+
+        /// <summary>
+        /// 停止所有对话相关协程和回调状态
+        /// </summary>
+        private void StopDialogueRoutine()
+        {
+            if (_typewriterCoroutine != null)
+            {
+                StopCoroutine(_typewriterCoroutine);
+                _typewriterCoroutine = null;
+            }
+
+            if (_autoHideCoroutine != null)
+            {
+                StopCoroutine(_autoHideCoroutine);
+                _autoHideCoroutine = null;
+            }
+
+            if (_autoContinueCoroutine != null)
+            {
+                StopCoroutine(_autoContinueCoroutine);
+                _autoContinueCoroutine = null;
             }
         }
 
@@ -509,11 +547,14 @@ namespace InnsmouthCafe.UI
             // 隐藏气泡
             HideBubble(() =>
             {
+                // 先缓存并清空回调，避免回调中再次 ShowDialogue 时被后续代码覆盖
+                Action onComplete = _currentOnComplete;
+                _currentOnComplete = null;
+
                 // 气泡隐藏完成后，触发回调
                 _isShowingDialogue = false;
                 OnDialogueComplete?.Invoke();
-                _currentOnComplete?.Invoke();
-                _currentOnComplete = null;
+                onComplete?.Invoke();
             });
         }
 

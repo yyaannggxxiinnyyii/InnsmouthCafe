@@ -209,7 +209,7 @@ namespace InnsmouthCafe.UI
         // ── 退场动画 ──────────────────────────────────────────
 
         /// <summary>
-        /// 退场：从当前位置摆动向左离开，颜色从正常变回黑色剪影
+        /// 退场：从当前位置摆动向左离开，颜色从正常逐步变回黑色剪影
         /// </summary>
         private void PlayExitAnimation(Action onComplete)
         {
@@ -224,31 +224,33 @@ namespace InnsmouthCafe.UI
             _animSequence = DOTween.Sequence();
             _isAnimating  = true;
 
-            float totalDuration = _exitStepDuration * _exitWaypoints.Length;
+            _customerImage.color = NormalColor;
 
-            // 颜色从开始移动到最后一个锚点到达时完全变暗（线性，0→1）
-            _animSequence.Insert(0f,
-                _customerImage.DOColor(SilhouetteColor, totalDuration).SetEase(Ease.Linear)
-            );
+            float stepCount    = _exitWaypoints.Length;
+            float stepDuration = _exitStepDuration;
 
             for (int i = 0; i < _exitWaypoints.Length; i++)
             {
-                RectTransform waypoint      = _exitWaypoints[i];
-                float         tilt          = (i % 2 == 0) ? _swingAngle : -_swingAngle;
-                float         halfStep      = _exitStepDuration * 0.5f;
-                float         stepStartTime = _exitStepDuration * i;
+                RectTransform waypoint   = _exitWaypoints[i];
+                float         tilt       = (i % 2 == 0) ? _swingAngle : -_swingAngle;
+                float         halfStep   = stepDuration * 0.5f;
+                float         stepStart  = stepDuration * i;
+                float         colorRatio = (i + 1f) / stepCount;
+                Color         stepColor  = Color.Lerp(NormalColor, SilhouetteColor, colorRatio);
 
-                _animSequence.Append(
-                    _customerRect.DOAnchorPos(waypoint.anchoredPosition, _exitStepDuration)
+                _animSequence.Insert(stepStart,
+                    _customerRect.DOAnchorPos(waypoint.anchoredPosition, stepDuration)
                         .SetEase(Ease.InOutSine)
                 );
-                _animSequence.Join(
+                _animSequence.Insert(stepStart,
                     _customerRect.DOLocalRotate(new Vector3(0f, 0f, tilt), halfStep)
                         .SetEase(Ease.OutSine)
                 );
-                _animSequence.Insert(
-                    stepStartTime + halfStep,
+                _animSequence.Insert(stepStart + halfStep,
                     _customerRect.DOLocalRotate(Vector3.zero, halfStep).SetEase(Ease.InSine)
+                );
+                _animSequence.Insert(stepStart,
+                    _customerImage.DOColor(stepColor, stepDuration).SetEase(Ease.Linear)
                 );
             }
 

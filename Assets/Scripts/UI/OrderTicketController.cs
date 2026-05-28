@@ -37,14 +37,11 @@ namespace InnsmouthCafe.UI
                 }
             }
 
+            // 初始隐藏并重置小票
+            ResetTicket();
+
             // 订阅订单生成事件
             _orderManager.OnOrderGenerated += OnOrderGenerated;
-
-            // 初始隐藏小票
-            if (_ticketPanel != null)
-            {
-                _ticketPanel.SetActive(false);
-            }
         }
 
         private void OnDestroy()
@@ -61,6 +58,12 @@ namespace InnsmouthCafe.UI
         private void OnOrderGenerated(OrderSO order)
         {
             Debug.Log($"[OrderTicketController] 收到订单生成事件: {order.orderName}");
+
+            // 先把小票恢复到基准状态，再重新显示，避免继承上一单的收起状态
+            if (_orderTicketUI != null)
+            {
+                _orderTicketUI.ResetTicketState();
+            }
 
             // 显示小票面板
             if (_ticketPanel != null)
@@ -92,21 +95,28 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 隐藏小票
+        /// 隐藏并重置小票
         /// </summary>
         public void HideTicket()
         {
+            ResetTicket();
+            Debug.Log("[OrderTicketController] 隐藏订单小票");
+        }
+
+        /// <summary>
+        /// 重置小票为初始状态
+        /// </summary>
+        public void ResetTicket()
+        {
+            if (_orderTicketUI != null)
+            {
+                _orderTicketUI.ResetTicketState();
+            }
+
             if (_ticketPanel != null)
             {
                 _ticketPanel.SetActive(false);
             }
-
-            if (_orderTicketUI != null)
-            {
-                _orderTicketUI.ClearTicket();
-            }
-
-            Debug.Log("[OrderTicketController] 隐藏订单小票");
         }
 
         /// <summary>

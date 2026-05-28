@@ -28,6 +28,14 @@ namespace InnsmouthCafe.Managers
         [Tooltip("当前顾客")]
         private CustomerSO _currentCustomer;
 
+        [SerializeField]
+        [Tooltip("预生成订单")]
+        private OrderSO _preparedOrder;
+
+        [SerializeField]
+        [Tooltip("预生成订单对应顾客")]
+        private CustomerSO _preparedCustomer;
+
         /// <summary>
         /// 订单生成事件（订单SO）
         /// </summary>
@@ -198,21 +206,23 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 为顾客生成订单
+        /// 预生成顾客订单，不触发订单生成事件
         /// </summary>
         /// <param name="customer">顾客配置</param>
-        /// <returns>生成的订单，失败返回null</returns>
-        public OrderSO GenerateOrderForCustomer(CustomerSO customer)
+        /// <returns>预生成的订单，失败返回null</returns>
+        public OrderSO PrepareOrderForCustomer(CustomerSO customer)
         {
             if (customer == null)
             {
-                Debug.LogError("[Order] GenerateOrderForCustomer: 顾客配置为空");
+                Debug.LogError("[Order] PrepareOrderForCustomer: 顾客配置为空");
                 return null;
             }
 
-            Debug.Log($"[Order] 开始为顾客 {customer.customerName} 生成订单");
+            _preparedOrder = null;
+            _preparedCustomer = null;
 
-            // 选择订单池
+            Debug.Log($"[Order] 开始为顾客 {customer.customerName} 预生成订单");
+
             OrderPoolSO selectedPool = SelectOrderPool(customer);
             if (selectedPool == null)
             {
@@ -220,7 +230,6 @@ namespace InnsmouthCafe.Managers
                 return null;
             }
 
-            // 从订单池中随机订单
             OrderSO selectedOrder = GetRandomOrderFromPool(selectedPool);
             if (selectedOrder == null)
             {
@@ -228,18 +237,55 @@ namespace InnsmouthCafe.Managers
                 return null;
             }
 
-            // 更新当前状态
+            _preparedOrder = selectedOrder;
+            _preparedCustomer = customer;
+
+            Debug.Log($"[Order] 成功预生成顾客 {customer.customerName} 的订单 {selectedOrder.orderName}");
+            return selectedOrder;
+        }
+
+        /// <summary>
+        /// 确认预生成订单并触发订单生成事件
+        /// </summary>
+        /// <returns>确认后的订单，失败返回null</returns>
+        public OrderSO ConfirmPreparedOrder()
+        {
+            if (_preparedOrder == null || _preparedCustomer == null)
+            {
+                Debug.LogError("[Order] ConfirmPreparedOrder: 没有可确认的预生成订单");
+                return null;
+            }
+
             _lastOrder = _currentOrder;
-            _currentOrder = selectedOrder;
-            _currentCustomer = customer;
+            _currentOrder = _preparedOrder;
+            _currentCustomer = _preparedCustomer;
 
-            Debug.Log($"[Order] 成功为顾客 {customer.customerName} 生成订单 {selectedOrder.orderName}");
+            OrderSO confirmedOrder = _preparedOrder;
+            _preparedOrder = null;
+            _preparedCustomer = null;
 
-            // 触发订单生成事件
-            OnOrderGenerated?.Invoke(selectedOrder);
+            Debug.Log($"[Order] 成功确认订单 {confirmedOrder.orderName}");
+
+            OnOrderGenerated?.Invoke(confirmedOrder);
             TutorialEventBus.Publish("OrderGenerated");
 
-            return selectedOrder;
+            return confirmedOrder;
+        }
+
+        /// <summary>
+        /// 为顾客生成订单
+        /// </summary>
+        /// <param name="customer">顾客配置</param>
+        /// <returns>生成的订单，失败返回null</returns>
+        public OrderSO GenerateOrderForCustomer(CustomerSO customer)
+        {
+            OrderSO selectedOrder = PrepareOrderForCustomer(customer);
+            if (selectedOrder == null)
+            {
+                return null;
+            }
+
+            return ConfirmPreparedOrder();
         }
 
         /// <summary>
@@ -358,6 +404,8 @@ namespace InnsmouthCafe.Managers
 
             _currentOrder = null;
             _currentCustomer = null;
+            _preparedOrder = null;
+            _preparedCustomer = null;
             // 注意：不清空 _lastOrder，用于避免重复订单
         }
     }
