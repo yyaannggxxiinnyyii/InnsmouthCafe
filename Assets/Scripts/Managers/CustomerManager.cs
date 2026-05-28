@@ -167,7 +167,7 @@ public class CustomerManager : Singleton<CustomerManager>
         /// 完成订单并准备显示反馈
         /// </summary>
         /// <param name="scoreLevel">咖啡评分档位 (0=不满意, 1=一般, 2=满意)</param>
-        public void FinishOrderAndShowFeedback(int scoreLevel)
+        public int FinishOrderAndShowFeedback(int scoreLevel)
         {
             // 提交了咖啡，停止耐心
             _isTimerRunning = false;
@@ -184,6 +184,18 @@ public class CustomerManager : Singleton<CustomerManager>
 
             // 下方可以通过事件发送结果给 UI...或者由 GameManager 调用获取文本
             Debug.Log($"[Customer] 顾客评价档位结算完成，曾发怒状态: {_hasTriggeredAngry}，最终档位: {finalFeedbackLevel}");
+            return finalFeedbackLevel;
+        }
+
+        /// <summary>
+        /// 切换到开心状态
+        /// </summary>
+        public void SetHappy()
+        {
+            if (_currentState == CustomerState.Feedback)
+            {
+                ChangeState(CustomerState.Happy);
+            }
         }
 
         /// <summary>
@@ -277,6 +289,19 @@ public class CustomerManager : Singleton<CustomerManager>
 
             int randomIndex = UnityEngine.Random.Range(0, feedbackList.Count);
             return feedbackList[randomIndex];
+        }
+
+        /// <summary>
+        /// 获取随机特殊评价文本
+        /// </summary>
+        public string GetRandomSpecialFeedbackText()
+        {
+            if (_currentCustomer == null || _currentCustomer.SpecialFeedbackTexts == null
+                || _currentCustomer.SpecialFeedbackTexts.Count == 0)
+                return null;
+
+            int randomIndex = UnityEngine.Random.Range(0, _currentCustomer.SpecialFeedbackTexts.Count);
+            return _currentCustomer.SpecialFeedbackTexts[randomIndex];
         }
         #endregion
     }

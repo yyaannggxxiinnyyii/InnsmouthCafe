@@ -225,6 +225,11 @@ namespace InnsmouthCafe.Data
         Feedback,
 
         /// <summary>
+        /// 开心
+        /// </summary>
+        Happy,
+
+        /// <summary>
         /// 离开中
         /// </summary>
         Leaving

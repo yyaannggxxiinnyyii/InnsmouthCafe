@@ -56,6 +56,10 @@ namespace InnsmouthCafe.Data
         [Tooltip("不满意时的评价文本列表（随机一条）")]
         public List<string> dissatisfiedFeedbackTexts = new List<string>();
 
+        [TextArea(3, 5)]
+        [Tooltip("特殊评价文本列表（随机一条）")]
+        public List<string> SpecialFeedbackTexts = new List<string>();
+
 #if UNITY_EDITOR
         /// <summary>
         /// 验证配置数据的合理性

@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5723281553190441978f2d3b256b6f4, type: 3}
-  m_Name: "Customer_\u73CA\u745A\u592B\u4EBA"
+  m_Name: "Customer_\u201C\u6F5C\u6C34\u5458\u201D"
   m_EditorClassIdentifier: 
-  customerId: 
+  customerId: 01
   customerName: 
   normalSprite: {fileID: 0}
   impatientSprite: {fileID: 0}
@@ -24,4 +24,3 @@ MonoBehaviour:
   satisfiedFeedbackTexts: []
   neutralFeedbackTexts: []
   dissatisfiedFeedbackTexts: []
-  SpecialFeedbackTexts: []

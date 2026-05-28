@@ -95,4 +95,8 @@ InitTestScene*.unity*
 /[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
 /[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
 
+# Large TMP font assets
+/Assets/TextMesh Pro/Resources/Fonts & Materials/SIyuan SDF.asset
+/Assets/TextMesh Pro/Resources/Fonts & Materials/SIyuan SDF.asset.meta
+
 # Auto-generated scenes by play mode tests
