@@ -2762,6 +2762,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SettingsPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 1915721745173972016, guid: e4c104f01dba75441bca2f89d538bf54, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2490434983290077418, guid: e4c104f01dba75441bca2f89d538bf54, type: 3}
       propertyPath: m_Alpha
       value: 0
