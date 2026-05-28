@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   liquidId: water
   liquidName: "\u6C34"
-  icon: {fileID: 21300000, guid: d5d2f8106be424c4ca42336025af4957, type: 3}
-  containerIcon: {fileID: 21300000, guid: d5d2f8106be424c4ca42336025af4957, type: 3}
+  icon: {fileID: 21300000, guid: 47e235c4a2a280640ad81f7eb89b7b57, type: 3}
+  containerIcon: {fileID: 21300000, guid: 47e235c4a2a280640ad81f7eb89b7b57, type: 3}
   displayColor: {r: 0.7, g: 0.8, b: 0.9, a: 0.5}
   description: "\u7528\u4E8E\u7A00\u91CA\u5496\u5561\u6D53\u5EA6"
   particleColor: {r: 0.7, g: 0.8, b: 0.9, a: 1}

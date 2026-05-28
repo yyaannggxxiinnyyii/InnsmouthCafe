@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f06373cee9fd8214ca357b53e942a59d, type: 3}
-  m_Name: Order_克苏鲁之眼
-  m_EditorClassIdentifier:
+  m_Name: "Order_\u514B\u82CF\u9C81\u4E4B\u773C"
+  m_EditorClassIdentifier: 
   orderId: Hard_CthulhuEye_001
   orderName: "\u514B\u82CF\u9C81\u4E4B\u773C"
   orderDialogueTexts:
@@ -19,7 +19,7 @@ MonoBehaviour:
   - "\u8BA9\u6211\u770B\u5230\u4F60\u7684\u6280\u827A\uFF0C\u4E09\u79CD\u8C46\uFF0C\u4E09\u79CD\u6D77\u6D0B\u3002"
   coffeeRequirements:
   - bean: {fileID: 11400000, guid: d091b320013118141b164165549b748d, type: 2}
-    grindType: 2
+    grindType: 0
     targetVolume: 75
   - bean: {fileID: 11400000, guid: d3b40c5ba7431134e9247f655a08e642, type: 2}
     grindType: 1

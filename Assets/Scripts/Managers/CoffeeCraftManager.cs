@@ -344,7 +344,7 @@ namespace InnsmouthCafe.Managers
             OnExtractionProgressChanged?.Invoke(_currentExtractionVolume, _targetExtractionVolume);
 
             // 播放开始萃取音效
-            AudioManager.Instance?.PlaySfx(SoundId.CoffeeExtractionStart);
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeExtraction);
 
             Debug.Log($"[CoffeeCraft] 开始萃取，目标萃取量：{_targetExtractionVolume}ml");
         }
@@ -378,9 +378,6 @@ namespace InnsmouthCafe.Managers
             OnBatchDataChanged?.Invoke(_currentBatch);
             OnModuleStateChanged?.Invoke(_moduleState);
             OnExtractionCompleted?.Invoke(); // 触发完成事件（用于播放音效）
-
-            // 播放萃取完成音效
-            AudioManager.Instance?.PlaySfx(SoundId.CoffeeExtractionComplete);
 
             Debug.Log($"[CoffeeCraft] 萃取完成：{_targetExtractionVolume}ml咖啡液");
 

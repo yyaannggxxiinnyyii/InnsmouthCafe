@@ -39,10 +39,6 @@ public class AudioManager : Singleton<AudioManager>
     [Tooltip("BGM 淡出 / 淡入默认时长（秒）。")]
     [SerializeField] private float _bgmFadeDuration = 0.5f;
 
-    [Header("旁白音频")]
-    [Tooltip("旁白专用 AudioSource（用于播放线索触发时的旁白语音）。")]
-    [SerializeField] private AudioSource _narrationSource;
-
     // ── 运行时字段 ────────────────────────────────────────────
 
     /// <summary>SoundId → AudioEntry 快速查找字典，Awake 时构建。</summary>
@@ -197,55 +193,6 @@ public class AudioManager : Singleton<AudioManager>
     {
         if (paused) _bgmSource.Pause();
         else _bgmSource.UnPause();
-    }
-
-    // ── 旁白 API ──────────────────────────────────────────────
-
-    /// <summary>
-    /// 播放旁白音频（用于线索触发时的语音旁白）。
-    /// 如果已有旁白正在播放，会停止当前旁白并播放新的。
-    /// </summary>
-    /// <param name="clip">旁白音频片段。</param>
-    public void PlayNarration(AudioClip clip)
-    {
-        if (_narrationSource == null)
-        {
-            Debug.LogWarning("[AudioManager] 旁白 AudioSource 未配置，请在 Inspector 中赋值。");
-            return;
-        }
-
-        if (clip == null)
-        {
-            Debug.LogWarning("[AudioManager] 旁白 AudioClip 为空。");
-            return;
-        }
-
-        _narrationSource.Stop();
-        _narrationSource.clip = clip;
-        _narrationSource.volume = _narrationVolume;
-        _narrationSource.loop = false;
-        _narrationSource.Play();
-
-        Debug.Log($"[AudioManager] 播放旁白：{clip.name}");
-    }
-
-    /// <summary>
-    /// 停止当前正在播放的旁白。
-    /// </summary>
-    public void StopNarration()
-    {
-        if (_narrationSource != null)
-        {
-            _narrationSource.Stop();
-        }
-    }
-
-    /// <summary>
-    /// 检查旁白是否正在播放。
-    /// </summary>
-    public bool IsNarrationPlaying()
-    {
-        return _narrationSource != null && _narrationSource.isPlaying;
     }
 
     // ── 内部方法 ──────────────────────────────────────────────

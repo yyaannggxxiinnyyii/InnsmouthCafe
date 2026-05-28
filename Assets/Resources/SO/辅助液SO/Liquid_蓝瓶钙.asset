@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e481af26167224dad52c9023112ecb, type: 3}
-  m_Name: "Liquid_\u725B\u5976"
+  m_Name: "Liquid_\u84DD\u74F6\u9499"
   m_EditorClassIdentifier: 
   liquidId: milk
   liquidName: "\u725B\u5976"
-  icon: {fileID: 21300000, guid: cf441ecc4b4cbf6498611ac265813a62, type: 3}
-  containerIcon: {fileID: 21300000, guid: cf441ecc4b4cbf6498611ac265813a62, type: 3}
+  icon: {fileID: 21300000, guid: 6168a53c8bd5b6049821ba19fac416f0, type: 3}
+  containerIcon: {fileID: 21300000, guid: 6168a53c8bd5b6049821ba19fac416f0, type: 3}
   displayColor: {r: 1, g: 1, b: 1, a: 0.9}
   description: "\u589E\u52A0\u5976\u9999\u548C\u4E1D\u6ED1\u53E3\u611F"
   particleColor: {r: 1, g: 1, b: 1, a: 1}

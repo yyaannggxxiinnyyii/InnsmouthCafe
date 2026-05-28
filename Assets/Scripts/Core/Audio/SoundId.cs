@@ -5,21 +5,8 @@
 /// </summary>
 public enum SoundId
 {
-    // ── 通用UI音效 ──────────────────────────────────────────
-
     /// <summary>通用按钮点击音效。</summary>
     ButtonClick,
-
-    /// <summary>时间线控制按钮音效（播放/暂停/快进等）。</summary>
-    TimelineButton,
-
-    /// <summary>可交互线索高亮/发现音效。</summary>
-    ClueInteractable,
-
-    /// <summary>线索墙点击线索音效。</summary>
-    ClueWallClick,
-
-    // ── 咖啡制作音效 ──────────────────────────────────────────
 
     /// <summary>选择杯子音效。</summary>
     CoffeeCupSelect,
@@ -33,11 +20,8 @@ public enum SoundId
     /// <summary>研磨咖啡豆音效。</summary>
     CoffeeGrind,
 
-    /// <summary>开始萃取音效。</summary>
-    CoffeeExtractionStart,
-
-    /// <summary>萃取完成音效。</summary>
-    CoffeeExtractionComplete,
+    /// <summary>萃取咖啡豆音效。</summary>
+    CoffeeExtraction,
 
     /// <summary>倒掉咖啡粉音效。</summary>
     CoffeePowderClear,
