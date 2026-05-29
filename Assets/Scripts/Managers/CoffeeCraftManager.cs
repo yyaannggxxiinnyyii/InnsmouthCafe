@@ -432,9 +432,6 @@ namespace InnsmouthCafe.Managers
 
             _isPouring = false;
 
-            // 播放停止倒液音效
-            AudioManager.Instance?.PlaySfx(SoundId.CoffeeLiquidPourStop);
-
             Debug.Log($"[CoffeeCraft] 停止倒入{_currentPouringLiquid}");
         }
 

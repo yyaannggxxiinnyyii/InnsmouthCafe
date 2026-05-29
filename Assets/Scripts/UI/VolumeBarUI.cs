@@ -182,7 +182,7 @@ namespace InnsmouthCafe.UI
             if (targetVolume > cupCapacity)
             {
                 HideTargetZone();
-                ShowWarning("杯子容量不足！");
+                ShowWarning("当前杯子容量无法满足订单！");
                 return;
             }
 

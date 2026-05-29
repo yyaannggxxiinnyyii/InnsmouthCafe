@@ -16,7 +16,7 @@ namespace InnsmouthCafe.Managers
     {
         [Header("设置")]
         [SerializeField] [Tooltip("是否仅在教学模式下工作（关闭则任何模式都触发引导）")]
-        private bool _tutorialModeOnly = false;
+        private bool _tutorialModeOnly = true;
 
         [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = true;
@@ -79,40 +79,52 @@ namespace InnsmouthCafe.Managers
 
         private void SubscribeEvents()
         {
-            TutorialEventBus.Subscribe("DayStart",            OnEventDayStart);
-            TutorialEventBus.Subscribe("DayEnd",              OnEventDayEnd);
-            TutorialEventBus.Subscribe("CustomerEnter",       OnEventCustomerEnter);
-            TutorialEventBus.Subscribe("CustomerLeave",       OnEventCustomerLeave);
-            TutorialEventBus.Subscribe("OrderGenerated",      OnEventOrderGenerated);
-            TutorialEventBus.Subscribe("CoffeeSubmit",        OnEventCoffeeSubmit);
-            TutorialEventBus.Subscribe("ViewSwitchBar",       OnEventViewSwitchBar);
-            TutorialEventBus.Subscribe("ViewSwitchCraftBase", OnEventViewSwitchCraftBase);
-            TutorialEventBus.Subscribe("ViewSwitchCraftMix",  OnEventViewSwitchCraftMix);
+            TutorialEventBus.Subscribe(TutorialEvents.DayStart,            OnEventDayStart);
+            TutorialEventBus.Subscribe(TutorialEvents.DayEnd,              OnEventDayEnd);
+            TutorialEventBus.Subscribe(TutorialEvents.CustomerEnter,       OnEventCustomerEnter);
+            TutorialEventBus.Subscribe(TutorialEvents.CustomerReadyToTalk, OnEventCustomerReadyToTalk);
+            TutorialEventBus.Subscribe(TutorialEvents.CustomerTicketShown, OnEventCustomerTicketShown);
+            TutorialEventBus.Subscribe(TutorialEvents.FirstBarToCraftBaseSwitchComplete, OnEventFirstBarToCraftBaseSwitchComplete);
+            TutorialEventBus.Subscribe(TutorialEvents.FirstCraftMixSwitchComplete, OnEventFirstCraftMixSwitchComplete);
+            TutorialEventBus.Subscribe(TutorialEvents.CustomerLeave,       OnEventCustomerLeave);
+            TutorialEventBus.Subscribe(TutorialEvents.OrderGenerated,      OnEventOrderGenerated);
+            TutorialEventBus.Subscribe(TutorialEvents.CoffeeSubmit,        OnEventCoffeeSubmit);
+            TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchBar,       OnEventViewSwitchBar);
+            TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchCraftBase, OnEventViewSwitchCraftBase);
+            TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchCraftMix,  OnEventViewSwitchCraftMix);
         }
 
         private void UnsubscribeEvents()
         {
-            TutorialEventBus.Unsubscribe("DayStart",            OnEventDayStart);
-            TutorialEventBus.Unsubscribe("DayEnd",              OnEventDayEnd);
-            TutorialEventBus.Unsubscribe("CustomerEnter",       OnEventCustomerEnter);
-            TutorialEventBus.Unsubscribe("CustomerLeave",       OnEventCustomerLeave);
-            TutorialEventBus.Unsubscribe("OrderGenerated",      OnEventOrderGenerated);
-            TutorialEventBus.Unsubscribe("CoffeeSubmit",        OnEventCoffeeSubmit);
-            TutorialEventBus.Unsubscribe("ViewSwitchBar",       OnEventViewSwitchBar);
-            TutorialEventBus.Unsubscribe("ViewSwitchCraftBase", OnEventViewSwitchCraftBase);
-            TutorialEventBus.Unsubscribe("ViewSwitchCraftMix",  OnEventViewSwitchCraftMix);
+            TutorialEventBus.Unsubscribe(TutorialEvents.DayStart,            OnEventDayStart);
+            TutorialEventBus.Unsubscribe(TutorialEvents.DayEnd,              OnEventDayEnd);
+            TutorialEventBus.Unsubscribe(TutorialEvents.CustomerEnter,       OnEventCustomerEnter);
+            TutorialEventBus.Unsubscribe(TutorialEvents.CustomerReadyToTalk, OnEventCustomerReadyToTalk);
+            TutorialEventBus.Unsubscribe(TutorialEvents.CustomerTicketShown, OnEventCustomerTicketShown);
+            TutorialEventBus.Unsubscribe(TutorialEvents.FirstBarToCraftBaseSwitchComplete, OnEventFirstBarToCraftBaseSwitchComplete);
+            TutorialEventBus.Unsubscribe(TutorialEvents.FirstCraftMixSwitchComplete, OnEventFirstCraftMixSwitchComplete);
+            TutorialEventBus.Unsubscribe(TutorialEvents.CustomerLeave,       OnEventCustomerLeave);
+            TutorialEventBus.Unsubscribe(TutorialEvents.OrderGenerated,      OnEventOrderGenerated);
+            TutorialEventBus.Unsubscribe(TutorialEvents.CoffeeSubmit,        OnEventCoffeeSubmit);
+            TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchBar,       OnEventViewSwitchBar);
+            TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchCraftBase, OnEventViewSwitchCraftBase);
+            TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchCraftMix,  OnEventViewSwitchCraftMix);
         }
 
         // 各事件对应的独立方法，方法引用稳定，可被 List.Remove 正确匹配
-        private void OnEventDayStart()            => OnEvent("DayStart");
-        private void OnEventDayEnd()              => OnEvent("DayEnd");
-        private void OnEventCustomerEnter()       => OnEvent("CustomerEnter");
-        private void OnEventCustomerLeave()       => OnEvent("CustomerLeave");
-        private void OnEventOrderGenerated()      => OnEvent("OrderGenerated");
-        private void OnEventCoffeeSubmit()        => OnEvent("CoffeeSubmit");
-        private void OnEventViewSwitchBar()       => OnEvent("ViewSwitchBar");
-        private void OnEventViewSwitchCraftBase() => OnEvent("ViewSwitchCraftBase");
-        private void OnEventViewSwitchCraftMix()  => OnEvent("ViewSwitchCraftMix");
+        private void OnEventDayStart()            => OnEvent(TutorialEvents.DayStart);
+        private void OnEventDayEnd()              => OnEvent(TutorialEvents.DayEnd);
+        private void OnEventCustomerEnter()       => OnEvent(TutorialEvents.CustomerEnter);
+        private void OnEventCustomerReadyToTalk()  => OnEvent(TutorialEvents.CustomerReadyToTalk);
+        private void OnEventCustomerTicketShown()  => OnEvent(TutorialEvents.CustomerTicketShown);
+        private void OnEventFirstBarToCraftBaseSwitchComplete() => OnEvent(TutorialEvents.FirstBarToCraftBaseSwitchComplete);
+        private void OnEventFirstCraftMixSwitchComplete() => OnEvent(TutorialEvents.FirstCraftMixSwitchComplete);
+        private void OnEventCustomerLeave()       => OnEvent(TutorialEvents.CustomerLeave);
+        private void OnEventOrderGenerated()      => OnEvent(TutorialEvents.OrderGenerated);
+        private void OnEventCoffeeSubmit()        => OnEvent(TutorialEvents.CoffeeSubmit);
+        private void OnEventViewSwitchBar()       => OnEvent(TutorialEvents.ViewSwitchBar);
+        private void OnEventViewSwitchCraftBase() => OnEvent(TutorialEvents.ViewSwitchCraftBase);
+        private void OnEventViewSwitchCraftMix()  => OnEvent(TutorialEvents.ViewSwitchCraftMix);
 
         // ── 核心触发逻辑 ────────────────────────────────────
 
@@ -200,9 +212,6 @@ namespace InnsmouthCafe.Managers
                 if (config != null)
                     return config.gameMode == GameMode.Tutorial;
             }
-
-            if (GameFlowManager.Instance != null && GameFlowManager.Instance.IsGameRunning)
-                return true;
 
             return false;
         }

@@ -475,6 +475,8 @@ namespace InnsmouthCafe.Managers
 
             SetState(GameFlowState.CustomerEntering);
 
+            TutorialEventBus.Publish(TutorialEvents.CustomerReadyToTalk);
+
             CustomerManager.Instance.StartTalking();
 
             string enterDialogue = CustomerManager.Instance.GetRandomEnterDialogue();

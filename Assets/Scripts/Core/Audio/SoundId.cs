@@ -29,9 +29,6 @@ public enum SoundId
     /// <summary>开始倒辅助液音效（循环）。</summary>
     CoffeeLiquidPourStart,
 
-    /// <summary>停止倒辅助液音效。</summary>
-    CoffeeLiquidPourStop,
-
     /// <summary>添加小料音效。</summary>
     CoffeeToppingAdd,
 

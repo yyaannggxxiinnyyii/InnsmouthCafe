@@ -7,7 +7,7 @@ namespace InnsmouthCafe.Data
     /// 用于在Unity中创建杯子配置资源
     /// </summary>
     [CreateAssetMenu(fileName = "Cup_", menuName = "InnsmouthCafe/Config/Cup Container", order = 1)]
-    public class CupContainerSO : ScriptableObject
+    public class CupContainerSO : ScriptableObject, IItemTooltipSource
     {
         [Header("基础信息")]
         [Tooltip("杯子唯一ID")]
@@ -23,6 +23,14 @@ namespace InnsmouthCafe.Data
         [Header("视觉资源")]
         [Tooltip("杯子图标（按钮/空杯显示）")]
         public Sprite cupSprite;
+
+        [Header("描述")]
+        [TextArea(3, 5)]
+        [Tooltip("杯子描述文本（用于悬停提示）")]
+        public string description;
+
+        public string TooltipTitle => cupName;
+        public string TooltipDescription => description;
 
         [Header("填充阶段贴图")]
         [Tooltip("0% ~ 25% 填充时显示的贴图")]

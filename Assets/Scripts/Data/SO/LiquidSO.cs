@@ -7,7 +7,7 @@ namespace InnsmouthCafe.Data
     /// 定义辅助液的基础属性和显示信息
     /// </summary>
     [CreateAssetMenu(fileName = "Liquid_", menuName = "InnsmouthCafe/Config/Liquid Config", order = 3)]
-    public class LiquidSO : ScriptableObject
+    public class LiquidSO : ScriptableObject, IItemTooltipSource
     {
         [Header("基础信息")]
         [Tooltip("辅助液唯一ID")]
@@ -30,6 +30,9 @@ namespace InnsmouthCafe.Data
         [TextArea(3, 5)]
         [Tooltip("辅助液描述文本")]
         public string description;
+
+        public string TooltipTitle => liquidName;
+        public string TooltipDescription => description;
 
         [Header("倒入效果")]
         [Tooltip("倒入时的粒子效果颜色")]

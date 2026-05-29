@@ -2,6 +2,7 @@ using UnityEngine;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
 
+
 namespace InnsmouthCafe.UI
 {
     /// <summary>
@@ -76,6 +77,8 @@ namespace InnsmouthCafe.UI
             {
                 _orderTicketUI.RefreshTicket(order);
             }
+
+            TutorialEventBus.Publish(TutorialEvents.CustomerTicketShown);
 
             // 播放动画（可选）
             if (_enableAnimation)

@@ -16,8 +16,8 @@ namespace InnsmouthCafe.Managers
         private UI.TutorialGuideUI _guideUI;
 
         [Header("设置")]
-        [SerializeField] [Tooltip("Mark序列中步骤间最小间隔（秒）")]
-        private float _stepInterval = 0.3f;
+        [SerializeField] [Tooltip("统一的Mark序列间隔（秒），当下一条Mark未单独配置延迟时使用")]
+        private float _defaultStepInterval = 0.3f;
 
         /// <summary>引导是否正在进行</summary>
         public bool IsGuideActive { get; private set; }
@@ -33,6 +33,9 @@ namespace InnsmouthCafe.Managers
 
         /// <summary>自动推进协程</summary>
         private Coroutine _autoAdvanceCoroutine;
+
+        /// <summary>序列切换协程</summary>
+        private Coroutine _sequenceAdvanceCoroutine;
 
         /// <summary>用于支持暂停计数的计数器</summary>
         private int _pauseCount = 0;
@@ -80,15 +83,11 @@ namespace InnsmouthCafe.Managers
                 onComplete?.Invoke();
             });
 
-            // 自动推进（使用实时等待，暂停游戏时也能自动推进）
-            if (mark.AutoAdvanceDelay > 0f)
+            // 对话框模式下不自动推进，必须由玩家手动点击“继续”
+            if (_autoAdvanceCoroutine != null)
             {
-                if (_autoAdvanceCoroutine != null)
-                {
-                    StopCoroutine(_autoAdvanceCoroutine);
-                    _autoAdvanceCoroutine = null;
-                }
-                _autoAdvanceCoroutine = StartCoroutine(AutoAdvance(mark.AutoAdvanceDelay));
+                StopCoroutine(_autoAdvanceCoroutine);
+                _autoAdvanceCoroutine = null;
             }
         }
 
@@ -178,13 +177,19 @@ namespace InnsmouthCafe.Managers
                 _autoAdvanceCoroutine = null;
             }
 
+            if (_sequenceAdvanceCoroutine != null)
+            {
+                StopCoroutine(_sequenceAdvanceCoroutine);
+                _sequenceAdvanceCoroutine = null;
+            }
+
             _guideUI?.HideAll();
 
-            // 如果在序列中，推进到下一步
+            // 如果在序列中，直接进入下一步
             if (_currentMarks != null)
             {
                 _currentMarkIndex++;
-                StartCoroutine(DelayedTriggerNext());
+                TriggerCurrentMark();
             }
             else
             {
@@ -221,14 +226,8 @@ namespace InnsmouthCafe.Managers
             TriggerMark(mark, () =>
             {
                 _currentMarkIndex++;
-                StartCoroutine(DelayedTriggerNext());
+                StartNextMarkAfterDelay(GetNextMarkDelay(_currentMarkIndex));
             });
-        }
-
-        private IEnumerator DelayedTriggerNext()
-        {
-            yield return new WaitForSecondsRealtime(_stepInterval);
-            TriggerCurrentMark();
         }
 
         private IEnumerator AutoHideTip(float delay)
@@ -243,6 +242,44 @@ namespace InnsmouthCafe.Managers
             yield return new WaitForSecondsRealtime(delay);
             _autoAdvanceCoroutine = null;
             _guideUI?.CompleteCurrentStep();
+        }
+
+        private void StartNextMarkAfterDelay(float delay)
+        {
+            if (_sequenceAdvanceCoroutine != null)
+            {
+                StopCoroutine(_sequenceAdvanceCoroutine);
+                _sequenceAdvanceCoroutine = null;
+            }
+
+            _sequenceAdvanceCoroutine = StartCoroutine(DelayedTriggerNext(delay));
+        }
+
+        private IEnumerator DelayedTriggerNext(float delay)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSecondsRealtime(delay);
+            }
+
+            _sequenceAdvanceCoroutine = null;
+            TriggerCurrentMark();
+        }
+
+        private float GetNextMarkDelay(int nextIndex)
+        {
+            if (_currentMarks == null || nextIndex < 0 || nextIndex >= _currentMarks.Length)
+            {
+                return _defaultStepInterval;
+            }
+
+            var nextMark = _currentMarks[nextIndex];
+            if (nextMark != null && nextMark.NextDelay > 0f)
+            {
+                return nextMark.NextDelay;
+            }
+
+            return _defaultStepInterval;
         }
 
         /// <summary>

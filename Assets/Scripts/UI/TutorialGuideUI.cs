@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -24,31 +23,40 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("高亮区Image的RectTransform（调整位置和大小即可实现镂空）")]
         private RectTransform _highlightArea;
 
-        [Header("提示框")]
-        [SerializeField] [Tooltip("提示框根节点")]
-        private RectTransform _tipRoot;
+        [Header("老板对话框")]
+        [SerializeField] [Tooltip("对话框根节点（位置由场景手动摆放）")]
+        private RectTransform _dialogueRoot;
 
-        [SerializeField] [Tooltip("提示框CanvasGroup")]
-        private CanvasGroup _tipGroup;
+        [SerializeField] [Tooltip("对话框CanvasGroup")]
+        private CanvasGroup _dialogueGroup;
 
-        [SerializeField] [Tooltip("提示文本")]
-        private TextMeshProUGUI _tipText;
+        [SerializeField] [Tooltip("老板立绘")]
+        private Image _bossPortrait;
 
-        [SerializeField] [Tooltip("提示标题（可选）")]
-        private TextMeshProUGUI _tipTitle;
+        [SerializeField] [Tooltip("说话者名字")]
+        private TextMeshProUGUI _speakerNameText;
 
-        [SerializeField] [Tooltip("继续按钮/点击区域")]
+        [SerializeField] [Tooltip("对话文本")]
+        private TextMeshProUGUI _dialogueText;
+
+        [SerializeField] [Tooltip("继续按钮")]
         private Button _continueButton;
 
         [Header("动画设置")]
         [SerializeField] [Tooltip("淡入淡出时长")]
         private float _fadeDuration = 0.2f;
 
-        [SerializeField] [Tooltip("提示框弹出缩放时长")]
+        [SerializeField] [Tooltip("对话框弹出缩放时长")]
         private float _popDuration = 0.25f;
 
         /// <summary>当前步骤完成回调</summary>
         private Action _onStepComplete;
+
+        /// <summary>当前教学标记</summary>
+        private TutorialMark _currentMark;
+
+        /// <summary>当前句序号</summary>
+        private int _currentDialogueIndex;
 
         /// <summary>所在Canvas的RectTransform（用于边界计算）</summary>
         private RectTransform _canvasRect;
@@ -61,6 +69,9 @@ namespace InnsmouthCafe.UI
         private float _typeCharDelay = 0.02f;
 
         private Coroutine _typeCoroutine;
+        private string _currentFullText = string.Empty;
+        private bool _isTyping = false;
+        private bool _isFullTextShown = false;
 
         private void Awake()
         {
@@ -81,7 +92,7 @@ namespace InnsmouthCafe.UI
         // ── TutorialMark 驱动接口（主要使用方式）─────────────
 
         /// <summary>
-        /// 根据 TutorialMark 显示引导（遮罩+高亮+TipPanel定位到旁边）
+        /// 根据 TutorialMark 显示引导（遮罩+高亮+老板对话框）
         /// </summary>
         public void ShowMark(TutorialMark mark, Action onComplete)
         {
@@ -91,6 +102,8 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
+            _currentMark = mark;
+            _currentDialogueIndex = 0;
             _onStepComplete = onComplete;
 
             // 将高亮区定位到目标
@@ -103,29 +116,17 @@ namespace InnsmouthCafe.UI
             // 显示遮罩
             ShowMask();
 
-            // 设置提示内容
-            if (_tipTitle != null)
+            // 固定说话者名字
+            if (_speakerNameText != null)
             {
-                bool hasTitle = !string.IsNullOrEmpty(mark.TipTitle);
-                _tipTitle.gameObject.SetActive(hasTitle);
-                if (hasTitle) _tipTitle.text = mark.TipTitle;
+                _speakerNameText.text = "店老板";
+                _speakerNameText.gameObject.SetActive(true);
             }
 
-            if (_tipText != null)
-            {
-                // 启动打字机效果（先清空文本）
-                if (_typeCoroutine != null)
-                    StopCoroutine(_typeCoroutine);
-                _typeCoroutine = StartCoroutine(TypeText(mark.TipText));
-            }
-
-            // 显示TipPanel（文本会逐步填充并触发布局刷新）
+            // 显示对话框（位置由场景手动摆放）
             ShowTipPanel();
-            PositionTipNearHighlight(mark.TipPositionMode, mark.TipOffset);
 
-            // 继续按钮交互设置
-            if (_continueButton != null)
-                _continueButton.interactable = !mark.RequireClickTarget;
+            PlayCurrentDialogue();
         }
 
         // ── 简易接口 ─────────────────────────────────────────
@@ -133,17 +134,22 @@ namespace InnsmouthCafe.UI
         /// <summary>显示纯文本提示（无高亮）</summary>
         public void ShowTip(string text)
         {
-            if (_tipTitle != null)
-                _tipTitle.gameObject.SetActive(false);
+            _currentMark = null;
+            _currentDialogueIndex = 0;
+            _currentFullText = text ?? string.Empty;
+            _isTyping = false;
+            _isFullTextShown = false;
 
-            if (_tipText != null)
+            if (_speakerNameText != null)
             {
-                if (_typeCoroutine != null)
-                    StopCoroutine(_typeCoroutine);
-                _typeCoroutine = StartCoroutine(TypeText(text));
+                _speakerNameText.text = "店老板";
+                _speakerNameText.gameObject.SetActive(true);
             }
 
-            // 显示 TipPanel
+            ApplyPortrait(null);
+            BeginTypingCurrentText();
+
+            // 显示对话框
             ShowTipPanel();
         }
 
@@ -185,10 +191,10 @@ namespace InnsmouthCafe.UI
                     _maskGroup.interactable = false;
                     _maskGroup.blocksRaycasts = false;
                 }
-                SetGroupVisible(_tipGroup, false);
+                SetGroupVisible(_dialogueGroup, false);
 
-                if (_tipRoot != null)
-                    _tipRoot.gameObject.SetActive(false);
+                if (_dialogueRoot != null)
+                    _dialogueRoot.gameObject.SetActive(false);
             }
             else
             {
@@ -197,7 +203,11 @@ namespace InnsmouthCafe.UI
             }
 
             _onStepComplete = null;
-
+            _currentMark = null;
+            _currentDialogueIndex = 0;
+            _currentFullText = string.Empty;
+            _isTyping = false;
+            _isFullTextShown = false;
 
             // 停止打字机协程（如果存在）
             if (_typeCoroutine != null)
@@ -211,119 +221,57 @@ namespace InnsmouthCafe.UI
 
         private IEnumerator TypeText(string fullText)
         {
-            if (_tipText == null) yield break;
+            if (_dialogueText == null) yield break;
 
-            _tipText.text = string.Empty;
+            _isTyping = true;
+            _isFullTextShown = false;
+            _dialogueText.text = string.Empty;
             int length = fullText?.Length ?? 0;
 
             for (int i = 0; i < length; i++)
             {
-                _tipText.text += fullText[i];
+                _dialogueText.text += fullText[i];
                 // 使用真实时间等待（暂停时仍能打字）
                 yield return new WaitForSecondsRealtime(_typeCharDelay);
 
-                // 每次添加字符后强制刷新文本布局，保证父Panel更新高度
-                _tipText.ForceMeshUpdate();
+                _dialogueText.ForceMeshUpdate();
                 Canvas.ForceUpdateCanvases();
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_tipText.rectTransform);
-                if (_tipRoot != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_tipRoot);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_dialogueText.rectTransform);
+                if (_dialogueRoot != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_dialogueRoot);
             }
 
+            _isTyping = false;
+            _isFullTextShown = true;
             _typeCoroutine = null;
-        }
-
-        /// <summary>将TipPanel定位到高亮区旁边</summary>
-        private void PositionTipNearHighlight(TipPosition mode, float offset)
-        {
-            if (_tipRoot == null || _highlightArea == null) return;
-
-            // TipPanel 自身大小（确保布局已计算）
-            Vector2 tipSize = _tipRoot.sizeDelta;
-
-            // 目标高亮在 tipRoot 父节点下的本地坐标计算
-            RectTransform tipParent = _tipRoot.parent as RectTransform;
-            if (tipParent == null) return;
-
-            Vector2 min = Vector2.positiveInfinity;
-            Vector2 max = Vector2.negativeInfinity;
-
-            Vector3[] worldCorners = new Vector3[4];
-            _highlightArea.GetWorldCorners(worldCorners);
-
-            for (int i = 0; i < 4; i++)
-            {
-                Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(_canvasCamera, worldCorners[i]);
-                Vector2 localPoint;
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(tipParent, screenPoint, _canvasCamera, out localPoint);
-                min = Vector2.Min(min, localPoint);
-                max = Vector2.Max(max, localPoint);
-            }
-
-            Vector2 highlightCenter = (min + max) * 0.5f;
-            Vector2 highlightSize = (max - min);
-
-            // Canvas边界（用于Auto模式判断空间和边界约束）
-            Vector2 canvasSize = _canvasRect != null
-                ? _canvasRect.sizeDelta
-                : new Vector2(1920f, 1080f);
-            float canvasHalfH = canvasSize.y * 0.5f;
-            float canvasHalfW = canvasSize.x * 0.5f;
-
-            // 确定最终位置
-            TipPosition resolvedPos = mode;
-            if (mode == TipPosition.Auto)
-            {
-                // 计算以 tipParent 坐标系为基准的空间判断：使用 highlightCenter.y
-                float spaceBelow = canvasHalfH + (highlightCenter.y - highlightSize.y * 0.5f);
-                resolvedPos = spaceBelow > tipSize.y + offset + 50f
-                    ? TipPosition.Below
-                    : TipPosition.Above;
-            }
-
-            Vector2 tipPos = highlightCenter;
-
-            switch (resolvedPos)
-            {
-                case TipPosition.Above:
-                    tipPos.y = highlightCenter.y + highlightSize.y * 0.5f + offset + tipSize.y * 0.5f;
-                    break;
-                case TipPosition.Below:
-                    tipPos.y = highlightCenter.y - highlightSize.y * 0.5f - offset - tipSize.y * 0.5f;
-                    break;
-                case TipPosition.Left:
-                    tipPos.x = highlightCenter.x - highlightSize.x * 0.5f - offset - tipSize.x * 0.5f;
-                    break;
-                case TipPosition.Right:
-                    tipPos.x = highlightCenter.x + highlightSize.x * 0.5f + offset + tipSize.x * 0.5f;
-                    break;
-            }
-
-            // 边界约束：以 tipParent 的 rect 为边界基准（若为 Canvas 则与之前一致）
-            float halfTipW = tipSize.x * 0.5f;
-            float halfTipH = tipSize.y * 0.5f;
-
-            Rect parentRect = tipParent.rect;
-            float parentHalfW = parentRect.width * 0.5f;
-            float parentHalfH = parentRect.height * 0.5f;
-
-            tipPos.x = Mathf.Clamp(tipPos.x, -parentHalfW + halfTipW + 10f, parentHalfW - halfTipW - 10f);
-            tipPos.y = Mathf.Clamp(tipPos.y, -parentHalfH + halfTipH + 10f, parentHalfH - halfTipH - 10f);
-
-            _tipRoot.anchoredPosition = tipPos;
+            if (_continueButton != null)
+                _continueButton.interactable = true;
         }
 
         // ── 内部方法 ─────────────────────────────────────────
 
         private void OnContinueClicked()
         {
+            if (_isTyping)
+            {
+                ShowFullCurrentText();
+                return;
+            }
+
+            if (!_isFullTextShown)
+            {
+                ShowFullCurrentText();
+                return;
+            }
+
+            if (_currentMark != null && _currentDialogueIndex + 1 < _currentMark.GetDialogueCount())
+            {
+                _currentDialogueIndex++;
+                PlayCurrentDialogue();
+                return;
+            }
+
             var callback = _onStepComplete;
             _onStepComplete = null;
-
-            // 停止打字机协程
-            if (_typeCoroutine != null)
-            {
-                StopCoroutine(_typeCoroutine);
-            }
 
             HideAll();
             callback?.Invoke();
@@ -356,33 +304,33 @@ namespace InnsmouthCafe.UI
 
         private void ShowTipPanel()
         {
-            if (_tipRoot != null)
-                _tipRoot.gameObject.SetActive(true);
+            if (_dialogueRoot != null)
+                _dialogueRoot.gameObject.SetActive(true);
 
-            if (_tipGroup != null)
+            if (_dialogueGroup != null)
             {
-                _tipGroup.DOKill();
-                _tipGroup.alpha = 0f;
-                _tipGroup.DOFade(1f, _fadeDuration).SetUpdate(true);
+                _dialogueGroup.DOKill();
+                _dialogueGroup.alpha = 0f;
+                _dialogueGroup.DOFade(1f, _fadeDuration).SetUpdate(true);
             }
 
-            if (_tipRoot != null)
+            if (_dialogueRoot != null)
             {
-                _tipRoot.DOKill();
-                _tipRoot.localScale = Vector3.one * 0.8f;
-                _tipRoot.DOScale(Vector3.one, _popDuration).SetEase(Ease.OutBack).SetUpdate(true);
+                _dialogueRoot.DOKill();
+                _dialogueRoot.localScale = Vector3.one * 0.8f;
+                _dialogueRoot.DOScale(Vector3.one, _popDuration).SetEase(Ease.OutBack).SetUpdate(true);
             }
         }
 
         private void HideTipPanel()
         {
-            if (_tipGroup != null)
+            if (_dialogueGroup != null)
             {
-                _tipGroup.DOKill();
-                _tipGroup.DOFade(0f, _fadeDuration).SetUpdate(true).OnComplete(() =>
+                _dialogueGroup.DOKill();
+                _dialogueGroup.DOFade(0f, _fadeDuration).SetUpdate(true).OnComplete(() =>
                 {
-                    if (_tipRoot != null)
-                        _tipRoot.gameObject.SetActive(false);
+                    if (_dialogueRoot != null)
+                        _dialogueRoot.gameObject.SetActive(false);
                 });
             }
         }
@@ -418,6 +366,89 @@ namespace InnsmouthCafe.UI
 
             _highlightArea.anchoredPosition = center;
             _highlightArea.sizeDelta = size;
+        }
+
+        private void PlayCurrentDialogue()
+        {
+            if (_currentMark == null)
+            {
+                CompleteSequence();
+                return;
+            }
+
+            int count = _currentMark.GetDialogueCount();
+            if (count <= 0)
+            {
+                CompleteSequence();
+                return;
+            }
+
+            if (_currentDialogueIndex < 0 || _currentDialogueIndex >= count)
+            {
+                _currentDialogueIndex = 0;
+            }
+
+            _currentFullText = _currentMark.GetDialogueText(_currentDialogueIndex) ?? string.Empty;
+            _isTyping = false;
+            _isFullTextShown = false;
+
+            ApplyPortrait(_currentMark.GetDialoguePortrait(_currentDialogueIndex));
+            BeginTypingCurrentText();
+        }
+
+        private void BeginTypingCurrentText()
+        {
+            if (_dialogueText == null)
+                return;
+
+            if (_typeCoroutine != null)
+            {
+                StopCoroutine(_typeCoroutine);
+                _typeCoroutine = null;
+            }
+
+            _dialogueText.text = string.Empty;
+            _typeCoroutine = StartCoroutine(TypeText(_currentFullText));
+        }
+
+        private void ShowFullCurrentText()
+        {
+            if (_typeCoroutine != null)
+            {
+                StopCoroutine(_typeCoroutine);
+                _typeCoroutine = null;
+            }
+
+            if (_dialogueText != null)
+            {
+                _dialogueText.text = _currentFullText;
+            }
+
+            _isTyping = false;
+            _isFullTextShown = true;
+            if (_continueButton != null)
+                _continueButton.interactable = true;
+        }
+
+        private void ApplyPortrait(Sprite portrait)
+        {
+            if (_bossPortrait == null)
+                return;
+
+            bool hasPortrait = portrait != null;
+            _bossPortrait.gameObject.SetActive(hasPortrait);
+            if (hasPortrait)
+            {
+                _bossPortrait.sprite = portrait;
+            }
+        }
+
+        private void CompleteSequence()
+        {
+            var callback = _onStepComplete;
+            _onStepComplete = null;
+            HideAll();
+            callback?.Invoke();
         }
 
         private void SetGroupVisible(CanvasGroup group, bool visible)

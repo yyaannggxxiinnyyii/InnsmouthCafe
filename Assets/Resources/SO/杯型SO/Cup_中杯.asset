@@ -16,6 +16,7 @@ MonoBehaviour:
   cupName: "\u4E2D\u676F"
   capacity: 450
   cupSprite: {fileID: 21300000, guid: 389f82b0e9afbd041af20b7ea8e3648f, type: 3}
+  description: "\u5BB9\u91CF450ml\u7684\u4E2D\u676F"
   fillSprite_0_25: {fileID: 21300000, guid: 121b7359a57455642a5ea68920ccf5fb, type: 3}
   fillSprite_25_50: {fileID: 21300000, guid: a2c7203a2c7785e4fba9ba10bfc973ce, type: 3}
   fillSprite_50_75: {fileID: 21300000, guid: 7e1b1e2aa6942ea47b38e3e6c7b7f6ce, type: 3}

@@ -158,38 +158,21 @@ public class ScoringManager : Singleton<ScoringManager>
         private float CalculateToppingMatchScore(OrderSO order, CoffeeData coffee)
         {
             var orderData = order.ToData();
-            if (orderData.toppingRequirement == null)
+            if (orderData.toppingRequirement == null || orderData.toppingRequirement.requiredToppings == null || orderData.toppingRequirement.requiredToppings.Count == 0)
                 return coffee.toppings.Count == 0 ? 100f : 90f;
 
             bool allRequiredToppingsPresent = true;
-            if (orderData.toppingRequirement.requiredToppings?.Count > 0)
+            foreach (var requiredTopping in orderData.toppingRequirement.requiredToppings)
             {
-                foreach (var requiredTopping in orderData.toppingRequirement.requiredToppings)
+                if (!coffee.toppings.Exists(t => t.topping == requiredTopping))
                 {
-                    if (!coffee.toppings.Exists(t => t.topping == requiredTopping))
-                    {
-                        allRequiredToppingsPresent = false;
-                        break;
-                    }
-                }
-            }
-
-            bool allRequiredTagsPresent = true;
-            if (orderData.toppingRequirement.requiredTags?.Count > 0)
-            {
-                foreach (var requiredTag in orderData.toppingRequirement.requiredTags)
-                {
-                    if (!coffee.toppings.Exists(t => t.topping?.tags?.Contains(requiredTag) ?? false))
-                    {
-                        allRequiredTagsPresent = false;
-                        break;
-                    }
+                    allRequiredToppingsPresent = false;
+                    break;
                 }
             }
 
             float score = 100f;
             if (!allRequiredToppingsPresent) score -= 30f;
-            if (!allRequiredTagsPresent) score -= 30f;
             score = Mathf.Max(0, score);
             return score;
         }

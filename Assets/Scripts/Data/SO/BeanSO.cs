@@ -7,7 +7,7 @@ namespace InnsmouthCafe.Data
     /// 定义咖啡豆的基础属性和显示信息
     /// </summary>
     [CreateAssetMenu(fileName = "Bean_", menuName = "InnsmouthCafe/Config/Bean Config", order = 2)]
-    public class BeanSO : ScriptableObject
+    public class BeanSO : ScriptableObject, IItemTooltipSource
     {
         [Header("基础信息")]
         [Tooltip("咖啡豆唯一ID")]
@@ -30,6 +30,9 @@ namespace InnsmouthCafe.Data
         [TextArea(3, 5)]
         [Tooltip("咖啡豆描述文本（用于图鉴、悬停提示）")]
         public string description;
+
+        public string TooltipTitle => beanName;
+        public string TooltipDescription => description;
 
 #if UNITY_EDITOR
         /// <summary>

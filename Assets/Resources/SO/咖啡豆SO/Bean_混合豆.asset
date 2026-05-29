@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   beanId: blend
   beanName: "\u6DF7\u5408\u8C46"
-  icon: {fileID: 21300000, guid: 1a6c39779eef0cc44a9a2b29ddd7d667, type: 3}
+  icon: {fileID: 21300000, guid: 8cf2ed31980413e45969fdc544f7e310, type: 3}
   beanBarrelIcon: {fileID: 21300000, guid: 8cf2ed31980413e45969fdc544f7e310, type: 3}
   displayColor: {r: 0.3529412, g: 0.21960786, b: 0, a: 1}
   description: "\u5747\u8861\u914D\u65B9\uFF0C\u9002\u5408\u5927\u4F17\u53E3\u5473"

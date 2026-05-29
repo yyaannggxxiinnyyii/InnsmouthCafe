@@ -208,16 +208,23 @@ namespace InnsmouthCafe.Managers
             Debug.Log($"[GameManager] 模式已解锁: {mode}");
         }
 
+        /// <summary>重置游戏进度（清除存档标记和所有模式解锁状态）</summary>
+        public void ResetGameProgress()
+        {
+            PlayerPrefs.DeleteKey(SaveExistsKey);
+            PlayerPrefs.DeleteKey(PrefKeyTutorialDone);
+            PlayerPrefs.DeleteKey(PrefKeyBeginnerUnlocked);
+            PlayerPrefs.DeleteKey(PrefKeyNormalUnlocked);
+            PlayerPrefs.Save();
+            Debug.Log("[GameManager] 游戏进度已重置");
+        }
+
 #if UNITY_EDITOR
         /// <summary>编辑器调试：重置所有模式解锁状态</summary>
         [ContextMenu("调试：重置模式解锁")]
         private void DebugResetModeUnlock()
         {
-            PlayerPrefs.DeleteKey(PrefKeyTutorialDone);
-            PlayerPrefs.DeleteKey(PrefKeyBeginnerUnlocked);
-            PlayerPrefs.DeleteKey(PrefKeyNormalUnlocked);
-            PlayerPrefs.Save();
-            Debug.Log("[GameManager] 所有模式解锁状态已重置");
+            ResetGameProgress();
         }
 
         /// <summary>编辑器调试：解锁所有模式</summary>

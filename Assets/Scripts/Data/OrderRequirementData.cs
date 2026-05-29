@@ -41,7 +41,7 @@ namespace InnsmouthCafe.Data
 
     /// <summary>
     /// 小料需求数据
-    /// 定义小料需求（指定小料+属性需求）
+    /// 定义小料需求（仅指定具体小料）
     /// </summary>
     [System.Serializable]
     public class ToppingRequirementData
@@ -49,10 +49,6 @@ namespace InnsmouthCafe.Data
         [Header("指定小料")]
         [Tooltip("要求的具体小料列表")]
         public List<ToppingSO> requiredToppings;
-
-        [Header("属性需求")]
-        [Tooltip("要求的小料属性标签列表")]
-        public List<ToppingTagSO> requiredTags;
     }
 
     /// <summary>

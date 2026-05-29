@@ -32,21 +32,5 @@ namespace InnsmouthCafe.UI
                 _nameText.text = topping != null ? topping.toppingName : "";
             }
         }
-
-        /// <summary>
-        /// 用小料标签初始化
-        /// </summary>
-        public void Init(ToppingTagSO tag)
-        {
-            if (tag != null && _toppingIcon != null)
-            {
-                _toppingIcon.sprite = tag.icon;
-            }
-
-            if (_nameText != null)
-            {
-                _nameText.text = tag != null ? tag.tagName : "";
-            }
-        }
     }
 }

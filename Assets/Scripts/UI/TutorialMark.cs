@@ -1,5 +1,5 @@
+using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 
 namespace InnsmouthCafe.UI
 {
@@ -12,6 +12,18 @@ namespace InnsmouthCafe.UI
     [RequireComponent(typeof(RectTransform))]
     public class TutorialMark : MonoBehaviour
     {
+        [System.Serializable]
+        public class DialogueEntry
+        {
+            [TextArea(2, 5)]
+            [SerializeField] private string _text;
+
+            [SerializeField] private Sprite _portrait;
+
+            public string Text => _text;
+            public Sprite Portrait => _portrait;
+        }
+
         [Header("触发时机")]
         [SerializeField] [Tooltip("触发此引导的事件 key（参照 TutorialEvents 常量类，如 DayStart / CustomerEnter）")]
         private string _triggerEventKey = string.Empty;
@@ -26,30 +38,23 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("同一触发时机下的执行顺序（小的先执行）")]
         private int _order;
 
-        [Header("提示内容")]
-        [SerializeField] [Tooltip("提示标题（可选，留空则不显示标题）")]
-        private string _tipTitle;
+        [SerializeField] [Tooltip("当前引导播放完后，到下一条引导开始前的延迟（秒），0=使用统一延迟")]
+        private float _nextDelay;
 
-        [SerializeField] [Tooltip("提示正文")]
+        [Header("提示内容")]
+        [SerializeField] [Tooltip("兼容单句配置；多句时请使用下方对话列表")]
         [TextArea(2, 5)]
         private string _tipText;
 
-        [Header("行为设置")]
-        [SerializeField] [Tooltip("是否必须点击高亮目标才能继续")]
-        private bool _requireClickTarget;
+        [SerializeField] [Tooltip("默认老板对话立绘（条目未配置时继承此立绘）")]
+        private Sprite _bossPortrait;
 
-        [SerializeField] [Tooltip("自动推进延迟（秒）。0=需要手动点击继续")]
-        private float _autoAdvanceDelay;
+        [SerializeField] [Tooltip("多句对话列表；为空时使用旧版提示正文")]
+        private List<DialogueEntry> _dialogues = new List<DialogueEntry>();
 
-        [Header("显示设置")]
+        [Header("高亮设置")]
         [SerializeField] [Tooltip("高亮框额外边距")]
         private float _highlightPadding = 20f;
-
-        [SerializeField] [Tooltip("TipPanel显示位置（相对于高亮区域）")]
-        private TipPosition _tipPosition = TipPosition.Auto;
-
-        [SerializeField] [Tooltip("TipPanel与高亮区域的间距")]
-        private float _tipOffset = 20f;
 
         /// <summary>是否已触发过</summary>
         private bool _hasTriggered;
@@ -68,32 +73,61 @@ namespace InnsmouthCafe.UI
         /// <summary>排序权重</summary>
         public int Order => _order;
 
-        /// <summary>提示标题</summary>
-        public string TipTitle => _tipTitle;
+        /// <summary>下一条引导开始前的延迟（0=使用统一延迟）</summary>
+        public float NextDelay => _nextDelay;
 
-        /// <summary>提示正文</summary>
+        /// <summary>旧版提示正文</summary>
         public string TipText => _tipText;
 
-        /// <summary>是否必须点击目标</summary>
-        public bool RequireClickTarget => _requireClickTarget;
+        /// <summary>默认老板对话立绘</summary>
+        public Sprite BossPortrait => _bossPortrait;
 
-        /// <summary>自动推进延迟</summary>
-        public float AutoAdvanceDelay => _autoAdvanceDelay;
+        /// <summary>多句对话列表</summary>
+        public List<DialogueEntry> Dialogues => _dialogues;
+
+        /// <summary>是否包含多句对话</summary>
+        public bool HasDialogues => _dialogues != null && _dialogues.Count > 0;
 
         /// <summary>高亮边距</summary>
         public float HighlightPadding => _highlightPadding;
-
-        /// <summary>TipPanel位置</summary>
-        public TipPosition TipPositionMode => _tipPosition;
-
-        /// <summary>TipPanel偏移距离</summary>
-        public float TipOffset => _tipOffset;
 
         /// <summary>是否已触发过</summary>
         public bool HasTriggered => _hasTriggered;
 
         /// <summary>获取自身RectTransform作为高亮区域</summary>
         public RectTransform HighlightRect => GetComponent<RectTransform>();
+
+        /// <summary>获取第 N 句的文本</summary>
+        public string GetDialogueText(int index)
+        {
+            if (_dialogues != null && index >= 0 && index < _dialogues.Count)
+            {
+                return _dialogues[index] != null ? _dialogues[index].Text : string.Empty;
+            }
+
+            return index == 0 ? _tipText : string.Empty;
+        }
+
+        /// <summary>获取第 N 句的立绘，未配置则返回默认立绘</summary>
+        public Sprite GetDialoguePortrait(int index)
+        {
+            if (_dialogues != null && index >= 0 && index < _dialogues.Count)
+            {
+                var entry = _dialogues[index];
+                if (entry != null && entry.Portrait != null)
+                {
+                    return entry.Portrait;
+                }
+            }
+
+            return _bossPortrait;
+        }
+
+        /// <summary>获取对话句数，兼容旧版单句配置</summary>
+        public int GetDialogueCount()
+        {
+            return HasDialogues ? _dialogues.Count : (!string.IsNullOrEmpty(_tipText) ? 1 : 0);
+        }
 
         /// <summary>标记为已触发</summary>
         public void MarkAsTriggered()
@@ -130,22 +164,5 @@ namespace InnsmouthCafe.UI
             }
         }
 #endif
-    }
-
-    /// <summary>
-    /// TipPanel相对于高亮区域的显示位置
-    /// </summary>
-    public enum TipPosition
-    {
-        /// <summary>自动判断（优先下方，空间不够则上方）</summary>
-        Auto,
-        /// <summary>高亮区域上方</summary>
-        Above,
-        /// <summary>高亮区域下方</summary>
-        Below,
-        /// <summary>高亮区域左侧</summary>
-        Left,
-        /// <summary>高亮区域右侧</summary>
-        Right
     }
 }

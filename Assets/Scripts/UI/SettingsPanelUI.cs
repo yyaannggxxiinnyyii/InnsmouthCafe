@@ -42,6 +42,19 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("分辨率行容器的 CanvasGroup（全屏时淡出禁用）")]
         private CanvasGroup _resolutionGroup;
 
+        [Header("清除存档")]
+        [SerializeField] [Tooltip("清除存档按钮")]
+        private Button _clearSaveButton;
+
+        [SerializeField] [Tooltip("二次确认弹窗的 CanvasGroup")]
+        private CanvasGroup _confirmPanel;
+
+        [SerializeField] [Tooltip("确认清除按钮")]
+        private Button _confirmYesButton;
+
+        [SerializeField] [Tooltip("取消清除按钮")]
+        private Button _confirmNoButton;
+
         [Header("底部按钮")]
         [SerializeField] [Tooltip("关闭/返回按钮")]
         private Button _closeButton;
@@ -66,6 +79,9 @@ namespace InnsmouthCafe.UI
             _mainMenu = FindObjectOfType<MainMenuUI>();
 
             _closeButton?.onClick.AddListener(OnCloseClicked);
+            _clearSaveButton?.onClick.AddListener(OnClearSaveClicked);
+            _confirmYesButton?.onClick.AddListener(OnConfirmYes);
+            _confirmNoButton?.onClick.AddListener(OnConfirmNo);
             _sfxSlider?.onValueChanged.AddListener(OnSfxChanged);
             _bgmSlider?.onValueChanged.AddListener(OnBgmChanged);
 
@@ -82,6 +98,7 @@ namespace InnsmouthCafe.UI
         public void Show()
         {
             RefreshAll();
+            SetGroupState(_confirmPanel, false);
             FadePanel(true);
         }
 
@@ -177,6 +194,22 @@ namespace InnsmouthCafe.UI
             GameManager.Instance?.ApplyDisplaySettings(_isFullscreen, _resolutionIndex);
         }
 
+        private void OnClearSaveClicked()
+        {
+            FadeConfirmPanel(true);
+        }
+
+        private void OnConfirmYes()
+        {
+            GameManager.Instance?.ResetGameProgress();
+            FadeConfirmPanel(false);
+        }
+
+        private void OnConfirmNo()
+        {
+            FadeConfirmPanel(false);
+        }
+
         private void OnCloseClicked()
         {
             if (OnCloseCallback != null)
@@ -217,6 +250,36 @@ namespace InnsmouthCafe.UI
         {
             if (label != null)
                 label.text = $"{Mathf.RoundToInt(value * 100f)}%";
+        }
+
+        /// <summary>淡入/淡出确认弹窗</summary>
+        private void FadeConfirmPanel(bool show)
+        {
+            if (_confirmPanel == null) return;
+
+            _confirmPanel.DOKill();
+
+            if (show)
+            {
+                _confirmPanel.alpha          = 0f;
+                _confirmPanel.interactable   = false;
+                _confirmPanel.blocksRaycasts = true;
+                _confirmPanel.DOFade(1f, _fadeDuration)
+                    .SetEase(Ease.InOutQuad)
+                    .SetUpdate(true)
+                    .OnComplete(() => _confirmPanel.interactable = true);
+            }
+            else
+            {
+                _confirmPanel.interactable = false;
+                _confirmPanel.DOFade(0f, _fadeDuration)
+                    .SetEase(Ease.InOutQuad)
+                    .SetUpdate(true)
+                    .OnComplete(() =>
+                    {
+                        _confirmPanel.blocksRaycasts = false;
+                    });
+            }
         }
 
         // ── CanvasGroup 工具 ──────────────────────────────────

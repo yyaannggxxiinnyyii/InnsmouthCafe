@@ -76,6 +76,11 @@ namespace InnsmouthCafe.Managers
         private CoffeeCraftManager _craftManager;
 
         /// <summary>
+        /// 已进入过的界面集合
+        /// </summary>
+        private readonly HashSet<GameViewType> _visitedViews = new HashSet<GameViewType>();
+
+        /// <summary>
         /// 获取当前界面类型
         /// </summary>
         public GameViewType CurrentViewType => _currentViewType;
@@ -154,14 +159,32 @@ namespace InnsmouthCafe.Managers
             switch (viewType)
             {
                 case GameViewType.Bar:
-                    TutorialEventBus.Publish("ViewSwitchBar");
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchBar);
                     break;
                 case GameViewType.CraftBase:
-                    TutorialEventBus.Publish("ViewSwitchCraftBase");
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftBase);
                     break;
                 case GameViewType.CraftMix:
-                    TutorialEventBus.Publish("ViewSwitchCraftMix");
+                    TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftMix);
                     break;
+            }
+        }
+
+        private void HandleViewEntered(GameViewType viewType)
+        {
+            bool isFirstEntry = _visitedViews.Add(viewType);
+            if (!isFirstEntry)
+            {
+                return;
+            }
+
+            if (viewType == GameViewType.CraftBase)
+            {
+                TutorialEventBus.Publish(TutorialEvents.FirstBarToCraftBaseSwitchComplete);
+            }
+            else if (viewType == GameViewType.CraftMix)
+            {
+                TutorialEventBus.Publish(TutorialEvents.FirstCraftMixSwitchComplete);
             }
         }
 
@@ -317,6 +340,7 @@ namespace InnsmouthCafe.Managers
                     _isSwitching = false;
                     OnViewSwitched?.Invoke(toView);
                     PublishViewEvent(toView);
+                    HandleViewEntered(toView);
 
                     if (_showDebugLog)
                     {
@@ -342,6 +366,7 @@ namespace InnsmouthCafe.Managers
 
             OnViewSwitched?.Invoke(viewType);
             PublishViewEvent(viewType);
+            HandleViewEntered(viewType);
 
             if (_showDebugLog)
             {

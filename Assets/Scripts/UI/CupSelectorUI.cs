@@ -34,6 +34,10 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("未选中状态颜色")]
         private Color _normalColor = Color.white;
 
+        [Header("提示")]
+        [SerializeField] [Tooltip("悬停提示显示延迟（秒）")]
+        private float _tooltipDelay = 0.5f;
+
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = false;
@@ -72,6 +76,8 @@ namespace InnsmouthCafe.UI
                     binding.button.image.sprite = binding.cup.cupSprite;
                 }
 
+                AttachTooltip(binding.button, binding.cup);
+
                 int index = i;
                 binding.button.onClick.AddListener(() => OnCupButtonClick(index));
             }
@@ -103,6 +109,19 @@ namespace InnsmouthCafe.UI
         private void OnCoffeeDataChanged(CoffeeData coffeeData)
         {
             RefreshButtonStates();
+        }
+
+        private void AttachTooltip(Button button, ScriptableObject tooltipSource)
+        {
+            if (button == null || tooltipSource == null) return;
+
+            var trigger = button.GetComponent<HoverTooltipTrigger>();
+            if (trigger == null)
+            {
+                trigger = button.gameObject.AddComponent<HoverTooltipTrigger>();
+            }
+
+            trigger.Configure(tooltipSource, _tooltipDelay);
         }
 
         /// <summary>

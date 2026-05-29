@@ -14,9 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toppingId: seaweed_jelly
   toppingName: "\u6D77\u8349\u51BB"
-  icon: {fileID: 21300000, guid: 97aaeb2e849827943be9ab00be43c85d, type: 3}
+  icon: {fileID: 21300000, guid: 27267e84308776f4fbc439a5f7f43fd0, type: 3}
   instanceIcon: {fileID: 21300000, guid: a4d5436d09b42d04e99b986da4ea2b6c, type: 3}
-  tags:
-  - {fileID: 11400000, guid: 0940b3de241a059499cc4834a5b8ea22, type: 2}
-  - {fileID: 11400000, guid: b295c8ab78f005247b193b5c87ab786a, type: 2}
   description: "Q\u5F39\u6E05\u723D\u7684\u6D77\u8349\u51BB"

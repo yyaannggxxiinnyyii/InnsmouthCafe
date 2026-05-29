@@ -36,6 +36,10 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("当前状态文本")]
         private TextMeshProUGUI _statusText;
 
+        [Header("提示")]
+        [SerializeField] [Tooltip("悬停提示显示延迟（秒）")]
+        private float _tooltipDelay = 0.5f;
+
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
         private bool _showDebugLog = false;
@@ -103,6 +107,8 @@ namespace InnsmouthCafe.UI
                         binding.button.image.sprite = buttonSprite;
                     }
                 }
+
+                AttachTooltip(binding.button, binding.bean);
             }
         }
 
@@ -120,6 +126,19 @@ namespace InnsmouthCafe.UI
         private void OnModuleStateChanged(CraftModuleState state)
         {
             RefreshUI();
+        }
+
+        private void AttachTooltip(Button button, ScriptableObject tooltipSource)
+        {
+            if (button == null || tooltipSource == null) return;
+
+            var trigger = button.GetComponent<HoverTooltipTrigger>();
+            if (trigger == null)
+            {
+                trigger = button.gameObject.AddComponent<HoverTooltipTrigger>();
+            }
+
+            trigger.Configure(tooltipSource, _tooltipDelay);
         }
 
         /// <summary>

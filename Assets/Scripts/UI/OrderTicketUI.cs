@@ -216,30 +216,14 @@ namespace InnsmouthCafe.UI
         {
             ClearContainer(_toppingRequirementsContainer);
 
-            if (order.toppingRequirement == null) return;
+            if (order.toppingRequirement == null || order.toppingRequirement.requiredToppings == null) return;
 
-            // 指定小料
-            if (order.toppingRequirement.requiredToppings != null)
+            foreach (var topping in order.toppingRequirement.requiredToppings)
             {
-                foreach (var topping in order.toppingRequirement.requiredToppings)
-                {
-                    if (topping == null) continue;
+                if (topping == null) continue;
 
-                    var item = Instantiate(_toppingRequirementItemPrefab, _toppingRequirementsContainer);
-                    item.GetComponent<ToppingRequirementItemUI>().Init(topping);
-                }
-            }
-
-            // 属性需求
-            if (order.toppingRequirement.requiredTags != null)
-            {
-                foreach (var tag in order.toppingRequirement.requiredTags)
-                {
-                    if (tag == null) continue;
-
-                    var item = Instantiate(_toppingRequirementItemPrefab, _toppingRequirementsContainer);
-                    item.GetComponent<ToppingRequirementItemUI>().Init(tag);
-                }
+                var item = Instantiate(_toppingRequirementItemPrefab, _toppingRequirementsContainer);
+                item.GetComponent<ToppingRequirementItemUI>().Init(topping);
             }
         }
 
