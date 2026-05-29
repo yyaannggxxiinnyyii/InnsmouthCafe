@@ -208,13 +208,20 @@ namespace InnsmouthCafe.Managers
             Debug.Log($"[GameManager] 模式已解锁: {mode}");
         }
 
-        /// <summary>重置游戏进度（清除存档标记和所有模式解锁状态）</summary>
+        /// <summary>重置游戏进度（清除存档标记、模式解锁状态和收集物）</summary>
         public void ResetGameProgress()
         {
             PlayerPrefs.DeleteKey(SaveExistsKey);
             PlayerPrefs.DeleteKey(PrefKeyTutorialDone);
             PlayerPrefs.DeleteKey(PrefKeyBeginnerUnlocked);
             PlayerPrefs.DeleteKey(PrefKeyNormalUnlocked);
+
+            // 重置收集物
+            if (CollectibleManager.Instance != null)
+                CollectibleManager.Instance.ResetAllCollectibles();
+            else
+                PlayerPrefs.SetInt("Collectible_ResetFlag", 1);
+
             PlayerPrefs.Save();
             Debug.Log("[GameManager] 游戏进度已重置");
         }

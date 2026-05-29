@@ -22,8 +22,12 @@ MonoBehaviour:
   orderPoolEntries:
   - orderPool: {fileID: 11400000, guid: 7dbec63c3b9237a48bfe96f9b6c068ef, type: 2}
     weight: 100
+  - orderPool: {fileID: 11400000, guid: 7dbec63c3b9237a48bfe96f9b6c068ef, type: 2}
+    weight: 100
   enterDialogueTexts:
   - "\u201C\u4E0D\u552E\u9152\u7C7B\u662F\u4EC0\u4E48\u610F\u601D\uFF1F\u7B97\u4E86\uFF0C\u968F\u4FBF\u7ED9\u6211\u6765\u70B9\u5565\u90FD\u52A0\u7684\u8D85\u8C6A\u534E\u7279\u8C03\u3002\u201C\n"
+  hasCollectible: 1
+  collectible: {fileID: 11400000, guid: 5756b9a9675941d479eb04a790f8d20f, type: 2}
   satisfiedFeedbackTexts:
   - "\u201C\u8FD9\u79CD\u611F\u89C9\u4F7F\u6211\u7CBE\u795E\u767E\u500D\uFF0C\u5C0F\u7684\u4EEC\uFF0C\u626C\u5E06\uFF0C\u542F\u822A\uFF01\u55EF\uFF1F\u4F60\u4E0D\u6253\u7B97\u52A0\u5165\u6211\u5417\uFF1F\u201C"
   neutralFeedbackTexts:

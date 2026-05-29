@@ -9,10 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13653cb960447054a9b187a495b02076, type: 3}
-  m_Name: "OrderPool_\u7B80\u5355\u6C60"
+  m_Script: {fileID: 11500000, guid: 398db0b985b4f364f8a372ee77d0fb92, type: 3}
+  m_Name: "Collectible_\u6B7B\u7075\u4E4B\u4E66"
   m_EditorClassIdentifier: 
-  poolId: Pool_Easy
-  poolName: "\u7B80\u5355\u8BA2\u5355\u6C60"
-  orders:
-  - {fileID: 11400000, guid: a4e78392531f18f4399c05a0cc11cfe2, type: 2}
+  collectibleId: Col_03
+  collectibleName: "\u6B7B\u7075\u4E4B\u4E66"
+  description: 
+  icon: {fileID: 21300000, guid: b7446f4ff6d81d842b4f8ec64609a063, type: 3}

@@ -24,6 +24,8 @@ MonoBehaviour:
     weight: 100
   enterDialogueTexts:
   - '@@#$%***$@?'
+  hasCollectible: 1
+  collectible: {fileID: 11400000, guid: d59edd83cf87ddd42b29280e40699df1, type: 2}
   satisfiedFeedbackTexts:
   - '@@#$$%@@@&&!'
   neutralFeedbackTexts:

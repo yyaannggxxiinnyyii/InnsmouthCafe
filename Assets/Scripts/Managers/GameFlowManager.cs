@@ -29,6 +29,11 @@ namespace InnsmouthCafe.Managers
         [Tooltip("订单小票控制器（提交订单和重置时使用）")]
         private OrderTicketController _orderTicketController;
 
+        [Header("收集物提示")]
+        [SerializeField]
+        [Tooltip("收集物获得提示UI")]
+        private CollectibleNotifyUI _collectibleNotifyUI;
+
         [Header("调试")]
         [SerializeField]
         [Tooltip("是否显示调试日志")]
@@ -78,6 +83,11 @@ namespace InnsmouthCafe.Managers
         /// 当前顾客的订单需求数据（用于制作系统）
         /// </summary>
         private OrderRequirementData _currentOrderData;
+
+        /// <summary>
+        /// 当前顾客的评分数据（用于收集物判定）
+        /// </summary>
+        private CoffeeScoringData _currentScoringData;
 
         /// <summary>
         /// 当天剩余顾客数
@@ -625,6 +635,8 @@ namespace InnsmouthCafe.Managers
         {
             SetState(GameFlowState.CustomerFeedback);
 
+            _currentScoringData = scoringData;
+
             int cappedLevel = CustomerManager.Instance.FinishOrderAndShowFeedback(scoringData.feedbackLevel);
 
             DialogueUIManager.Instance?.ForceClearDialogue();
@@ -633,7 +645,7 @@ namespace InnsmouthCafe.Managers
 
             if (string.IsNullOrEmpty(feedbackText))
             {
-                StartCustomerLeaving();
+                TryGrantCollectibleThenLeave();
                 return;
             }
 
@@ -650,14 +662,38 @@ namespace InnsmouthCafe.Managers
                 {
                     DialogueUIManager.Instance.ShowDialogue(specialText, () =>
                     {
-                        StartCustomerLeaving();
+                        TryGrantCollectibleThenLeave();
                     });
                 }
                 else
                 {
-                    StartCustomerLeaving();
+                    TryGrantCollectibleThenLeave();
                 }
             });
+        }
+
+        /// <summary>
+        /// 尝试授予收集物，然后进入离开阶段
+        /// </summary>
+        private void TryGrantCollectibleThenLeave()
+        {
+            if (CollectibleManager.Instance != null && _currentScoringData != null)
+            {
+                var customer = CustomerManager.Instance?.CurrentCustomer;
+                CollectibleSO obtained = CollectibleManager.Instance.TryObtainCollectible(
+                    customer, _currentScoringData.qualityLevel);
+
+                if (obtained != null && _collectibleNotifyUI != null)
+                {
+                    _collectibleNotifyUI.Show(obtained, () =>
+                    {
+                        StartCustomerLeaving();
+                    });
+                    return;
+                }
+            }
+
+            StartCustomerLeaving();
         }
 
         /// <summary>
@@ -690,6 +726,7 @@ namespace InnsmouthCafe.Managers
             OrderManager.Instance.ResetOrder();
             _currentOrderSO   = null;
             _currentOrderData = null;
+            _currentScoringData = null;
 
             // 有动画组件：等退场动画完成后再推进
             // 无动画组件：直接推进

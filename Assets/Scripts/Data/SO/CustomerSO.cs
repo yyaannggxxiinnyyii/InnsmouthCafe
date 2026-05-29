@@ -43,6 +43,13 @@ namespace InnsmouthCafe.Data
         [Tooltip("顾客进店时的开场白列表（随机一条）")]
         public List<string> enterDialogueTexts = new List<string>();
 
+        [Header("收集物")]
+        [Tooltip("该顾客是否携带收集物（完美接待后获得）")]
+        public bool hasCollectible;
+
+        [Tooltip("顾客携带的收集物配置（hasCollectible为true时有效）")]
+        public CollectibleSO collectible;
+
         [Header("评价文本")]
         [TextArea(3, 5)]
         [Tooltip("满意时的评价文本列表（随机一条）")]
