@@ -17,8 +17,11 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("工作杯子的Image组件（和场景容器同级）")]
         private Image _workCupImage;
 
-        [SerializeField] [Tooltip("工作杯子的RectTransform")]
+        [SerializeField] [Tooltip("工作杯子的RectTransform（阴影节点，杯子是其子节点）")]
         private RectTransform _workCupRect;
+
+        [SerializeField] [Tooltip("阴影节点上的CanvasGroup，未选中杯子时隐藏")]
+        private CanvasGroup _shadowGroup;
 
         [Header("杯子选择器引用")]
         [SerializeField] [Tooltip("杯型选择UI组件")]
@@ -375,6 +378,11 @@ namespace InnsmouthCafe.UI
             {
                 _workCupImage.enabled = visible;
             }
+
+            if (_shadowGroup != null)
+            {
+                _shadowGroup.alpha = visible ? 1f : 0f;
+            }
         }
 
         /// <summary>
@@ -546,9 +554,8 @@ namespace InnsmouthCafe.UI
                 if (_toppingImages[i] == null) continue;
 
                 var topping = data.toppings[i].topping;
-                if (topping == null || topping.instanceIcon == null) continue;
+                if (topping == null) continue;
 
-                _toppingImages[i].sprite  = topping.instanceIcon;
                 _toppingImages[i].enabled = true;
             }
         }

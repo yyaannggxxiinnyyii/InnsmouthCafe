@@ -38,6 +38,8 @@ public class AudioManager : Singleton<AudioManager>
     [SerializeField] private AudioSource _bgmSource;
     [Tooltip("BGM 淡出 / 淡入默认时长（秒）。")]
     [SerializeField] private float _bgmFadeDuration = 0.5f;
+    [Tooltip("默认 BGM（主菜单/通用场景使用）。")]
+    [SerializeField] private AudioClip _defaultBgm;
 
     // ── 运行时字段 ────────────────────────────────────────────
 
@@ -183,6 +185,15 @@ public class AudioManager : Singleton<AudioManager>
     {
         _bgmSource.DOKill();
         _bgmSource.Stop();
+    }
+
+    /// <summary>
+    /// 播放默认 BGM（主菜单/通用场景使用），带淡入淡出过渡。
+    /// </summary>
+    public void PlayDefaultBgm(float fadeDuration = -1f)
+    {
+        if (_defaultBgm == null) return;
+        PlayBgm(_defaultBgm, fadeDuration);
     }
 
     /// <summary>

@@ -17,11 +17,8 @@ namespace InnsmouthCafe.Data
         public string toppingName;
 
         [Header("视觉资源")]
-        [Tooltip("小料图标（按钮显示）")]
+        [Tooltip("小料图标")]
         public Sprite icon;
-
-        [Tooltip("小料实例图标（锚点显示）")]
-        public Sprite instanceIcon;
 
         [Header("描述")]
         [TextArea(3, 5)]

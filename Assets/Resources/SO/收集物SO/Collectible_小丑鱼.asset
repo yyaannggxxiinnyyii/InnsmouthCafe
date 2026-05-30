@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   collectibleId: Col_02
   collectibleName: "\u5C0F\u4E11\u9C7C"
-  description: 
+  description: " \u4EBA\u4EEC\u90FD\u558A\u4ED6\u5C0F\u4E11\u9C7C\uFF0C\u5979\u5BF9\u6B64\u5F88\u4E0D\u9AD8\u5174\uFF0C\u5979\u89C9\u5F97\u81EA\u5DF1\u662F\u5C0F\u7F8E\u9C7C\u3002"
   icon: {fileID: 21300000, guid: 613d83978fc4564419dda4b3da3f083f, type: 3}

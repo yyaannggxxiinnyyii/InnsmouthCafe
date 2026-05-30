@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41e481af26167224dad52c9023112ecb, type: 3}
+  m_Name: "Liquid_\u6D77\u8349\u6C41"
+  m_EditorClassIdentifier: 
+  liquidId: haicaozhi
+  liquidName: "\u6D77\u8349\u6C41"
+  icon: {fileID: 21300000, guid: 34c7c3541a0f2c244bf62e67c8548d3a, type: 3}
+  displayColor: {r: 1, g: 1, b: 1, a: 0.9}
+  description: "\u589E\u52A0\u5976\u9999\u548C\u4E1D\u6ED1\u53E3\u611F"

@@ -281,7 +281,7 @@ namespace InnsmouthCafe.Managers
             // 更新继续按钮文本
             if (_continueButtonText != null)
             {
-                _continueButtonText.text = data.dayNumber >= _totalDays ? "结束营业" : "继续";
+                _continueButtonText.text = data.dayNumber >= _totalDays ? "结算" : "继续";
             }
 
             // 等一帧让Canvas布局重建完成，再启动动画
@@ -501,17 +501,27 @@ namespace InnsmouthCafe.Managers
                 Debug.Log("[Settlement] 点击继续按钮");
             }
 
-            // 卷帘门上滑 + 黑幕渐退
-            SlideUp(() =>
-            {
-                // 触发下一天事件
-                int nextDay = _currentSettlement != null ? _currentSettlement.dayNumber + 1 : 1;
-                OnNextDayStart?.Invoke(nextDay);
+            int nextDay = _currentSettlement != null ? _currentSettlement.dayNumber + 1 : 1;
+            bool isLastDay = _currentSettlement != null && _currentSettlement.dayNumber >= _totalDays;
 
-                // 触发回调
+            if (isLastDay)
+            {
+                // 最后一天：不做卷帘门动画，直接触发结局流程
+                // EndingPanelUI 的黑幕会覆盖结算面板
+                OnNextDayStart?.Invoke(nextDay);
                 _onContinueCallback?.Invoke();
                 _onContinueCallback = null;
-            });
+            }
+            else
+            {
+                // 非最后一天：卷帘门上滑 + 黑幕渐退
+                SlideUp(() =>
+                {
+                    OnNextDayStart?.Invoke(nextDay);
+                    _onContinueCallback?.Invoke();
+                    _onContinueCallback = null;
+                });
+            }
         }
 
         /// <summary>

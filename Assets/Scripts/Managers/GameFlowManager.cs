@@ -451,6 +451,9 @@ namespace InnsmouthCafe.Managers
             if (_showDebugLog)
                 Debug.Log($"[GameFlow] 顾客到达: {customer.customerName}");
 
+            // 播放客人进店音效
+            AudioManager.Instance?.PlaySfx(SoundId.CustomerEnter);
+
             // 进入顾客流程时，先禁止切换，直到订单确认后再开启
             ViewSwitchManager.Instance.SetCanSwitch(false);
 

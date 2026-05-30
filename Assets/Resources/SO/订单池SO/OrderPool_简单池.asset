@@ -15,4 +15,8 @@ MonoBehaviour:
   poolId: Pool_Easy
   poolName: "\u7B80\u5355\u8BA2\u5355\u6C60"
   orders:
+  - {fileID: 11400000, guid: 005884d13359ac645ad7fd14842ae400, type: 2}
+  - {fileID: 11400000, guid: 89e919aa1b8ea624e8fdc744ddc65aa9, type: 2}
+  - {fileID: 11400000, guid: c258fa8ce8553524ba7cf20402e635c5, type: 2}
   - {fileID: 11400000, guid: a4e78392531f18f4399c05a0cc11cfe2, type: 2}
+  - {fileID: 11400000, guid: 2af119a9183cb3141be21f3519e9ec65, type: 2}

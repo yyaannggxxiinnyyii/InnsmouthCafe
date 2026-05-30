@@ -17,11 +17,8 @@ namespace InnsmouthCafe.Data
         public string liquidName;
 
         [Header("视觉资源")]
-        [Tooltip("辅助液图标")]
+        [Tooltip("辅助液图标（仅用于小票需求显示）")]
         public Sprite icon;
-
-        [Tooltip("辅助液容器图标（制作界面2使用）")]
-        public Sprite containerIcon;
 
         [Tooltip("辅助液显示颜色（用于容量条）")]
         public Color displayColor = Color.white;
@@ -33,16 +30,6 @@ namespace InnsmouthCafe.Data
 
         public string TooltipTitle => liquidName;
         public string TooltipDescription => description;
-
-        [Header("倒入效果")]
-        [Tooltip("倒入时的粒子效果颜色")]
-        public Color particleColor = Color.white;
-
-        [Tooltip("倒入音效")]
-        public AudioClip pourSound;
-
-        [Tooltip("停止倒入音效")]
-        public AudioClip stopSound;
 
         /// <summary>
         /// 获取带透明度的颜色（用于UI叠加显示）

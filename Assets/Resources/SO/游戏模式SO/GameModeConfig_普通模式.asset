@@ -13,7 +13,13 @@ MonoBehaviour:
   m_Name: "GameModeConfig_\u666E\u901A\u6A21\u5F0F"
   m_EditorClassIdentifier: 
   gameMode: 2
-  totalDays: 1
+  totalDays: 7
   dayConfigs:
-  - {fileID: 11400000, guid: 77191963a4233594ba45c3fa7549f833, type: 2}
-  startDelay: 2
+  - {fileID: 11400000, guid: d7ea391bef8b8bf41b97e0d19877fab1, type: 2}
+  - {fileID: 11400000, guid: 1d18e933a0b29834b8a870c10a912710, type: 2}
+  - {fileID: 11400000, guid: 834f1de2121e1d14baebd322741a7f24, type: 2}
+  - {fileID: 11400000, guid: 57d4085bb6b59164bb8e77554c893dff, type: 2}
+  - {fileID: 11400000, guid: 76abeb5dc80be5e4bb8bd552f719f817, type: 2}
+  - {fileID: 11400000, guid: 9830f1309c4b392478ae1085e36155fe, type: 2}
+  - {fileID: 11400000, guid: 00b3f4b9f6713f246a5070549ad88ea2, type: 2}
+  startDelay: 1

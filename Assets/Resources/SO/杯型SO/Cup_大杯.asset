@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1493fd9a818b44541bd887ab648b9129, type: 3}
+  m_Name: "Cup_\u5927\u676F"
+  m_EditorClassIdentifier: 
+  cupId: cpu_big
+  cupName: "\u5927\u676F"
+  capacity: 500
+  cupSprite: {fileID: 21300000, guid: 022417978ddd9f344b758101bdb566c1, type: 3}
+  description: "\u5BB9\u91CF500ml\u7684\u4E2D\u676F"
+  fillSprite_0_25: {fileID: 21300000, guid: dfa26bf442d22a74eb37a1a2ab97b880, type: 3}
+  fillSprite_25_50: {fileID: 21300000, guid: c20fc877c52609d4286601a2b5e9e8c1, type: 3}
+  fillSprite_50_75: {fileID: 21300000, guid: 29b1196cabd67ec4cbdb90a74609ce24, type: 3}
+  fillSprite_75_100: {fileID: 21300000, guid: 86aa187872f34754ab36ddb238c1ebad, type: 3}

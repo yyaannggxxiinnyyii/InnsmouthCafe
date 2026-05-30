@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41e481af26167224dad52c9023112ecb, type: 3}
+  m_Name: "Liquid_\u8FF7\u8FED\u9999\u7CBE\u534E\u6DB2"
+  m_EditorClassIdentifier: 
+  liquidId: midiex
+  liquidName: "\u8FF7\u8FED\u9999"
+  icon: {fileID: 21300000, guid: 57ef64d60e158b147853a029344ee872, type: 3}
+  displayColor: {r: 0.9, g: 0.95, b: 1, a: 0.9}
+  description: "\u73CD\u8D35\u7684\u9CB8\u9C7C\u5976\uFF0C\u5E26\u6709\u6D77\u6D0B\u98CE\u5473"

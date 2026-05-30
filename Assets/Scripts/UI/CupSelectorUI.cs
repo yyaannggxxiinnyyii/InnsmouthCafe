@@ -27,13 +27,6 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("杯型与按钮的对应配置")]
         private List<CupButtonBinding> _cupBindings = new List<CupButtonBinding>();
 
-        [Header("选中状态")]
-        [SerializeField] [Tooltip("选中状态颜色")]
-        private Color _selectedColor = new Color(0.8f, 1f, 0.8f);
-
-        [SerializeField] [Tooltip("未选中状态颜色")]
-        private Color _normalColor = Color.white;
-
         [Header("提示")]
         [SerializeField] [Tooltip("悬停提示显示延迟（秒）")]
         private float _tooltipDelay = 0.5f;
@@ -69,12 +62,6 @@ namespace InnsmouthCafe.UI
             {
                 var binding = _cupBindings[i];
                 if (binding == null || binding.button == null) continue;
-
-                // 设置按钮图片为SO中配置的杯子Sprite
-                if (binding.cup != null && binding.cup.cupSprite != null && binding.button.image != null)
-                {
-                    binding.button.image.sprite = binding.cup.cupSprite;
-                }
 
                 AttachTooltip(binding.button, binding.cup);
 
@@ -171,12 +158,6 @@ namespace InnsmouthCafe.UI
                 if (binding?.button == null) continue;
 
                 binding.button.interactable = canSelect;
-
-                // 高亮选中的按钮
-                if (binding.button.image != null)
-                {
-                    binding.button.image.color = (i == _selectedIndex) ? _selectedColor : _normalColor;
-                }
             }
         }
 

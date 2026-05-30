@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: "GameModeConfig_\u6559\u5B66\u6A21\u5F0F"
   m_EditorClassIdentifier: 
   gameMode: 0
-  totalDays: 1
+  totalDays: 2
   dayConfigs:
   - {fileID: 11400000, guid: a609f622017e6ac469bb953920d79f1f, type: 2}
+  - {fileID: 11400000, guid: 1d56215ba2d2a3b4d9da3d0d247220e1, type: 2}
   startDelay: 1

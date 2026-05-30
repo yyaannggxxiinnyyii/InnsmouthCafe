@@ -21,7 +21,7 @@ namespace InnsmouthCafe.Data
         public float capacity;
 
         [Header("视觉资源")]
-        [Tooltip("杯子图标（按钮/空杯显示）")]
+        [Tooltip("空杯贴图（制作界面空杯状态显示）")]
         public Sprite cupSprite;
 
         [Header("描述")]

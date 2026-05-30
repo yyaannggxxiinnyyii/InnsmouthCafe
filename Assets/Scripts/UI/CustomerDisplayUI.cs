@@ -21,6 +21,22 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("顾客立绘 RectTransform")]
         private RectTransform _customerRect;
 
+        [Header("耐心进度条")]
+        [SerializeField] [Tooltip("耐心值进度条（Image，fillMethod 设为 Horizontal 或 Filled）")]
+        private Image _patienceBar;
+
+        [SerializeField] [Tooltip("进度条根节点（顾客不在时隐藏整个节点）")]
+        private GameObject _patienceBarRoot;
+
+        [SerializeField] [Tooltip("阶段1颜色（有耐心）")]
+        private Color _stageOneColor = new Color(0.3f, 0.85f, 0.3f);
+
+        [SerializeField] [Tooltip("阶段2颜色（有点等不及）")]
+        private Color _stageTwoColor = new Color(1f, 0.75f, 0f);
+
+        [SerializeField] [Tooltip("阶段3颜色（不耐烦）")]
+        private Color _stageThreeColor = new Color(1f, 0.25f, 0.1f);
+
         [Header("进场锚点（按顺序：最右→中间→站立位）")]
         [SerializeField] [Tooltip("进场路径锚点，至少2个，最后一个为站立位置")]
         private RectTransform[] _enterWaypoints = new RectTransform[3];
@@ -62,12 +78,14 @@ namespace InnsmouthCafe.UI
         private void Start()
         {
             SetVisible(false);
+            SetPatienceBarVisible(false);
 
             if (CustomerManager.Instance != null)
             {
                 CustomerManager.Instance.OnCustomerSpawned      += OnCustomerSpawned;
                 CustomerManager.Instance.OnCustomerLeft         += OnCustomerLeft;
                 CustomerManager.Instance.OnCustomerStateChanged += OnCustomerStateChanged;
+                CustomerManager.Instance.OnPatienceChanged      += OnPatienceChanged;
             }
 
             if (ViewSwitchManager.Instance != null)
@@ -83,6 +101,7 @@ namespace InnsmouthCafe.UI
                 CustomerManager.Instance.OnCustomerSpawned      -= OnCustomerSpawned;
                 CustomerManager.Instance.OnCustomerLeft         -= OnCustomerLeft;
                 CustomerManager.Instance.OnCustomerStateChanged -= OnCustomerStateChanged;
+                CustomerManager.Instance.OnPatienceChanged      -= OnPatienceChanged;
             }
 
             if (ViewSwitchManager.Instance != null)
@@ -93,28 +112,14 @@ namespace InnsmouthCafe.UI
             _animSequence?.Kill();
         }
 
-        private void Update()
-        {
-            // 等待/愤怒阶段实时轮询耐心阶段，切换立绘
-            if (_currentCustomer == null || _isAnimating) return;
-            if (CustomerManager.Instance == null) return;
-
-            var state = CustomerManager.Instance.CurrentState;
-            if (state != CustomerState.Waiting && state != CustomerState.Angry) return;
-
-            int stage = CustomerManager.Instance.GetCurrentPatienceStage();
-            if (stage == _lastPatienceStage) return;
-
-            _lastPatienceStage = stage;
-            UpdateSpriteForStage(stage);
-        }
-
         // ── 事件回调 ──────────────────────────────────────────
 
         private void OnCustomerSpawned(CustomerSO customer)
         {
             _currentCustomer   = customer;
             _lastPatienceStage = 1;
+            SetPatienceBarVisible(false);
+            RefreshPatienceBar(1f, 1);
             PlayEnterAnimation(customer);
         }
 
@@ -131,10 +136,15 @@ namespace InnsmouthCafe.UI
         {
             if (_currentCustomer == null) return;
 
-            if (state == CustomerState.Angry)
+            if (state == CustomerState.Waiting)
+            {
+                SetPatienceBarVisible(true);
+            }
+            else if (state == CustomerState.Angry)
             {
                 _lastPatienceStage = 4;
                 UpdateSpriteForStage(4);
+                RefreshPatienceBar(0f, 4);
             }
             else if (state == CustomerState.Happy)
             {
@@ -142,13 +152,34 @@ namespace InnsmouthCafe.UI
             }
         }
 
+        private void OnPatienceChanged(float remainingRatio)
+        {
+            int stage = CustomerManager.Instance.GetCurrentPatienceStage();
+            RefreshPatienceBar(remainingRatio, stage);
+
+            // 立绘阶段切换（和 Update 轮询等效，改为事件驱动）
+            if (stage != _lastPatienceStage && !_isAnimating)
+            {
+                _lastPatienceStage = stage;
+                UpdateSpriteForStage(stage);
+            }
+        }
+
         private void OnViewSwitched(GameViewType viewType)
         {
             if (_customerImage == null) return;
 
-            // 仅在 Bar 视图显示顾客立绘
+            // 仅在 Bar 视图显示顾客立绘和耐心条
             bool inBar = viewType == GameViewType.Bar;
             _customerImage.enabled = inBar && _currentCustomer != null;
+
+            if (_patienceBarRoot != null)
+            {
+                bool showBar = inBar && _currentCustomer != null
+                    && CustomerManager.Instance != null
+                    && CustomerManager.Instance.CurrentState == CustomerState.Waiting;
+                _patienceBarRoot.SetActive(showBar);
+            }
         }
 
         // ── 进场动画 ──────────────────────────────────────────
@@ -301,6 +332,35 @@ namespace InnsmouthCafe.UI
         {
             if (_customerImage != null)
                 _customerImage.enabled = visible;
+        }
+
+        // ── 耐心进度条 ────────────────────────────────────────
+
+        /// <summary>
+        /// 刷新进度条填充量和颜色
+        /// </summary>
+        private void RefreshPatienceBar(float remainingRatio, int stage)
+        {
+            if (_patienceBar == null) return;
+
+            _patienceBar.fillAmount = remainingRatio;
+
+            _patienceBar.color = stage switch
+            {
+                1    => _stageOneColor,
+                2    => _stageTwoColor,
+                >= 3 => _stageThreeColor,
+                _    => _stageOneColor
+            };
+        }
+
+        /// <summary>
+        /// 控制耐心条根节点显隐
+        /// </summary>
+        private void SetPatienceBarVisible(bool visible)
+        {
+            if (_patienceBarRoot != null)
+                _patienceBarRoot.SetActive(visible);
         }
     }
 }

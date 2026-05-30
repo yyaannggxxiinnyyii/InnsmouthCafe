@@ -109,15 +109,6 @@ namespace InnsmouthCafe.UI
 
                 binding.button.onClick.RemoveAllListeners();
 
-                if (binding.button.image != null && binding.liquid != null)
-                {
-                    Sprite buttonSprite = binding.liquid.containerIcon != null ? binding.liquid.containerIcon : binding.liquid.icon;
-                    if (buttonSprite != null)
-                    {
-                        binding.button.image.sprite = buttonSprite;
-                    }
-                }
-
                 EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>();
                 if (trigger == null)
                 {
@@ -163,15 +154,6 @@ namespace InnsmouthCafe.UI
                 }
 
                 binding.button.onClick.RemoveAllListeners();
-
-                if (binding.button.image != null && binding.topping != null)
-                {
-                    Sprite buttonSprite = binding.topping.icon;
-                    if (buttonSprite != null)
-                    {
-                        binding.button.image.sprite = buttonSprite;
-                    }
-                }
 
                 EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>();
                 if (trigger == null)

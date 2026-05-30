@@ -19,10 +19,12 @@ public class CustomerManager : Singleton<CustomerManager>
         public CustomerState CurrentState => _currentState;
         public int QueueCount => _todayQueue.Count;
 
-        // 全局时间阶段比例 V0.1
-        private const float STAGE_ONE_RATIO = 0.5f;
-        private const float STAGE_TWO_RATIO = 0.8f;
-        private const float STAGE_THREE_RATIO = 1.0f;
+        [Header("耐心阶段阈值（剩余耐心比例）")]
+        [SerializeField] [Tooltip("阶段1→2的剩余耐心比例（默认0.6，即剩余60%时进入阶段2）")]
+        [Range(0f, 1f)] private float _stageOneThreshold = 0.6f;
+
+        [SerializeField] [Tooltip("阶段2→3的剩余耐心比例（默认0.3，即剩余30%时进入阶段3）")]
+        [Range(0f, 1f)] private float _stageTwoThreshold = 0.3f;
 
         // 当前耐心的计时
         private float _currentWaitTime = 0f;
@@ -37,23 +39,22 @@ public class CustomerManager : Singleton<CustomerManager>
         public event Action<CustomerState> OnCustomerStateChanged;
         public event Action<float> OnSanityDrop; // 每帧掉San的回调
         public event Action<CustomerSO> OnCustomerLeft;
+        public event Action<float> OnPatienceChanged; // 耐心值变化（0-1，剩余比例）
 
         private void Update()
         {
             if (_isTimerRunning && _currentCustomer != null && _currentState == CustomerState.Waiting)
             {
                 _currentWaitTime += Time.deltaTime;
-                float timeRatio = _currentWaitTime / _currentCustomer.basePatienceTime;
+                float remaining = GetRemainingPatienceRatio();
 
-                // 检查是否进入不同阶段
-                if (timeRatio > STAGE_THREE_RATIO && !_hasTriggeredAngry)
+                // 广播耐心变化
+                OnPatienceChanged?.Invoke(remaining);
+
+                // 耐心耗尽进入愤怒
+                if (remaining <= 0f && !_hasTriggeredAngry)
                 {
                     ChangeState(CustomerState.Angry);
-                }
-                else if (timeRatio > STAGE_TWO_RATIO && timeRatio <= STAGE_THREE_RATIO)
-                {
-                    // 第三阶段：不耐烦，可触发 UI 警告
-                    // 这里可以额外发送事件通知 UI 进行视觉警告
                 }
             }
 
@@ -213,42 +214,42 @@ public class CustomerManager : Singleton<CustomerManager>
 
         #region 工具方法
         /// <summary>
-        /// 获取当前耐心百分比 (0-1)
+        /// 获取当前耐心百分比 (0-1)，已用时间比例
         /// </summary>
         public float GetCurrentPatienceRatio()
         {
             if (_currentCustomer == null || _currentCustomer.basePatienceTime <= 0)
                 return 0f;
-
             return Mathf.Clamp01(_currentWaitTime / _currentCustomer.basePatienceTime);
         }
 
         /// <summary>
-        /// 获取当前耐心阶段
+        /// 获取当前剩余耐心比例 (0-1)，1=满，0=耗尽
         /// </summary>
-        public int GetCurrentPatienceStage()
+        public float GetRemainingPatienceRatio()
         {
-            float ratio = GetCurrentPatienceRatio();
-
-            if (ratio <= STAGE_ONE_RATIO)
-                return 1;
-            else if (ratio <= STAGE_TWO_RATIO)
-                return 2;
-            else if (ratio <= STAGE_THREE_RATIO)
-                return 3;
-            else
-                return 4; // Angry
+            return 1f - GetCurrentPatienceRatio();
         }
 
         /// <summary>
-        /// 获取当前剩余耐心时间
+        /// 获取当前耐心阶段（基于剩余耐心比例）
+        /// 阶段1：剩余 > stageOneThreshold（有耐心）
+        /// 阶段2：剩余 > stageTwoThreshold（有点等不及）
+        /// 阶段3：剩余 > 0（不耐烦）
+        /// 阶段4：耗尽（愤怒）
         /// </summary>
-        public float GetRemainingPatienceTime()
+        public int GetCurrentPatienceStage()
         {
-            if (_currentCustomer == null)
-                return 0f;
+            float remaining = GetRemainingPatienceRatio();
 
-            return Mathf.Max(0, _currentCustomer.basePatienceTime - _currentWaitTime);
+            if (remaining > _stageOneThreshold)
+                return 1;
+            else if (remaining > _stageTwoThreshold)
+                return 2;
+            else if (remaining > 0f)
+                return 3;
+            else
+                return 4;
         }
 
         /// <summary>

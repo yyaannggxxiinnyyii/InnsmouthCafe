@@ -46,4 +46,7 @@ public enum SoundId
 
     /// <summary>理智值下降音效。</summary>
     SanityDecrease,
+
+    /// <summary>客人进店音效。</summary>
+    CustomerEnter,
 }

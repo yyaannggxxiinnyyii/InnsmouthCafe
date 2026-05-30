@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
@@ -9,9 +10,17 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 研磨机UI组件
     /// 模拟压力表盘式研磨机，通过指针旋转显示研磨度
+    /// 鼠标进入热区时显示，离开时隐藏
     /// </summary>
     public class GrinderUI : MonoBehaviour
     {
+        [Header("悬停显示")]
+        [SerializeField] [Tooltip("鼠标悬停热区（需挂有Image且Raycast Target开启）")]
+        private RectTransform _hoverArea;
+
+        [SerializeField] [Tooltip("鼠标进入热区时显示的CanvasGroup（为空则不控制显隐）")]
+        private CanvasGroup _visibleGroup;
+
         [Header("UI引用")]
         [SerializeField] [Tooltip("指针Transform")]
         private RectTransform _needle;
@@ -66,6 +75,9 @@ namespace InnsmouthCafe.UI
             {
                 _grindButton.onClick.AddListener(OnGrindButtonClick);
             }
+
+            // 初始隐藏
+            SetGroupVisible(false);
         }
 
         private void Start()
@@ -73,6 +85,24 @@ namespace InnsmouthCafe.UI
             if (_manager != null)
             {
                 _manager.OnBatchDataChanged += OnBatchDataChanged;
+            }
+
+            // 给热区注册指针事件
+            if (_hoverArea != null)
+            {
+                var trigger = _hoverArea.gameObject.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+                if (trigger == null)
+                    trigger = _hoverArea.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+
+                var enterEntry = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+                enterEntry.callback.AddListener(_ => OnHoverEnter());
+                trigger.triggers.Add(enterEntry);
+
+                var exitEntry = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+                exitEntry.callback.AddListener(_ => OnHoverExit());
+                trigger.triggers.Add(exitEntry);
             }
 
             RefreshDisplay();
@@ -314,6 +344,34 @@ namespace InnsmouthCafe.UI
         public void ManualRefresh()
         {
             RefreshDisplay();
+        }
+
+        // ── 悬停显示 ──────────────────────────────────────────
+
+        /// <summary>
+        /// 鼠标进入热区，显示研磨机UI
+        /// </summary>
+        private void OnHoverEnter()
+        {
+            SetGroupVisible(true);
+        }
+
+        /// <summary>
+        /// 鼠标离开热区，隐藏研磨机UI
+        /// </summary>
+        private void OnHoverExit()
+        {
+            SetGroupVisible(false);
+        }
+
+        /// <summary>
+        /// 控制CanvasGroup显隐
+        /// </summary>
+        private void SetGroupVisible(bool visible)
+        {
+            if (_visibleGroup == null) return;
+            _visibleGroup.alpha = visible ? 1f : 0f;
+            _visibleGroup.blocksRaycasts = visible;
         }
     }
 }
