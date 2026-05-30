@@ -14,31 +14,45 @@ namespace InnsmouthCafe.UI
     public class VolumeBarUI : MonoBehaviour
     {
         [Header("UI引用")]
-        [SerializeField] [Tooltip("容量条背景")]
+        [SerializeField]
+        [Tooltip("容量条背景")]
         private Image _background;
 
-        [SerializeField] [Tooltip("液体段容器")]
+        [SerializeField]
+        [Tooltip("液体段容器")]
         private RectTransform _liquidContainer;
 
-        [SerializeField] [Tooltip("绿色目标区")]
+        [SerializeField]
+        [Tooltip("绿色目标区")]
         private Image _targetZone;
 
-        [SerializeField] [Tooltip("警告文本")]
+        [SerializeField]
+        [Tooltip("警告文本")]
         private TextMeshProUGUI _warningText;
 
+        [SerializeField]
+        [Tooltip("当前倒液量文本（实时显示正在倒入的辅助液累计量）")]
+        private TextMeshProUGUI _currentLiquidVolumeText;
+
         [Header("预制体")]
-        [SerializeField] [Tooltip("液体段预制体")]
+        [SerializeField]
+        [Tooltip("液体段预制体")]
         private GameObject _liquidSegmentPrefab;
 
         [Header("配置")]
-        [SerializeField] [Tooltip("完美误差百分比（用于计算目标区宽度）")]
+        [SerializeField]
+        [Tooltip("完美误差百分比（用于计算目标区宽度）")]
         private float _perfectTolerancePercent = 0.1f;
 
-        [SerializeField] [Tooltip("目标区颜色")]
+        [SerializeField]
+        [Tooltip("目标区颜色")]
         private Color _targetZoneColor = new Color(0.2f, 0.8f, 0.2f, 0.3f);
 
         private CoffeeCraftManager _manager;
         private List<Image> _liquidSegments = new List<Image>();
+
+        // 辅助液段的 tooltip trigger，key = LiquidSO，用于实时更新容量描述
+        private Dictionary<LiquidSO, HoverTooltipTrigger> _liquidTooltipTriggers = new Dictionary<LiquidSO, HoverTooltipTrigger>();
 
         private void Awake()
         {
@@ -53,13 +67,21 @@ namespace InnsmouthCafe.UI
             {
                 _warningText.gameObject.SetActive(false);
             }
+
+            if (_currentLiquidVolumeText != null)
+            {
+                _currentLiquidVolumeText.gameObject.SetActive(false);
+            }
         }
 
         private void Start()
         {
+            gameObject.SetActive(false);
+
             if (_manager != null)
             {
                 _manager.OnCoffeeDataChanged += OnCoffeeDataChanged;
+                _manager.OnCraftReset += OnCraftReset;
             }
         }
 
@@ -68,7 +90,13 @@ namespace InnsmouthCafe.UI
             if (_manager != null)
             {
                 _manager.OnCoffeeDataChanged -= OnCoffeeDataChanged;
+                _manager.OnCraftReset -= OnCraftReset;
             }
+        }
+
+        private void OnCraftReset()
+        {
+            gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -86,13 +114,16 @@ namespace InnsmouthCafe.UI
         {
             if (data == null || data.selectedCup == null)
             {
+                gameObject.SetActive(false);
                 ClearSegments();
                 HideTargetZone();
                 return;
             }
 
+            gameObject.SetActive(true);
             RefreshLiquidSegments(data);
             RefreshTargetZone(data);
+            RefreshCurrentLiquidVolumeText(data);
         }
 
         /// <summary>
@@ -107,61 +138,96 @@ namespace InnsmouthCafe.UI
             float cupCapacity = data.selectedCup.capacity;
             float currentX = 0f;
 
-            // 显示咖啡液段（使用BeanSO中配置的颜色）
+            // 显示咖啡液段（无图标无 tooltip）
             foreach (var coffeeSegment in data.coffeeSegments)
             {
                 float widthPercent = coffeeSegment.extractedVolume / cupCapacity;
                 Color coffeeColor = coffeeSegment.bean != null
                     ? coffeeSegment.bean.displayColor
                     : new Color(0.4f, 0.2f, 0.1f, 1f);
-                CreateLiquidSegment(currentX, widthPercent, coffeeColor);
+                CreateSegment(currentX, widthPercent, coffeeColor, null, null, 0f);
                 currentX += widthPercent;
             }
 
-            // 显示辅助液段
+            // 显示辅助液段（带图标和 tooltip）
             foreach (var liquidSegment in data.liquidSegments)
             {
                 float widthPercent = liquidSegment.amountMl / cupCapacity;
                 Color liquidColor = GetLiquidColor(liquidSegment.liquid);
-                CreateLiquidSegment(currentX, widthPercent, liquidColor);
+                var trigger = CreateSegment(currentX, widthPercent, liquidColor,
+                    liquidSegment.liquid?.icon, liquidSegment.liquid?.liquidName, liquidSegment.amountMl);
+                if (trigger != null && liquidSegment.liquid != null)
+                    _liquidTooltipTriggers[liquidSegment.liquid] = trigger;
                 currentX += widthPercent;
             }
         }
 
         /// <summary>
-        /// 创建液体段
+        /// 创建液体段，icon 不为 null 时在段内添加图标和 Tooltip
+        /// 返回挂在图标上的 HoverTooltipTrigger（无图标时返回 null）
         /// </summary>
-        private void CreateLiquidSegment(float startX, float widthPercent, Color color)
+        private HoverTooltipTrigger CreateSegment(float startX, float widthPercent, Color color,
+            Sprite icon, string liquidName, float amountMl)
         {
-            GameObject segmentObj;
+            if (_liquidContainer == null) return null;
 
+            GameObject segmentObj;
             if (_liquidSegmentPrefab != null)
-            {
                 segmentObj = Instantiate(_liquidSegmentPrefab, _liquidContainer);
-            }
             else
             {
                 segmentObj = new GameObject("LiquidSegment");
                 segmentObj.transform.SetParent(_liquidContainer, false);
-                segmentObj.AddComponent<Image>();
             }
 
             RectTransform rectTransform = segmentObj.GetComponent<RectTransform>();
+            if (rectTransform == null)
+                rectTransform = segmentObj.AddComponent<RectTransform>();
+
             Image image = segmentObj.GetComponent<Image>();
+            if (image == null)
+                image = segmentObj.AddComponent<Image>();
 
-            // 重置缩放
             rectTransform.localScale = Vector3.one;
-
-            // 设置锚点和位置
-            rectTransform.anchorMin = new Vector2(startX, 0f);
-            rectTransform.anchorMax = new Vector2(startX + widthPercent, 1f);
-            rectTransform.offsetMin = Vector2.zero;
-            rectTransform.offsetMax = Vector2.zero;
-
-            // 设置颜色
+            rectTransform.anchorMin  = new Vector2(startX, 0f);
+            rectTransform.anchorMax  = new Vector2(startX + widthPercent, 1f);
+            rectTransform.offsetMin  = Vector2.zero;
+            rectTransform.offsetMax  = Vector2.zero;
             image.color = color;
 
             _liquidSegments.Add(image);
+
+            // 无图标则不添加图标子节点
+            if (icon == null) return null;
+
+            // 创建图标子节点，居中填满段高度，宽高相等
+            GameObject iconObj = new GameObject("LiquidIcon");
+            iconObj.transform.SetParent(segmentObj.transform, false);
+
+            RectTransform iconRect = iconObj.AddComponent<RectTransform>();
+            iconRect.anchorMin        = new Vector2(0.5f, 0f);
+            iconRect.anchorMax        = new Vector2(0.5f, 1f);
+            iconRect.pivot            = new Vector2(0.5f, 0.5f);
+            iconRect.anchoredPosition = Vector2.zero;
+            iconRect.sizeDelta        = new Vector2(0f, 0f); // 高度跟随父节点，宽度由 SetSizeWithCurrentAnchors 设置
+
+            // 让图标宽度等于父节点高度（正方形）
+            iconRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
+                rectTransform.rect.height > 0 ? rectTransform.rect.height : 32f);
+
+            Image iconImage = iconObj.AddComponent<Image>();
+            iconImage.sprite             = icon;
+            iconImage.preserveAspect     = true;
+            iconImage.raycastTarget      = true;
+
+            // 挂 Tooltip trigger
+            HoverTooltipTrigger trigger = iconObj.AddComponent<HoverTooltipTrigger>();
+            trigger.ConfigureText(
+                liquidName ?? string.Empty,
+                $"{Mathf.FloorToInt(amountMl)}ml"
+            );
+
+            return trigger;
         }
 
         /// <summary>
@@ -264,6 +330,7 @@ namespace InnsmouthCafe.UI
                 }
             }
             _liquidSegments.Clear();
+            _liquidTooltipTriggers.Clear();
         }
 
         /// <summary>
@@ -279,5 +346,40 @@ namespace InnsmouthCafe.UI
             // 使用 LiquidSO 的 displayColor 属性
             return liquid.displayColor;
         }
+
+        /// <summary>
+        /// 刷新当前倒液量文本
+        /// 显示正在倒入的辅助液在 liquidSegments 中的累计量（整数 ml）
+        /// 没有正在倒液时隐藏
+        /// </summary>
+        private void RefreshCurrentLiquidVolumeText(CoffeeData data)
+        {
+            if (_currentLiquidVolumeText == null) return;
+
+            LiquidSO pouring = _manager?.CurrentPouringLiquid;
+            if (pouring == null)
+            {
+                _currentLiquidVolumeText.gameObject.SetActive(false);
+                return;
+            }
+
+            float total = 0f;
+            foreach (var seg in data.liquidSegments)
+            {
+                if (seg.liquid == pouring)
+                {
+                    total = seg.amountMl;
+                    break;
+                }
+            }
+
+            _currentLiquidVolumeText.gameObject.SetActive(true);
+            _currentLiquidVolumeText.text = Mathf.FloorToInt(total).ToString() + "ml";
+
+            // 同步更新对应液段图标上的 tooltip 描述
+            if (_liquidTooltipTriggers.TryGetValue(pouring, out var trigger))
+                trigger.UpdateDescription($"{Mathf.FloorToInt(total)}ml");
+        }
+
     }
 }

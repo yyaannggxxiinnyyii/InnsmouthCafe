@@ -162,6 +162,38 @@ namespace InnsmouthCafe.UI
             _delay = Mathf.Max(0f, delay);
         }
 
+        /// <summary>
+        /// 用纯文本配置 Tooltip（用于运行时动态内容，不依赖 SO）
+        /// </summary>
+        public void ConfigureText(string title, string description, float delay = 0f)
+        {
+            _tooltipSource = null;
+            _source = new InlineTooltipSource(title, description);
+            _delay = Mathf.Max(0f, delay);
+        }
+
+        /// <summary>
+        /// 更新已配置的 description 文本（用于实时数值变化）
+        /// </summary>
+        public void UpdateDescription(string description)
+        {
+            if (_source is InlineTooltipSource inline)
+                inline.Description = description;
+        }
+
+        private class InlineTooltipSource : IItemTooltipSource
+        {
+            public string TooltipTitle { get; }
+            public string TooltipDescription => Description;
+            public string Description { get; set; }
+
+            public InlineTooltipSource(string title, string description)
+            {
+                TooltipTitle = title;
+                Description  = description;
+            }
+        }
+
         public void OnPointerEnter(PointerEventData eventData)
         {
             _isPointerOver = true;

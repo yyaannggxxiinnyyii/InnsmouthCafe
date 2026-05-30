@@ -76,6 +76,7 @@ namespace InnsmouthCafe.Managers
         public CraftModuleState ModuleState => _moduleState;
         public bool IsExtracting => _isExtracting;
         public float ExtractionProgress => _targetExtractionVolume > 0 ? _currentExtractionVolume / _targetExtractionVolume : 0f;
+        public LiquidSO CurrentPouringLiquid => _isPouring ? _currentPouringLiquid : null;
 
         /// 事件
         public event Action<CoffeeData> OnCoffeeDataChanged;
@@ -511,13 +512,13 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
-            var lastSegment = _currentCoffeeData.liquidSegments.Count > 0
-                ? _currentCoffeeData.liquidSegments[_currentCoffeeData.liquidSegments.Count - 1]
-                : null;
-
-            if (lastSegment != null && lastSegment.liquid == liquid)
+            // 同类型液段全局合并，不论添加顺序
+            int existingIndex = _currentCoffeeData.liquidSegments.FindIndex(s => s.liquid == liquid);
+            if (existingIndex >= 0)
             {
-                lastSegment.amountMl += amount;
+                var seg = _currentCoffeeData.liquidSegments[existingIndex];
+                seg.amountMl += amount;
+                _currentCoffeeData.liquidSegments[existingIndex] = seg;
             }
             else
             {
