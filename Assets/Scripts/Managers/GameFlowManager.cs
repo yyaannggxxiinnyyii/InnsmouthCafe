@@ -387,7 +387,7 @@ namespace InnsmouthCafe.Managers
 
             _currentDay++;
 
-            _orderTicketController?.HideTicket();
+            _orderTicketController?.ResetTicket();
             DialogueUIManager.Instance?.ForceClearDialogue();
 
             // 重置当天统计
@@ -578,7 +578,7 @@ namespace InnsmouthCafe.Managers
             // 提交后立即隐藏并重置小票
             if (_orderTicketController != null)
             {
-                _orderTicketController.HideTicket();
+                _orderTicketController.ResetTicket();
             }
             else if (_showDebugLog)
             {
