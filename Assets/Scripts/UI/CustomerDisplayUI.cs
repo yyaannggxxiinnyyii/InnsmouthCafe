@@ -10,7 +10,6 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 顾客立绘显示UI
     /// 负责顾客进场/退场动画（剪影摆动+颜色恢复）以及耐心阶段立绘切换
-    /// 仅在 Bar 视图下可见
     /// </summary>
     public class CustomerDisplayUI : MonoBehaviour
     {
@@ -36,6 +35,19 @@ namespace InnsmouthCafe.UI
 
         [SerializeField] [Tooltip("阶段3颜色（不耐烦）")]
         private Color _stageThreeColor = new Color(1f, 0.25f, 0.1f);
+
+        [Header("耐心表情图标")]
+        [SerializeField] [Tooltip("表情图标 Image 组件（位于进度条左侧）")]
+        private Image _patienceEmoji;
+
+        [SerializeField] [Tooltip("阶段1表情图片（开心）")]
+        public Sprite emojiHappy;
+
+        [SerializeField] [Tooltip("阶段2表情图片（有点等不及）")]
+        public Sprite emojiImpatient;
+
+        [SerializeField] [Tooltip("阶段3/4表情图片（不耐烦）")]
+        public Sprite emojiAngry;
 
         [Header("进场锚点（按顺序：最右→中间→站立位）")]
         [SerializeField] [Tooltip("进场路径锚点，至少2个，最后一个为站立位置")]
@@ -87,11 +99,6 @@ namespace InnsmouthCafe.UI
                 CustomerManager.Instance.OnCustomerStateChanged += OnCustomerStateChanged;
                 CustomerManager.Instance.OnPatienceChanged      += OnPatienceChanged;
             }
-
-            if (ViewSwitchManager.Instance != null)
-            {
-                ViewSwitchManager.Instance.OnViewSwitched += OnViewSwitched;
-            }
         }
 
         private void OnDestroy()
@@ -102,11 +109,6 @@ namespace InnsmouthCafe.UI
                 CustomerManager.Instance.OnCustomerLeft         -= OnCustomerLeft;
                 CustomerManager.Instance.OnCustomerStateChanged -= OnCustomerStateChanged;
                 CustomerManager.Instance.OnPatienceChanged      -= OnPatienceChanged;
-            }
-
-            if (ViewSwitchManager.Instance != null)
-            {
-                ViewSwitchManager.Instance.OnViewSwitched -= OnViewSwitched;
             }
 
             _animSequence?.Kill();
@@ -162,23 +164,6 @@ namespace InnsmouthCafe.UI
             {
                 _lastPatienceStage = stage;
                 UpdateSpriteForStage(stage);
-            }
-        }
-
-        private void OnViewSwitched(GameViewType viewType)
-        {
-            if (_customerImage == null) return;
-
-            // 仅在 Bar 视图显示顾客立绘和耐心条
-            bool inBar = viewType == GameViewType.Bar;
-            _customerImage.enabled = inBar && _currentCustomer != null;
-
-            if (_patienceBarRoot != null)
-            {
-                bool showBar = inBar && _currentCustomer != null
-                    && CustomerManager.Instance != null
-                    && CustomerManager.Instance.CurrentState == CustomerState.Waiting;
-                _patienceBarRoot.SetActive(showBar);
             }
         }
 
@@ -337,7 +322,7 @@ namespace InnsmouthCafe.UI
         // ── 耐心进度条 ────────────────────────────────────────
 
         /// <summary>
-        /// 刷新进度条填充量和颜色
+        /// 刷新进度条填充量、颜色和表情图标
         /// </summary>
         private void RefreshPatienceBar(float remainingRatio, int stage)
         {
@@ -351,6 +336,24 @@ namespace InnsmouthCafe.UI
                 2    => _stageTwoColor,
                 >= 3 => _stageThreeColor,
                 _    => _stageOneColor
+            };
+
+            RefreshPatienceEmoji(stage);
+        }
+
+        /// <summary>
+        /// 根据耐心阶段切换表情图标
+        /// </summary>
+        private void RefreshPatienceEmoji(int stage)
+        {
+            if (_patienceEmoji == null) return;
+
+            _patienceEmoji.sprite = stage switch
+            {
+                1    => emojiHappy,
+                2    => emojiImpatient,
+                >= 3 => emojiAngry,
+                _    => emojiHappy
             };
         }
 
