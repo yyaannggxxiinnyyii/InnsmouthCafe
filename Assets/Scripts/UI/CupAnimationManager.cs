@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System.Collections.Generic;
 using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
@@ -9,7 +11,7 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 杯子动画管理器
     /// 管理独立的"工作杯子"实例（和场景容器同级），处理跨场景穿越移动
-    /// 同时管理杯子上的小料图标显示（6个固定锚点，跟随杯子移动）
+    /// 同时管理杯子上的小料图标显示（自由放置，跟随杯子移动）
     /// </summary>
     public class CupAnimationManager : MonoBehaviour
     {
@@ -68,8 +70,17 @@ namespace InnsmouthCafe.UI
         private float _enterDuration = 0.25f;
 
         [Header("小料显示")]
-        [SerializeField] [Tooltip("6个小料锚点（挂在 _workCupRect 下，跟随杯子移动）")]
-        private RectTransform[] _toppingAnchors = new RectTransform[6];
+        [SerializeField] [Tooltip("小料图标预制体（含 Image 组件）")]
+        private GameObject _toppingIconPrefab;
+
+        [SerializeField] [Tooltip("小料容器（_workCupRect 的子节点，位于背景层之上、前景层之下）")]
+        private RectTransform _toppingContainer;
+
+        [SerializeField] [Tooltip("杯子前景 Image（盖在小料之上，有溶液时显示）")]
+        private Image _cupForegroundImage;
+
+        [SerializeField] [Tooltip("杯口放置区域（_workCupRect 的子节点，定义可放置范围）")]
+        private RectTransform _toppingDropZone;
 
         [Header("调试")]
         [SerializeField] [Tooltip("是否显示调试日志")]
@@ -79,19 +90,15 @@ namespace InnsmouthCafe.UI
         private bool _isAnimating = false;
         private int _lastSelectedIndex = -1;
 
-        // 小料图标 Image 数组，与锚点一一对应
-        private Image[] _toppingImages = new Image[6];
+        // 已放置的小料图标对象列表
+        private List<GameObject> _placedToppingObjects = new List<GameObject>();
 
         private void Start()
         {
-            // 初始隐藏工作杯子
-            if (_workCupImage != null)
-            {
-                SetCupVisible(false);
-            }
-
-            // 初始化小料图标
-            InitToppingImages();
+            // 初始隐藏工作杯子和前景
+            SetCupVisible(false);
+            if (_cupForegroundImage != null)
+                _cupForegroundImage.gameObject.SetActive(false);
 
             // 监听杯子选择事件
             if (_cupSelector != null)
@@ -383,6 +390,12 @@ namespace InnsmouthCafe.UI
             {
                 _shadowGroup.alpha = visible ? 1f : 0f;
             }
+
+            // 杯子隐藏时同步隐藏前景
+            if (!visible && _cupForegroundImage != null)
+            {
+                _cupForegroundImage.gameObject.SetActive(false);
+            }
         }
 
         /// <summary>
@@ -478,29 +491,19 @@ namespace InnsmouthCafe.UI
         // ── 小料显示 ──────────────────────────────────────────
 
         /// <summary>
-        /// 初始化小料图标：在每个锚点下创建 Image 组件
+        /// 杯口放置区域（供 LiquidToppingUI 拖拽检测使用）
         /// </summary>
-        private void InitToppingImages()
-        {
-            _toppingImages = new Image[6];
+        public RectTransform ToppingDropZone => _toppingDropZone;
 
-            for (int i = 0; i < _toppingAnchors.Length && i < 6; i++)
-            {
-                if (_toppingAnchors[i] == null) continue;
+        /// <summary>
+        /// 工作杯子 RectTransform（供 LiquidToppingUI 坐标转换使用）
+        /// </summary>
+        public RectTransform WorkCupRect => _workCupRect;
 
-                // 在锚点下创建 Image 子节点
-                var go = new GameObject($"ToppingIcon_{i}");
-                go.transform.SetParent(_toppingAnchors[i], false);
-
-                var rt = go.AddComponent<RectTransform>();
-                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = Vector2.zero;
-                rt.sizeDelta = _toppingAnchors[i].sizeDelta;
-
-                _toppingImages[i] = go.AddComponent<Image>();
-                _toppingImages[i].enabled = false;
-            }
-        }
+        /// <summary>
+        /// 小料容器 RectTransform（坐标转换应以此为基准，与小料实例化父节点一致）
+        /// </summary>
+        public RectTransform ToppingContainer => _toppingContainer != null ? _toppingContainer : _workCupRect;
 
         /// <summary>
         /// 咖啡数据变化时同步刷新小料图标和杯子贴图
@@ -529,34 +532,67 @@ namespace InnsmouthCafe.UI
 
             float ratio = Mathf.Clamp01(totalVolume / capacity);
 
-            // 从 SO 获取对应阶段贴图（未配置时回退到 cupSprite）
             var cup = data.selectedCup;
             _workCupImage.sprite = cup.GetSpriteForFillRatio(ratio);
+
+            // 前景：有溶液时显示，并同步贴图
+            if (_cupForegroundImage != null)
+            {
+                bool hasliquid = totalVolume > 0f;
+                _cupForegroundImage.gameObject.SetActive(hasliquid);
+                if (hasliquid && cup.foregroundSprite != null)
+                    _cupForegroundImage.sprite = cup.foregroundSprite;
+            }
         }
 
         /// <summary>
-        /// 刷新杯子上的小料图标
+        /// 刷新杯子上的小料图标：销毁旧图标，按数据重建
         /// </summary>
         private void RefreshToppings(CoffeeData data)
         {
-            // 先全部隐藏
-            for (int i = 0; i < _toppingImages.Length; i++)
+            // 销毁所有已放置图标
+            foreach (var obj in _placedToppingObjects)
+                if (obj != null) Destroy(obj);
+            _placedToppingObjects.Clear();
+
+            if (data == null || _toppingIconPrefab == null || _workCupRect == null) return;
+
+            // 小料父节点：优先用 _toppingContainer，没配置则直接挂在 _workCupRect 下
+            Transform toppingParent = _toppingContainer != null ? _toppingContainer : _workCupRect;
+
+            for (int i = 0; i < data.toppings.Count; i++)
             {
-                if (_toppingImages[i] != null)
-                    _toppingImages[i].enabled = false;
-            }
+                var toppingData = data.toppings[i];
+                if (toppingData.topping == null) continue;
 
-            if (data == null) return;
+                var go = Instantiate(_toppingIconPrefab, toppingParent);
+                var rt = go.GetComponent<RectTransform>();
+                if (rt == null) rt = go.AddComponent<RectTransform>();
+                rt.anchorMin        = new Vector2(0.5f, 0.5f);
+                rt.anchorMax        = new Vector2(0.5f, 0.5f);
+                rt.pivot            = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = toppingData.localPosition;
+                rt.sizeDelta        = toppingData.topping.displaySize;
 
-            // 按顺序填入
-            for (int i = 0; i < data.toppings.Count && i < _toppingImages.Length; i++)
-            {
-                if (_toppingImages[i] == null) continue;
+                var img = go.GetComponent<Image>();
+                if (img == null) img = go.AddComponent<Image>();
+                img.sprite          = toppingData.topping.icon;
+                img.preserveAspect  = true;
+                img.raycastTarget   = true;
 
-                var topping = data.toppings[i].topping;
-                if (topping == null) continue;
+                // 右键点击移除该小料
+                int capturedIndex = i;
+                var et = go.GetComponent<EventTrigger>() ?? go.AddComponent<EventTrigger>();
+                var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+                entry.callback.AddListener(eventData =>
+                {
+                    var ptr = (PointerEventData)eventData;
+                    if (ptr.button == PointerEventData.InputButton.Right)
+                        CoffeeCraftManager.Instance?.RemoveToppingAt(capturedIndex);
+                });
+                et.triggers.Add(entry);
 
-                _toppingImages[i].enabled = true;
+                _placedToppingObjects.Add(go);
             }
         }
 
@@ -565,14 +601,9 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void ClearToppings()
         {
-            for (int i = 0; i < _toppingImages.Length; i++)
-            {
-                if (_toppingImages[i] != null)
-                {
-                    _toppingImages[i].sprite  = null;
-                    _toppingImages[i].enabled = false;
-                }
-            }
+            foreach (var obj in _placedToppingObjects)
+                if (obj != null) Destroy(obj);
+            _placedToppingObjects.Clear();
         }
 
         // ── 重置 ──────────────────────────────────────────────

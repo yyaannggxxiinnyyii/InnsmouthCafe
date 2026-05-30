@@ -24,6 +24,10 @@ namespace InnsmouthCafe.Data
         [Tooltip("空杯贴图（制作界面空杯状态显示）")]
         public Sprite cupSprite;
 
+        [Header("前景贴图")]
+        [Tooltip("杯子前景贴图（盖在小料之上，有溶液时显示）")]
+        public Sprite foregroundSprite;
+
         [Header("描述")]
         [TextArea(3, 5)]
         [Tooltip("杯子描述文本（用于悬停提示）")]
@@ -82,6 +86,7 @@ namespace InnsmouthCafe.Data
                 cupName            = this.cupName,
                 capacity           = this.capacity,
                 cupSprite          = this.cupSprite,
+                foregroundSprite   = this.foregroundSprite,
                 fillSprite_0_25    = this.fillSprite_0_25,
                 fillSprite_25_50   = this.fillSprite_25_50,
                 fillSprite_50_75   = this.fillSprite_50_75,

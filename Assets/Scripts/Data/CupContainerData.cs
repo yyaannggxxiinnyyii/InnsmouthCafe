@@ -24,6 +24,9 @@ namespace InnsmouthCafe.Data
         [Tooltip("杯子图标")]
         public Sprite cupSprite;
 
+        [Tooltip("前景贴图（盖在小料之上，有溶液时显示）")]
+        public Sprite foregroundSprite;
+
         [Tooltip("0%~25% 填充贴图")]
         public Sprite fillSprite_0_25;
 

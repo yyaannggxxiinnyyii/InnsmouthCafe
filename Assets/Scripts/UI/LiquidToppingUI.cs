@@ -10,7 +10,7 @@ namespace InnsmouthCafe.UI
 {
     /// <summary>
     /// 辅助液和小料UI交互组件
-    /// 负责处理辅助液倒入和小料添加/移除的交互
+    /// 负责处理辅助液倒入和小料拖拽放置的交互
     /// </summary>
     public class LiquidToppingUI : MonoBehaviour
     {
@@ -46,6 +46,19 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("提交按钮")]
         private Button _submitButton;
 
+        [Header("小料拖拽")]
+        [SerializeField] [Tooltip("杯子动画管理器（提供放置区域和坐标转换）")]
+        private CupAnimationManager _cupAnimationManager;
+
+        [SerializeField] [Tooltip("小料拖拽幽灵预制体（含 Image 组件）")]
+        private GameObject _toppingDragGhostPrefab;
+
+        [SerializeField] [Tooltip("拖拽层（根 Canvas 下的全屏层，幽灵在此层显示）")]
+        private RectTransform _dragLayer;
+
+        [SerializeField] [Tooltip("UI 相机（ScreenSpaceCamera 时填写，Overlay 留空）")]
+        private Camera _uiCamera;
+
         [Header("提示")]
         [SerializeField] [Tooltip("悬停提示显示延迟（秒）")]
         private float _tooltipDelay = 0.5f;
@@ -56,6 +69,10 @@ namespace InnsmouthCafe.UI
 
         private CoffeeCraftManager _manager;
 
+        // 拖拽状态
+        private ToppingSO _draggingTopping;
+        private GameObject _dragGhostInstance;
+
         private void Awake()
         {
             _manager = CoffeeCraftManager.Instance;
@@ -63,7 +80,6 @@ namespace InnsmouthCafe.UI
             BindLiquidButtons();
             BindToppingButtons();
 
-            // 设置提交按钮
             if (_submitButton != null)
             {
                 _submitButton.onClick.AddListener(OnSubmitButtonClick);
@@ -76,6 +92,7 @@ namespace InnsmouthCafe.UI
             {
                 _manager.OnCoffeeDataChanged += OnCoffeeDataChanged;
                 _manager.OnModuleStateChanged += OnModuleStateChanged;
+                _manager.OnCraftReset += OnCraftReset;
             }
 
             RefreshUI();
@@ -87,7 +104,45 @@ namespace InnsmouthCafe.UI
             {
                 _manager.OnCoffeeDataChanged -= OnCoffeeDataChanged;
                 _manager.OnModuleStateChanged -= OnModuleStateChanged;
+                _manager.OnCraftReset -= OnCraftReset;
             }
+
+            CancelDrag();
+        }
+
+        private void Update()
+        {
+            if (_draggingTopping == null) return;
+
+            // 幽灵跟随鼠标
+            if (_dragGhostInstance != null && _dragLayer != null)
+            {
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _dragLayer,
+                    Input.mousePosition,
+                    _uiCamera,
+                    out Vector2 localPoint
+                );
+                _dragGhostInstance.GetComponent<RectTransform>().anchoredPosition = localPoint;
+            }
+
+            // 右键取消
+            if (Input.GetMouseButtonDown(1))
+            {
+                CancelDrag();
+                return;
+            }
+
+            // 松开左键：尝试放置
+            if (Input.GetMouseButtonUp(0))
+            {
+                TryPlaceTopping();
+            }
+        }
+
+        private void OnCraftReset()
+        {
+            CancelDrag();
         }
 
         /// <summary>
@@ -137,50 +192,31 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 绑定小料按钮、图标与事件
+        /// 绑定小料按钮：PointerDown 开始拖拽
         /// </summary>
         private void BindToppingButtons()
         {
-            if (_toppingButtons == null)
-            {
-                return;
-            }
+            if (_toppingButtons == null) return;
 
             foreach (var binding in _toppingButtons)
             {
-                if (binding == null || binding.button == null)
-                {
-                    continue;
-                }
+                if (binding == null || binding.button == null) continue;
 
                 binding.button.onClick.RemoveAllListeners();
 
-                EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>();
-                if (trigger == null)
-                {
-                    trigger = binding.button.gameObject.AddComponent<EventTrigger>();
-                }
-
+                EventTrigger trigger = binding.button.gameObject.GetComponent<EventTrigger>()
+                    ?? binding.button.gameObject.AddComponent<EventTrigger>();
                 trigger.triggers.Clear();
 
-                EventTrigger.Entry pointerClickEntry = new EventTrigger.Entry
-                {
-                    eventID = EventTriggerType.PointerClick
-                };
                 ToppingSO topping = binding.topping;
-                pointerClickEntry.callback.AddListener((data) =>
+                var pointerDownEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+                pointerDownEntry.callback.AddListener(eventData =>
                 {
-                    PointerEventData pointerData = (PointerEventData)data;
-                    if (pointerData.button == PointerEventData.InputButton.Left)
-                    {
-                        OnToppingButtonLeftClick(topping);
-                    }
-                    else if (pointerData.button == PointerEventData.InputButton.Right)
-                    {
-                        OnToppingButtonRightClick(topping);
-                    }
+                    var ptr = (PointerEventData)eventData;
+                    if (ptr.button == PointerEventData.InputButton.Left)
+                        OnToppingButtonPointerDown(topping);
                 });
-                trigger.triggers.Add(pointerClickEntry);
+                trigger.triggers.Add(pointerDownEntry);
 
                 AttachTooltip(binding.button, binding.topping);
             }
@@ -236,39 +272,94 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 小料按钮左键点击（添加）
+        /// 小料按钮按下：创建拖拽幽灵
         /// </summary>
-        private void OnToppingButtonLeftClick(ToppingSO topping)
+        private void OnToppingButtonPointerDown(ToppingSO topping)
         {
-            if (_manager == null)
-            {
-                return;
-            }
+            if (_manager == null || topping == null) return;
 
-            _manager.AddTopping(topping);
+            var coffeeData = _manager.CurrentCoffeeData;
+            bool hasExtracted = coffeeData.coffeeSegments.Count > 0;
+            if (!hasExtracted || coffeeData.toppings.Count >= 6) return;
+
+            if (_toppingDragGhostPrefab == null || _dragLayer == null) return;
+
+            // 取消上一次未完成的拖拽
+            CancelDrag();
+
+            _draggingTopping = topping;
+
+            _dragGhostInstance = Instantiate(_toppingDragGhostPrefab, _dragLayer);
+            var rt = _dragGhostInstance.GetComponent<RectTransform>();
+            if (rt == null) rt = _dragGhostInstance.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot     = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = topping.displaySize;
+
+            var img = _dragGhostInstance.GetComponent<Image>();
+            if (img == null) img = _dragGhostInstance.AddComponent<Image>();
+            img.sprite         = topping.icon;
+            img.preserveAspect = true;
+            img.raycastTarget  = false; // 幽灵不阻挡射线
 
             if (_showDebugLog)
-            {
-                Debug.Log($"[LiquidToppingUI] 添加小料：{(topping != null ? topping.toppingName : "null")}");
-            }
+                Debug.Log($"[LiquidToppingUI] 开始拖拽小料：{topping.toppingName}");
         }
 
         /// <summary>
-        /// 小料按钮右键点击（移除）
+        /// 尝试在杯口区域放置小料
         /// </summary>
-        private void OnToppingButtonRightClick(ToppingSO topping)
+        private void TryPlaceTopping()
         {
-            if (_manager == null)
+            if (_draggingTopping == null) return;
+
+            bool placed = false;
+
+            if (_cupAnimationManager != null
+                && _cupAnimationManager.ToppingDropZone != null
+                && _cupAnimationManager.WorkCupRect != null)
             {
-                return;
+                bool inZone = RectTransformUtility.RectangleContainsScreenPoint(
+                    _cupAnimationManager.ToppingDropZone,
+                    Input.mousePosition,
+                    _uiCamera
+                );
+
+                if (inZone)
+                {
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        _cupAnimationManager.ToppingContainer,
+                        Input.mousePosition,
+                        _uiCamera,
+                        out Vector2 localPos
+                    );
+
+                    _manager?.AddTopping(_draggingTopping, localPos);
+                    placed = true;
+
+                    if (_showDebugLog)
+                        Debug.Log($"[LiquidToppingUI] 放置小料：{_draggingTopping.toppingName} @ {localPos}");
+                }
             }
 
-            _manager.RemoveLastToppingOfType(topping);
+            if (!placed && _showDebugLog)
+                Debug.Log("[LiquidToppingUI] 放置区域外，取消放置");
 
-            if (_showDebugLog)
+            CancelDrag();
+        }
+
+        /// <summary>
+        /// 取消拖拽，销毁幽灵
+        /// </summary>
+        private void CancelDrag()
+        {
+            if (_dragGhostInstance != null)
             {
-                Debug.Log($"[LiquidToppingUI] 移除小料：{(topping != null ? topping.toppingName : "null")}");
+                Destroy(_dragGhostInstance);
+                _dragGhostInstance = null;
             }
+            _draggingTopping = null;
         }
 
         /// <summary>
@@ -341,7 +432,7 @@ namespace InnsmouthCafe.UI
             }
 
             // 更新小料按钮状态
-            bool canAddTopping = hasExtracted && coffeeData.toppings.Count < 20;
+            bool canAddTopping = hasExtracted && coffeeData.toppings.Count < 6;
             if (_toppingButtons != null)
             {
                 foreach (var binding in _toppingButtons)

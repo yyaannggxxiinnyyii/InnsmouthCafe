@@ -13,8 +13,8 @@ namespace InnsmouthCafe.Data
         [Tooltip("小料配置")]
         public ToppingSO topping;
 
-        [Tooltip("添加顺序索引（用于锚点定位）")]
-        public int orderIndex;
+        [Tooltip("在杯子上的本地坐标（相对于 _workCupRect）")]
+        public Vector2 localPosition;
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ namespace InnsmouthCafe.Data
                 clone.toppings.Add(new ToppingInstanceData
                 {
                     topping = topping.topping,
-                    orderIndex = topping.orderIndex
+                    localPosition = topping.localPosition
                 });
             }
 

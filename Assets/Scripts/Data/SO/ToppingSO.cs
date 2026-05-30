@@ -20,6 +20,9 @@ namespace InnsmouthCafe.Data
         [Tooltip("小料图标")]
         public Sprite icon;
 
+        [Tooltip("小料图标在杯子上的显示尺寸（像素）")]
+        public Vector2 displaySize = new Vector2(80f, 80f);
+
         [Header("描述")]
         [TextArea(3, 5)]
         [Tooltip("小料描述文本")]

@@ -568,9 +568,9 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 添加小料
+        /// 添加小料（拖拽放置，localPosition 为相对 workCupRect 的本地坐标）
         /// </summary>
-        public void AddTopping(ToppingSO topping)
+        public void AddTopping(ToppingSO topping, Vector2 localPosition)
         {
             if (topping == null)
             {
@@ -586,14 +586,14 @@ namespace InnsmouthCafe.Managers
 
             if (_currentCoffeeData.toppings.Count >= 6)
             {
-                Debug.LogWarning("[CoffeeCraft] 小料锚点已满（6个）");
+                Debug.LogWarning("[CoffeeCraft] 小料已满（6个）");
                 return;
             }
 
             _currentCoffeeData.toppings.Add(new ToppingInstanceData
             {
                 topping = topping,
-                orderIndex = _currentCoffeeData.toppings.Count
+                localPosition = localPosition
             });
 
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
@@ -602,6 +602,25 @@ namespace InnsmouthCafe.Managers
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeToppingAdd);
 
             Debug.Log($"[CoffeeCraft] 添加小料：{topping.toppingName}");
+        }
+
+        /// <summary>
+        /// 按索引移除指定小料（右键点击已放置图标时调用）
+        /// </summary>
+        public void RemoveToppingAt(int index)
+        {
+            if (index < 0 || index >= _currentCoffeeData.toppings.Count)
+            {
+                Debug.LogWarning($"[CoffeeCraft] 小料索引越界：{index}");
+                return;
+            }
+
+            string name = _currentCoffeeData.toppings[index].topping?.toppingName ?? "unknown";
+            _currentCoffeeData.toppings.RemoveAt(index);
+            OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
+
+            AudioManager.Instance?.PlaySfx(SoundId.CoffeeToppingRemove);
+            Debug.Log($"[CoffeeCraft] 移除小料：{name}");
         }
 
         /// <summary>
@@ -620,7 +639,6 @@ namespace InnsmouthCafe.Managers
                 if (_currentCoffeeData.toppings[i].topping == topping)
                 {
                     _currentCoffeeData.toppings.RemoveAt(i);
-                    RefreshToppingIndices();
                     OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
 
                     // 播放移除小料音效
@@ -635,15 +653,9 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
-        /// 刷新小料索引（移除后自动前移补位）
+        /// 刷新小料索引（已废弃，保留空实现兼容旧调用）
         /// </summary>
-        private void RefreshToppingIndices()
-        {
-            for (int i = 0; i < _currentCoffeeData.toppings.Count; i++)
-            {
-                _currentCoffeeData.toppings[i].orderIndex = i;
-            }
-        }
+        private void RefreshToppingIndices() { }
 
         /// <summary>
         /// 清空整杯咖啡（倒掉重做）
