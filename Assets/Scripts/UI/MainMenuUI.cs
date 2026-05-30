@@ -55,6 +55,13 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("教学模式配置SO（首次游戏直接使用）")]
         private GameModeConfigSO _tutorialConfig;
 
+        [Header("开局CG")]
+        [SerializeField] [Tooltip("开局CG面板（教学未完成时播放）")]
+        private OpeningCGPanelUI _openingCGPanel;
+
+        [SerializeField] [Tooltip("开局CG配置SO（留空则使用面板Inspector中配置的默认值）")]
+        private OpeningCGConfigSO _openingCGConfig;
+
         [Header("过渡设置")]
         [SerializeField] [Tooltip("页面切换淡入淡出时长")]
         private float _fadeDuration = 0.25f;
@@ -107,7 +114,7 @@ namespace InnsmouthCafe.UI
         {
             bool tutorialCompleted = GameManager.Instance != null && GameManager.Instance.IsTutorialCompleted();
 
-            // 教学模式未完成：直接进入教学
+            // 教学模式未完成：先播放开局CG，再进入教学
             if (!tutorialCompleted)
             {
                 if (_tutorialConfig == null)
@@ -116,10 +123,28 @@ namespace InnsmouthCafe.UI
                     return;
                 }
 
-                if (GameManager.Instance != null)
-                    GameManager.Instance.StartGameWithConfig(_tutorialConfig);
+                if (_openingCGPanel != null)
+                {
+                    // 主菜单淡出，然后播放CG
+                    FadeGroup(_mainMenuGroup, false, () =>
+                    {
+                        _openingCGPanel.Play(_openingCGConfig, () =>
+                        {
+                            if (GameManager.Instance != null)
+                                GameManager.Instance.StartGameWithConfig(_tutorialConfig);
+                            else
+                                UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                        });
+                    });
+                }
                 else
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                {
+                    // 无CG面板时直接进入（降级处理）
+                    if (GameManager.Instance != null)
+                        GameManager.Instance.StartGameWithConfig(_tutorialConfig);
+                    else
+                        UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                }
                 return;
             }
 

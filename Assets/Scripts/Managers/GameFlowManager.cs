@@ -22,7 +22,7 @@ namespace InnsmouthCafe.Managers
         [Header("顾客动画")]
         [SerializeField]
         [Tooltip("顾客立绘动画组件（用于同步进场/退场动画与流程推进）")]
-        private InnsmouthCafe.UI.CustomerDisplayUI _customerDisplayUI;
+        private CustomerDisplayUI _customerDisplayUI;
 
         [Header("订单小票")]
         [SerializeField]
@@ -33,6 +33,11 @@ namespace InnsmouthCafe.Managers
         [SerializeField]
         [Tooltip("收集物获得提示UI")]
         private CollectibleNotifyUI _collectibleNotifyUI;
+
+        [Header("小章鱼NPC")]
+        [SerializeField]
+        [Tooltip("小章鱼NPC控制器（每天开门前播放开场对话）")]
+        private OctopusNPCController _octopusNPC;
 
         [Header("调试")]
         [SerializeField]
@@ -428,8 +433,16 @@ namespace InnsmouthCafe.Managers
                 Debug.Log($"[GameFlow] === 第 {_currentDay} 天开始 === 顾客数: {_remainingCustomers}");
             }
 
-            // 生成第一位顾客
-            SpawnNextCustomer();
+            // 小章鱼开场对话，说完后再生成第一位顾客
+            if (_octopusNPC != null)
+            {
+                bool isTutorial = _gameModeConfig.gameMode == GameMode.Tutorial;
+                _octopusNPC.PlayDailyOpening(isTutorial, dayConfig, SpawnNextCustomer);
+            }
+            else
+            {
+                SpawnNextCustomer();
+            }
         }
 
         /// <summary>
@@ -453,6 +466,8 @@ namespace InnsmouthCafe.Managers
 
             // 播放客人进店音效
             AudioManager.Instance?.PlaySfx(SoundId.CustomerEnter);
+
+            ActionLogBus.Log($"客人进店");
 
             // 进入顾客流程时，先禁止切换，直到订单确认后再开启
             ViewSwitchManager.Instance.SetCanSwitch(false);
@@ -624,6 +639,22 @@ namespace InnsmouthCafe.Managers
                 case 0: _todayDissatisfiedCount++; break;
             }
 
+            // 发布提交订单和评级日志
+            ActionLogBus.Log($"提交订单");
+            string feedbackLabel = scoringData.feedbackLevel switch
+            {
+                2 => "好评",
+                1 => "中评",
+                _ => "差评"
+            };
+            Color feedbackColor = scoringData.feedbackLevel switch
+            {
+                2 => Color.green,
+                1 => Color.yellow,
+                _ => Color.red
+            };
+            ActionLogBus.Log($"订单评级：{feedbackLabel}", feedbackColor);
+
             // 应用理智值变化
             SanityManager.Instance.ApplyFeedbackSanityChange(scoringData.feedbackLevel);
 
@@ -688,6 +719,7 @@ namespace InnsmouthCafe.Managers
 
                 if (obtained != null && _collectibleNotifyUI != null)
                 {
+                    ActionLogBus.Log($"获得新的收集物：{obtained.collectibleName}", Color.cyan);
                     _collectibleNotifyUI.Show(obtained, () =>
                     {
                         StartCustomerLeaving();

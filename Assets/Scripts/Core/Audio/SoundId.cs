@@ -49,4 +49,19 @@ public enum SoundId
 
     /// <summary>客人进店音效。</summary>
     CustomerEnter,
+
+    /// <summary>开局CG第1分镜入场音效。</summary>
+    OpeningCGPanel1,
+
+    /// <summary>开局CG第2分镜入场音效。</summary>
+    OpeningCGPanel2,
+
+    /// <summary>开局CG第3分镜入场音效。</summary>
+    OpeningCGPanel3,
+
+    /// <summary>开局CG第4分镜入场音效。</summary>
+    OpeningCGPanel4,
+
+    /// <summary>按压小章鱼音效。</summary>
+    OctopusSquish,
 }

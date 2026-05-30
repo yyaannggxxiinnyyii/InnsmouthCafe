@@ -18,5 +18,11 @@ namespace InnsmouthCafe.Managers
         public const string ViewSwitchBar = "ViewSwitchBar";
         public const string ViewSwitchCraftBase = "ViewSwitchCraftBase";
         public const string ViewSwitchCraftMix = "ViewSwitchCraftMix";
+
+        /// <summary>小章鱼说完教学模式开场台词后触发（仅教学模式第一天）</summary>
+        public const string OctopusOpeningComplete = "OctopusOpeningComplete";
+
+        /// <summary>教学模式下首次选择任意杯子时触发</summary>
+        public const string FirstCupSelected = "FirstCupSelected";
     }
 }

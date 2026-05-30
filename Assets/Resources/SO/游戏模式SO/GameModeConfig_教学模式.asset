@@ -18,3 +18,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a609f622017e6ac469bb953920d79f1f, type: 2}
   - {fileID: 11400000, guid: 1d56215ba2d2a3b4d9da3d0d247220e1, type: 2}
   startDelay: 1
+  hasOpeningSequence: 1

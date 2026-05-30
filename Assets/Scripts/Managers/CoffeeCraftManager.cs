@@ -157,6 +157,7 @@ namespace InnsmouthCafe.Managers
             // 播放选择杯子音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeCupSelect);
 
+            ActionLogBus.Log($"选择咖啡杯：{cup.cupName}");
             Debug.Log($"[CoffeeCraft] 选择杯子：{cup.cupName}，容量：{cup.capacity}ml");
         }
 
@@ -184,27 +185,27 @@ namespace InnsmouthCafe.Managers
             // 检查是否有订单
             if (_currentOrder == null)
             {
-                Debug.LogWarning("[CoffeeCraft] 没有订单，无法取豆");
+                ActionLogBus.Log("没有订单，无法取豆", new Color(1f, 0.6f, 0f));
                 return;
             }
 
             // 检查是否已经研磨过（研磨后不能再取豆）
             if (_currentBatch.grindType.HasValue)
             {
-                Debug.LogWarning("[CoffeeCraft] 咖啡粉已研磨，不能再添加豆子。请先清空咖啡粉或萃取完成后再取豆");
+                ActionLogBus.Log("咖啡粉已研磨，不能再添加豆子", new Color(1f, 0.6f, 0f));
                 return;
             }
 
             if (_currentBatch.beanGram + _beanPerClick > _maxBeanPerBatch)
             {
-                Debug.LogWarning($"[CoffeeCraft] 单批次豆量已达上限：{_maxBeanPerBatch}g");
+                ActionLogBus.Log("单批次豆量已达上限", new Color(1f, 0.6f, 0f));
                 return;
             }
 
             // 检查是否混合不同豆种
             if (_currentBatch.bean != null && _currentBatch.bean != bean)
             {
-                Debug.LogWarning($"[CoffeeCraft] 当前批次已有{_currentBatch.bean.beanName}豆，不能混合不同豆种");
+                ActionLogBus.Log($"已有{_currentBatch.bean.beanName}豆，不能混合不同豆种", new Color(1f, 0.6f, 0f));
                 return;
             }
 
@@ -218,6 +219,7 @@ namespace InnsmouthCafe.Managers
             // 播放取豆音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanAdd);
 
+            ActionLogBus.Log($"添加咖啡豆：{bean.beanName} 5g");
             Debug.Log($"[CoffeeCraft] 添加{bean.beanName}豆{_beanPerClick}g，当前批次：{_currentBatch.beanGram}g");
         }
 
@@ -244,6 +246,7 @@ namespace InnsmouthCafe.Managers
 
             // 扣除理智值
             SanityManager.Instance?.ReduceSanity(_clearBeansSanityPenalty, "浪费咖啡豆");
+            ActionLogBus.Log($"倒入垃圾桶：咖啡豆 {oldGram}g");
             Debug.Log($"[CoffeeCraft] 倒掉豆子：{oldGram}g，理智值-{_clearBeansSanityPenalty}");
         }
 
@@ -259,6 +262,7 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
+            string oldGrindName = _currentBatch.grindType.HasValue ? GrindTypeToName(_currentBatch.grindType.Value) : "未研磨";
             _currentBatch.grindType = grindType;
             _moduleState = CraftModuleState.Extract;
 
@@ -268,6 +272,7 @@ namespace InnsmouthCafe.Managers
             // 播放研磨音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeGrind);
 
+            ActionLogBus.Log($"研磨咖啡豆：{oldGrindName} => {GrindTypeToName(grindType)}");
             Debug.Log($"[CoffeeCraft] 选择研磨程度：{grindType}");
         }
 
@@ -293,6 +298,7 @@ namespace InnsmouthCafe.Managers
 
             // 扣除理智值
             SanityManager.Instance?.ReduceSanity(_clearPowderSanityPenalty, "倒掉咖啡粉");
+            ActionLogBus.Log($"倒入垃圾桶：咖啡粉");
             Debug.Log($"[CoffeeCraft] 倒掉咖啡粉，理智值-{_clearPowderSanityPenalty}");
         }
 
@@ -309,12 +315,14 @@ namespace InnsmouthCafe.Managers
 
             if (_currentCoffeeData.selectedCup == null)
             {
+                ActionLogBus.Log("还没有选择杯子", new Color(1f, 0.6f, 0f));
                 Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
                 return;
             }
 
             if (!_currentBatch.CanExtract())
             {
+                ActionLogBus.Log("还没有咖啡粉", new Color(1f, 0.6f, 0f));
                 Debug.LogWarning("[CoffeeCraft] 当前批次不满足萃取条件");
                 return;
             }
@@ -380,6 +388,7 @@ namespace InnsmouthCafe.Managers
             OnModuleStateChanged?.Invoke(_moduleState);
             OnExtractionCompleted?.Invoke(); // 触发完成事件（用于播放音效）
 
+            ActionLogBus.Log($"萃取完成：{_targetExtractionVolume:F0}ml 咖啡液");
             Debug.Log($"[CoffeeCraft] 萃取完成：{_targetExtractionVolume}ml咖啡液");
 
             // 重置萃取状态
@@ -402,12 +411,14 @@ namespace InnsmouthCafe.Managers
 
             if (_currentCoffeeData.selectedCup == null)
             {
+                ActionLogBus.Log("还没有选择杯子", new Color(1f, 0.6f, 0f));
                 Debug.LogWarning("[CoffeeCraft] 请先选择杯子");
                 return;
             }
 
             if (_currentCoffeeData.coffeeSegments.Count == 0)
             {
+                ActionLogBus.Log("还没有萃取咖啡液", new Color(1f, 0.6f, 0f));
                 Debug.LogWarning("[CoffeeCraft] 尚未萃取，不能倒入辅助液");
                 return;
             }
@@ -431,8 +442,10 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
+            string liquidName = _currentPouringLiquid != null ? _currentPouringLiquid.liquidName : "未知液体";
             _isPouring = false;
 
+            ActionLogBus.Log($"添加辅助液：{liquidName}");
             Debug.Log($"[CoffeeCraft] 停止倒入{_currentPouringLiquid}");
         }
 
@@ -507,7 +520,7 @@ namespace InnsmouthCafe.Managers
 
                     // 扣除理智值
                     SanityManager.Instance?.ReduceSanity(penaltyCount * _overflowSanityPenalty, "咖啡溢出");
-                    Debug.Log($"[CoffeeCraft] 溢出惩罚：理智值-{penaltyCount * _overflowSanityPenalty}");
+                    ActionLogBus.Log($"溢出惩罚：理智值-{penaltyCount * _overflowSanityPenalty}", Color.red);
                 }
                 return;
             }
@@ -562,6 +575,7 @@ namespace InnsmouthCafe.Managers
                     // 播放溢出音效
                     AudioManager.Instance?.PlaySfx(SoundId.CoffeeOverflow);
 
+                    ActionLogBus.Log("咖啡液溢出！", new Color(1f, 0.6f, 0f));
                     Debug.LogWarning("[CoffeeCraft] 咖啡溢出！");
                 }
             }
@@ -601,6 +615,7 @@ namespace InnsmouthCafe.Managers
             // 播放添加小料音效
             AudioManager.Instance?.PlaySfx(SoundId.CoffeeToppingAdd);
 
+            ActionLogBus.Log($"添加小料：{topping.toppingName}");
             Debug.Log($"[CoffeeCraft] 添加小料：{topping.toppingName}");
         }
 
@@ -653,6 +668,20 @@ namespace InnsmouthCafe.Managers
         }
 
         /// <summary>
+        /// 将研磨类型转换为中文名称
+        /// </summary>
+        private static string GrindTypeToName(GrindType grindType)
+        {
+            return grindType switch
+            {
+                GrindType.Coarse    => "粗磨",
+                GrindType.Fine      => "中磨",
+                GrindType.ExtraFine => "精磨",
+                _                   => grindType.ToString()
+            };
+        }
+
+        /// <summary>
         /// 刷新小料索引（已废弃，保留空实现兼容旧调用）
         /// </summary>
         private void RefreshToppingIndices() { }
@@ -678,6 +707,7 @@ namespace InnsmouthCafe.Managers
 
             // 扣除理智值
             SanityManager.Instance?.ReduceSanity(_clearWholeCoffeeSanityPenalty, "倒掉整杯咖啡");
+            ActionLogBus.Log($"倒入垃圾桶：整杯咖啡");
             Debug.Log($"[CoffeeCraft] 倒掉整杯，理智值-{_clearWholeCoffeeSanityPenalty}");
         }
 

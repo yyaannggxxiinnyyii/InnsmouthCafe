@@ -128,6 +128,10 @@ namespace InnsmouthCafe.UI
             int oldIndex = _selectedIndex;
             _selectedIndex = index;
 
+            // 教学模式：首次选择杯子时发布事件
+            if (oldIndex == -1)
+                TutorialEventBus.Publish(TutorialEvents.FirstCupSelected);
+
             // 通知管理器选择杯子
             _manager.SelectCup(binding.cup.ToData());
 

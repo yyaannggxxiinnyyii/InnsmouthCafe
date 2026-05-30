@@ -15,5 +15,5 @@ MonoBehaviour:
   liquidId: diedouhua
   liquidName: "\u8776\u8C46\u82B1"
   icon: {fileID: 21300000, guid: add9d2f47f4f1774a941d57182a6eb3e, type: 3}
-  displayColor: {r: 0.9, g: 0.95, b: 1, a: 0.9}
+  displayColor: {r: 1, g: 0.23113209, b: 0.40257096, a: 1}
   description: "\u73CD\u8D35\u7684\u9CB8\u9C7C\u5976\uFF0C\u5E26\u6709\u6D77\u6D0B\u98CE\u5473"

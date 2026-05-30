@@ -230,26 +230,26 @@ namespace InnsmouthCafe.UI
             bool canAddBean = isCrafting && !batch.grindType.HasValue; // 制作中且未研磨才能取豆
             bool beanLimitReached = batch.beanGram >= 20f;
 
-            if (_beanButtons != null)
-            {
-                foreach (var binding in _beanButtons)
-                {
-                    if (binding != null && binding.button != null)
-                    {
-                        binding.button.interactable = canAddBean && !beanLimitReached && binding.bean != null;
-                    }
-                }
-            }
+            //if (_beanButtons != null)
+            //{
+            //    foreach (var binding in _beanButtons)
+            //    {
+            //        if (binding != null && binding.button != null)
+            //        {
+            //            binding.button.interactable = canAddBean && !beanLimitReached && binding.bean != null;
+            //        }
+            //    }
+            //}
 
-            // 更新萃取按钮状态
-            if (_extractButton != null)
-            {
-                bool canExtract = isCrafting &&
-                                  batch.CanExtract() &&
-                                  _manager.CurrentCoffeeData.selectedCup != null &&
-                                  !_manager.IsExtracting;
-                _extractButton.interactable = canExtract;
-            }
+            //// 更新萃取按钮状态
+            //if (_extractButton != null)
+            //{
+            //    bool canExtract = isCrafting &&
+            //                      batch.CanExtract() &&
+            //                      _manager.CurrentCoffeeData.selectedCup != null &&
+            //                      !_manager.IsExtracting;
+            //    _extractButton.interactable = canExtract;
+            //}
 
             // 更新状态文本
             UpdateStatusText();

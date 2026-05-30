@@ -92,6 +92,8 @@ namespace InnsmouthCafe.Managers
             TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchBar,       OnEventViewSwitchBar);
             TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchCraftBase, OnEventViewSwitchCraftBase);
             TutorialEventBus.Subscribe(TutorialEvents.ViewSwitchCraftMix,  OnEventViewSwitchCraftMix);
+            TutorialEventBus.Subscribe(TutorialEvents.OctopusOpeningComplete, OnEventOctopusOpeningComplete);
+            TutorialEventBus.Subscribe(TutorialEvents.FirstCupSelected,       OnEventFirstCupSelected);
         }
 
         private void UnsubscribeEvents()
@@ -109,6 +111,8 @@ namespace InnsmouthCafe.Managers
             TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchBar,       OnEventViewSwitchBar);
             TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchCraftBase, OnEventViewSwitchCraftBase);
             TutorialEventBus.Unsubscribe(TutorialEvents.ViewSwitchCraftMix,  OnEventViewSwitchCraftMix);
+            TutorialEventBus.Unsubscribe(TutorialEvents.OctopusOpeningComplete, OnEventOctopusOpeningComplete);
+            TutorialEventBus.Unsubscribe(TutorialEvents.FirstCupSelected,       OnEventFirstCupSelected);
         }
 
         // 各事件对应的独立方法，方法引用稳定，可被 List.Remove 正确匹配
@@ -125,6 +129,8 @@ namespace InnsmouthCafe.Managers
         private void OnEventViewSwitchBar()       => OnEvent(TutorialEvents.ViewSwitchBar);
         private void OnEventViewSwitchCraftBase() => OnEvent(TutorialEvents.ViewSwitchCraftBase);
         private void OnEventViewSwitchCraftMix()  => OnEvent(TutorialEvents.ViewSwitchCraftMix);
+        private void OnEventOctopusOpeningComplete() => OnEvent(TutorialEvents.OctopusOpeningComplete);
+        private void OnEventFirstCupSelected()        => OnEvent(TutorialEvents.FirstCupSelected);
 
         // ── 核心触发逻辑 ────────────────────────────────────
 

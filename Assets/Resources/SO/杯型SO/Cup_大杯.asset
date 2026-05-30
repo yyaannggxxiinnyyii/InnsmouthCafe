@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cupId: cpu_big
   cupName: "\u5927\u676F"
-  capacity: 500
+  capacity: 400
   cupSprite: {fileID: 21300000, guid: 022417978ddd9f344b758101bdb566c1, type: 3}
   foregroundSprite: {fileID: 21300000, guid: e3c58147e86749e47a44a3a4edd6bbd2, type: 3}
-  description: "\u5BB9\u91CF500ml\u7684\u4E2D\u676F"
+  description: "\u5BB9\u91CF400ml\u7684\u5927\u676F"
   fillSprite_0_25: {fileID: 21300000, guid: dfa26bf442d22a74eb37a1a2ab97b880, type: 3}
   fillSprite_25_50: {fileID: 21300000, guid: c20fc877c52609d4286601a2b5e9e8c1, type: 3}
   fillSprite_50_75: {fileID: 21300000, guid: 29b1196cabd67ec4cbdb90a74609ce24, type: 3}

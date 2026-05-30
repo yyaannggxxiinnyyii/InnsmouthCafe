@@ -256,6 +256,13 @@ namespace InnsmouthCafe.Managers
                 return;
             }
 
+            // 萃取中禁止切换
+            if (CoffeeCraftManager.Instance != null && CoffeeCraftManager.Instance.IsExtracting)
+            {
+                ActionLogBus.Log("萃取中，无法切换界面", new Color(1f, 0.6f, 0f));
+                return;
+            }
+
             int nextIndex = _currentViewIndex + 1;
             if (nextIndex >= _viewList.Count)
             {
@@ -276,6 +283,13 @@ namespace InnsmouthCafe.Managers
                 {
                     Debug.LogWarning("[ViewSwitchManager] 当前不允许切换界面");
                 }
+                return;
+            }
+
+            // 萃取中禁止切换
+            if (CoffeeCraftManager.Instance != null && CoffeeCraftManager.Instance.IsExtracting)
+            {
+                ActionLogBus.Log("萃取中，无法切换界面", new Color(1f, 0.6f, 0f));
                 return;
             }
 

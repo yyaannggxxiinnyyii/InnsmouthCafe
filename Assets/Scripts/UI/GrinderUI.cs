@@ -178,14 +178,14 @@ namespace InnsmouthCafe.UI
             // 检查是否有豆子
             if (_manager.CurrentBatch.beanGram <= 0f)
             {
-                Debug.LogWarning("[GrinderUI] 没有豆子，无法研磨");
+                ActionLogBus.Log("没有豆子，无法研磨", new Color(1f, 0.6f, 0f));
                 return;
             }
 
             // 检查是否已经研磨3次
             if (_grindCount >= 3)
             {
-                Debug.LogWarning("[GrinderUI] 已达到最大研磨次数");
+                ActionLogBus.Log("已达到最大研磨次数", new Color(1f, 0.6f, 0f));
                 return;
             }
 
@@ -279,7 +279,7 @@ namespace InnsmouthCafe.UI
             bool reachedMaxGrind = _grindCount >= 3;
 
             // 按钮可用条件：有豆子 且 未达到最大研磨次数
-            _grindButton.interactable = hasBeans && !reachedMaxGrind;
+            //_grindButton.interactable = hasBeans && !reachedMaxGrind;
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace InnsmouthCafe.UI
         {
             if (_visibleGroup == null) return;
             _visibleGroup.alpha = visible ? 1f : 0f;
-            _visibleGroup.blocksRaycasts = visible;
+            //_visibleGroup.blocksRaycasts = visible;
         }
     }
 }

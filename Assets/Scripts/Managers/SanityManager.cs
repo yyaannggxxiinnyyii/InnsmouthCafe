@@ -360,6 +360,13 @@ namespace InnsmouthCafe.Managers
             // 触发事件
             OnSanityChanged?.Invoke(oldValue, _currentSanity, reason);
 
+            // 发布操作日志（增加绿色，减少红色）
+            //float actualDelta = _currentSanity - oldValue;
+            //if (actualDelta > 0f)
+            //    ActionLogBus.Log($"理智值：+{actualDelta:F1}", Color.green);
+            //else
+            //    ActionLogBus.Log($"理智值：{actualDelta:F1}", Color.red);
+
             // 检查是否归零
             if (_currentSanity <= _minSanity && oldValue > _minSanity)
             {

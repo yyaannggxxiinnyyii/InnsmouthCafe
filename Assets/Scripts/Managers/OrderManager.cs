@@ -268,6 +268,7 @@ namespace InnsmouthCafe.Managers
 
             OnOrderGenerated?.Invoke(confirmedOrder);
             TutorialEventBus.Publish("OrderGenerated");
+            ActionLogBus.Log($"新顾客下单");
 
             return confirmedOrder;
         }
