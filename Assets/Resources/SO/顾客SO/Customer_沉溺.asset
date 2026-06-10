@@ -14,20 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customerId: C04
   customerName: "\u6C89\u6EBA"
+  avatarSprite: {fileID: 21300000, guid: 384a193482f8d9e488d0dfe3a073b401, type: 3}
   normalSprite: {fileID: 21300000, guid: 7bf5db7fbf2044844a72f4768e6c5158, type: 3}
   impatientSprite: {fileID: 21300000, guid: bf942730089978046b4637a127547a5d, type: 3}
   angrySprite: {fileID: 21300000, guid: 227fa49c7c131194bb198520d166fd57, type: 3}
   happySprite: {fileID: 21300000, guid: 4ed6341878ac00d47bc5d393437fe57e, type: 3}
-  basePatienceTime: 60
+  basePatienceTime: 150
   orderPoolEntries:
-  - orderPool: {fileID: 11400000, guid: 7dbec63c3b9237a48bfe96f9b6c068ef, type: 2}
-    weight: 50
-  - orderPool: {fileID: 11400000, guid: a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2, type: 2}
-    weight: 50
+  - orderPool: {fileID: 11400000, guid: e7a696004d654be468ca54bddd7f4fd7, type: 2}
+    weight: 100
+  specialProfile: {fileID: 11400000, guid: ef78fb412ee5da44caab70f8b6d9ab3c, type: 2}
   enterDialogueTexts:
   - "\u2026\u2026\u4E00\u5207\u90FD\u67D3\u4E0A\u4E86\u6C34\u7684\u8165\u5473\uFF0C\u545C\u545C\u545C\uFF0C\u6211\u60F3\u5FF5\u4E00\u676F\u5496\u5561\u7684\u6E29\u5EA6\u2026\u2026"
   hasCollectible: 1
   collectible: {fileID: 11400000, guid: fb73fc02b37d30b4398fac0ab12d6810, type: 2}
+  rewardLiquidsOnPerfect: []
+  rewardToppingsOnPerfect: []
   satisfiedFeedbackTexts:
   - "\u6211\u7684\u7F8E\u4E3D\u7684\u68A6\u5E7B\u6CE1\u5F71\uFF0C\u4E00\u676F\u53EF\u4EE5\u8BA9\u6211\u5FD8\u5374\u8FD9\u5BD2\u51B7\u6C34\u5E95\u7684\u996E\u54C1\uFF0C\u60A8\u7684\u624B\u827A\u771F\u662F\u7F8E\u4E3D\u52A8\u4EBA\u3002"
   neutralFeedbackTexts:

@@ -1,0 +1,431 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System;
+using DG.Tweening;
+using InnsmouthCafe.Data;
+using InnsmouthCafe.Managers;
+
+namespace InnsmouthCafe.UI
+{
+    /// <summary>
+    /// 顾客立绘显示UI
+    /// 负责顾客进场/退场动画（剪影摆动+颜色恢复）以及耐心阶段立绘切换
+    /// </summary>
+    public class CustomerDisplayUI : MonoBehaviour
+    {
+        [Header("显示组件")]
+        [SerializeField] [Tooltip("顾客立绘 Image 组件")]
+        private Image _customerImage;
+
+        [SerializeField] [Tooltip("顾客立绘 RectTransform")]
+        private RectTransform _customerRect;
+
+        [Header("耐心进度条")]
+        [SerializeField] [Tooltip("耐心值进度条（Image，fillMethod 设为 Horizontal 或 Filled）")]
+        private Image _patienceBar;
+
+        [SerializeField] [Tooltip("进度条根节点（顾客不在时隐藏整个节点）")]
+        private GameObject _patienceBarRoot;
+
+        [SerializeField] [Tooltip("阶段1颜色（有耐心）")]
+        private Color _stageOneColor = new Color(0.3f, 0.85f, 0.3f);
+
+        [SerializeField] [Tooltip("阶段2颜色（有点等不及）")]
+        private Color _stageTwoColor = new Color(1f, 0.75f, 0f);
+
+        [SerializeField] [Tooltip("阶段3颜色（不耐烦）")]
+        private Color _stageThreeColor = new Color(1f, 0.25f, 0.1f);
+
+        [Header("耐心表情图标")]
+        [SerializeField] [Tooltip("表情图标 Image 组件（位于进度条左侧）")]
+        private Image _patienceEmoji;
+
+        [SerializeField] [Tooltip("阶段1表情图片（开心）")]
+        public Sprite emojiHappy;
+
+        [SerializeField] [Tooltip("阶段2表情图片（有点等不及）")]
+        public Sprite emojiImpatient;
+
+        [SerializeField] [Tooltip("阶段3/4表情图片（不耐烦）")]
+        public Sprite emojiAngry;
+
+        [Header("进场锚点（按顺序：最右→中间→站立位）")]
+        [SerializeField] [Tooltip("进场路径锚点，至少2个，最后一个为站立位置")]
+        private RectTransform[] _enterWaypoints = new RectTransform[3];
+
+        [Header("退场锚点（从站立位向左依次排列）")]
+        [SerializeField] [Tooltip("退场路径锚点，从当前位置依次向左移动")]
+        private RectTransform[] _exitWaypoints = new RectTransform[2];
+
+        [Header("动画配置")]
+        [SerializeField] [Tooltip("进场每步时长（秒）")]
+        private float _enterStepDuration = 0.28f;
+
+        [SerializeField] [Tooltip("退场每步时长（秒）")]
+        private float _exitStepDuration = 0.22f;
+
+        [SerializeField] [Tooltip("摆动角度（度）")]
+        private float _swingAngle = 10f;
+
+        [SerializeField] [Tooltip("进场动画进行到多少比例时开始恢复颜色（0~1）")]
+        [Range(0f, 1f)]
+        private float _colorRestoreStartRatio = 0.5f;
+
+        private static readonly Color SilhouetteColor = Color.black;
+        private static readonly Color NormalColor    = Color.white;
+
+        /// <summary>进场动画播放完毕时触发</summary>
+        public event Action OnEnterAnimationComplete;
+
+        /// <summary>退场动画播放完毕时触发</summary>
+        public event Action OnExitAnimationComplete;
+
+        private CustomerSO _currentCustomer;
+        private Sequence   _animSequence;
+        private int        _lastPatienceStage = 1;
+        private bool       _isAnimating       = false;
+
+        /// <summary>当前是否处于 Bar 界面（条形耐心条只在 Bar 显示）</summary>
+        private bool _isOnBarView = true;
+
+        /// <summary>当前耐心条是否应该激活（顾客处于等待状态）</summary>
+        private bool _isPatienceActive = false;
+
+        // ── 生命周期 ──────────────────────────────────────────
+
+        private void Start()
+        {
+            SetVisible(false);
+            SetPatienceBarVisible(false);
+
+            if (CustomerManager.Instance != null)
+            {
+                CustomerManager.Instance.OnCustomerSpawned      += OnCustomerSpawned;
+                CustomerManager.Instance.OnCustomerLeft         += OnCustomerLeft;
+                CustomerManager.Instance.OnCustomerStateChanged += OnCustomerStateChanged;
+                CustomerManager.Instance.OnPatienceChanged      += OnPatienceChanged;
+            }
+
+            if (ViewSwitchManager.Instance != null)
+            {
+                ViewSwitchManager.Instance.OnViewSwitched += OnViewSwitched;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (CustomerManager.Instance != null)
+            {
+                CustomerManager.Instance.OnCustomerSpawned      -= OnCustomerSpawned;
+                CustomerManager.Instance.OnCustomerLeft         -= OnCustomerLeft;
+                CustomerManager.Instance.OnCustomerStateChanged -= OnCustomerStateChanged;
+                CustomerManager.Instance.OnPatienceChanged      -= OnPatienceChanged;
+            }
+
+            if (ViewSwitchManager.Instance != null)
+            {
+                ViewSwitchManager.Instance.OnViewSwitched -= OnViewSwitched;
+            }
+
+            _animSequence?.Kill();
+        }
+
+        // ── 事件回调 ──────────────────────────────────────────
+
+        private void OnCustomerSpawned(CustomerSO customer)
+        {
+            _currentCustomer   = customer;
+            _lastPatienceStage = 1;
+            _isPatienceActive  = false;
+            SetPatienceBarVisible(false);
+            RefreshPatienceBar(1f, 1);
+            PlayEnterAnimation(customer);
+        }
+
+        private void OnCustomerLeft(CustomerSO customer)
+        {
+            _isPatienceActive = false;
+            PlayExitAnimation(() =>
+            {
+                _currentCustomer = null;
+                SetVisible(false);
+            });
+        }
+
+        private void OnCustomerStateChanged(CustomerState state)
+        {
+            if (_currentCustomer == null) return;
+
+            if (state == CustomerState.Waiting)
+            {
+                _isPatienceActive = true;
+                UpdatePatienceBarVisibility();
+            }
+            else if (state == CustomerState.Angry)
+            {
+                _lastPatienceStage = 4;
+                UpdateSpriteForStage(4);
+                RefreshPatienceBar(0f, 4);
+            }
+            else if (state == CustomerState.Happy)
+            {
+                UpdateSpriteForHappy();
+            }
+            else if (state == CustomerState.Neutral)
+            {
+                UpdateSpriteForConfused();
+            }
+            else if (state == CustomerState.Feedback
+                  || state == CustomerState.Leaving)
+            {
+                _isPatienceActive = false;
+                SetPatienceBarVisible(false);
+            }
+        }
+
+        private void OnPatienceChanged(float remainingRatio)
+        {
+            int stage = CustomerManager.Instance.GetCurrentPatienceStage();
+            RefreshPatienceBar(remainingRatio, stage);
+
+            if (stage != _lastPatienceStage && !_isAnimating)
+            {
+                _lastPatienceStage = stage;
+                UpdateSpriteForStage(stage);
+            }
+        }
+
+        private void OnViewSwitched(GameViewType viewType)
+        {
+            _isOnBarView = viewType == GameViewType.Bar;
+            UpdatePatienceBarVisibility();
+        }
+
+        // ── 进场动画 ──────────────────────────────────────────
+
+        /// <summary>
+        /// 进场：从最右锚点出发，摆动经过中间锚点，到达站立位，颜色从黑色剪影恢复正常
+        /// </summary>
+        private void PlayEnterAnimation(CustomerSO customer)
+        {
+            if (_enterWaypoints == null || _enterWaypoints.Length < 2) return;
+
+            _animSequence?.Kill();
+            _animSequence = DOTween.Sequence();
+
+            _customerImage.sprite          = GetSpriteForStage(customer, 1);
+            _customerImage.color           = SilhouetteColor;
+            _customerRect.anchoredPosition = _enterWaypoints[0].anchoredPosition;
+            _customerRect.localEulerAngles = Vector3.zero;
+            SetVisible(true);
+            _isAnimating = true;
+
+            int   steps         = _enterWaypoints.Length - 1;
+            float totalDuration = _enterStepDuration * steps;
+            float colorStart    = totalDuration * _colorRestoreStartRatio;
+            float colorDuration = totalDuration - colorStart;
+
+            for (int i = 1; i < _enterWaypoints.Length; i++)
+            {
+                RectTransform waypoint      = _enterWaypoints[i];
+                float         tilt          = (i % 2 == 1) ? -_swingAngle : _swingAngle;
+                float         halfStep      = _enterStepDuration * 0.5f;
+                float         stepStartTime = _enterStepDuration * (i - 1);
+
+                _animSequence.Append(
+                    _customerRect.DOAnchorPos(waypoint.anchoredPosition, _enterStepDuration)
+                        .SetEase(Ease.InOutSine)
+                );
+                _animSequence.Join(
+                    _customerRect.DOLocalRotate(new Vector3(0f, 0f, tilt), halfStep)
+                        .SetEase(Ease.OutSine)
+                );
+                _animSequence.Insert(
+                    stepStartTime + halfStep,
+                    _customerRect.DOLocalRotate(Vector3.zero, halfStep).SetEase(Ease.InSine)
+                );
+            }
+
+            // 颜色在后半段恢复
+            _animSequence.Insert(colorStart,
+                _customerImage.DOColor(NormalColor, colorDuration).SetEase(Ease.InQuad)
+            );
+
+            _animSequence.OnComplete(() =>
+            {
+                _customerRect.localEulerAngles = Vector3.zero;
+                _customerImage.color           = NormalColor;
+                _isAnimating                   = false;
+                OnEnterAnimationComplete?.Invoke();
+            });
+        }
+
+        // ── 退场动画 ──────────────────────────────────────────
+
+        /// <summary>
+        /// 退场：从当前位置摆动向左离开，颜色从正常逐步变回黑色剪影
+        /// </summary>
+        private void PlayExitAnimation(Action onComplete)
+        {
+            if (_exitWaypoints == null || _exitWaypoints.Length == 0)
+            {
+                SetVisible(false);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _animSequence?.Kill();
+            _animSequence = DOTween.Sequence();
+            _isAnimating  = true;
+
+            _customerImage.color = NormalColor;
+
+            float stepCount    = _exitWaypoints.Length;
+            float stepDuration = _exitStepDuration;
+
+            for (int i = 0; i < _exitWaypoints.Length; i++)
+            {
+                RectTransform waypoint   = _exitWaypoints[i];
+                float         tilt       = (i % 2 == 0) ? _swingAngle : -_swingAngle;
+                float         halfStep   = stepDuration * 0.5f;
+                float         stepStart  = stepDuration * i;
+                float         colorRatio = (i + 1f) / stepCount;
+                Color         stepColor  = Color.Lerp(NormalColor, SilhouetteColor, colorRatio);
+
+                _animSequence.Insert(stepStart,
+                    _customerRect.DOAnchorPos(waypoint.anchoredPosition, stepDuration)
+                        .SetEase(Ease.InOutSine)
+                );
+                _animSequence.Insert(stepStart,
+                    _customerRect.DOLocalRotate(new Vector3(0f, 0f, tilt), halfStep)
+                        .SetEase(Ease.OutSine)
+                );
+                _animSequence.Insert(stepStart + halfStep,
+                    _customerRect.DOLocalRotate(Vector3.zero, halfStep).SetEase(Ease.InSine)
+                );
+                _animSequence.Insert(stepStart,
+                    _customerImage.DOColor(stepColor, stepDuration).SetEase(Ease.Linear)
+                );
+            }
+
+            _animSequence.OnComplete(() =>
+            {
+                _customerImage.color = SilhouetteColor;
+                _isAnimating = false;
+                OnExitAnimationComplete?.Invoke();
+                onComplete?.Invoke();
+            });
+        }
+
+        // ── 立绘更新 ──────────────────────────────────────────
+
+        private void UpdateSpriteForStage(int stage)
+        {
+            if (_customerImage == null || _currentCustomer == null) return;
+            _customerImage.sprite = GetSpriteForStage(_currentCustomer, stage);
+        }
+
+        /// <summary>
+        /// 根据耐心阶段返回对应立绘，未配置时回退到 normalSprite
+        /// 阶段1=正常, 2=不耐烦, 3/4=愤怒
+        /// </summary>
+        private Sprite GetSpriteForStage(CustomerSO customer, int stage)
+        {
+            Sprite sprite = stage switch
+            {
+                >= 3 => customer.angrySprite    != null ? customer.angrySprite    : customer.normalSprite,
+                2    => customer.impatientSprite != null ? customer.impatientSprite : customer.normalSprite,
+                _    => customer.normalSprite
+            };
+            return sprite != null ? sprite : customer.normalSprite;
+        }
+
+        private void UpdateSpriteForHappy()
+        {
+            if (_customerImage == null || _currentCustomer == null) return;
+            if (_currentCustomer.happySprite != null)
+                _customerImage.sprite = _currentCustomer.happySprite;
+        }
+
+        private void UpdateSpriteForConfused()
+        {
+            if (_customerImage == null || _currentCustomer == null) return;
+            Sprite s = _currentCustomer.impatientSprite != null
+                ? _currentCustomer.impatientSprite
+                : _currentCustomer.normalSprite;
+            if (s != null)
+                _customerImage.sprite = s;
+        }
+
+        private void SetVisible(bool visible)
+        {
+            if (_customerImage != null)
+                _customerImage.enabled = visible;
+        }
+
+        // ── 耐心进度条 ────────────────────────────────────────
+
+        /// <summary>
+        /// 刷新进度条填充量、颜色和表情图标
+        /// </summary>
+        private void RefreshPatienceBar(float remainingRatio, int stage)
+        {
+            if (_patienceBar == null) return;
+
+            _patienceBar.fillAmount = remainingRatio;
+
+            _patienceBar.color = stage switch
+            {
+                1    => _stageOneColor,
+                2    => _stageTwoColor,
+                >= 3 => _stageThreeColor,
+                _    => _stageOneColor
+            };
+
+            RefreshPatienceEmoji(stage);
+        }
+
+        /// <summary>
+        /// 根据耐心阶段切换表情图标
+        /// </summary>
+        private void RefreshPatienceEmoji(int stage)
+        {
+            if (_patienceEmoji == null) return;
+
+            _patienceEmoji.sprite = stage switch
+            {
+                1    => emojiHappy,
+                2    => emojiImpatient,
+                >= 3 => emojiAngry,
+                _    => emojiHappy
+            };
+        }
+
+        /// <summary>
+        /// 外部调用：立即隐藏耐心条（如提交订单时）
+        /// </summary>
+        public void HidePatienceBar()
+        {
+            _isPatienceActive = false;
+            SetPatienceBarVisible(false);
+        }
+
+        /// <summary>
+        /// 根据当前视图和耐心激活状态决定条形耐心条显隐
+        /// 条形耐心条只在 Bar 界面 且 耐心激活时显示
+        /// </summary>
+        private void UpdatePatienceBarVisibility()
+        {
+            SetPatienceBarVisible(_isOnBarView && _isPatienceActive);
+        }
+
+        /// <summary>
+        /// 控制耐心条根节点显隐
+        /// </summary>
+        private void SetPatienceBarVisible(bool visible)
+        {
+            if (_patienceBarRoot != null)
+                _patienceBarRoot.SetActive(visible);
+        }
+    }
+}

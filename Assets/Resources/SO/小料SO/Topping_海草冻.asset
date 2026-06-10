@@ -15,5 +15,6 @@ MonoBehaviour:
   toppingId: seaweed_jelly
   toppingName: "\u6D77\u8349\u51BB"
   icon: {fileID: 21300000, guid: a4d5436d09b42d04e99b986da4ea2b6c, type: 3}
+  unlockIcon: {fileID: 21300000, guid: 5440596217e0431469a27f836433f7cd, type: 3}
   displaySize: {x: 80, y: 80}
   description: "Q\u5F39\u6E05\u723D\u7684\u6D77\u8349\u51BB"

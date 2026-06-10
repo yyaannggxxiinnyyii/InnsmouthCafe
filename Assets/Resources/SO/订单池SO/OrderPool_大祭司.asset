@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13653cb960447054a9b187a495b02076, type: 3}
+  m_Name: "OrderPool_\u5927\u796D\u53F8"
+  m_EditorClassIdentifier: 
+  poolId: pool_priest
+  poolName: "\u5927\u796D\u53F8\u6C60"
+  orders:
+  - {fileID: 11400000, guid: 26a906f1dc351384abc38a1c929aa73d, type: 2}

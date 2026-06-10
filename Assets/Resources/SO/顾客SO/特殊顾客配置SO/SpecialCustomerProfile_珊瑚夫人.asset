@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d2b2aa2f3204a1b8c1f68a2f1b4e9a7, type: 3}
+  m_Name: "SpecialCustomerProfile_\u73CA\u745A\u592B\u4EBA"
+  m_EditorClassIdentifier: 
+  dayStartEffects:
+  - {fileID: 11400000, guid: fa0df40239c9a3f42b1cdfa7ed2f6b4d, type: 2}
+  collectibleRewardOnPerfect: {fileID: 11400000, guid: 51dec1bacbfa5ba4f98020feecc6c06d, type: 2}
+  rewardLiquidsOnPerfect: []
+  rewardToppingsOnPerfect: []

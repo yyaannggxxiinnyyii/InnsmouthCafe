@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f06373cee9fd8214ca357b53e942a59d, type: 3}
+  m_Name: "\u5927\u796D\u53F8"
+  m_EditorClassIdentifier: 
+  orderId: teshu_priest
+  orderName: "\u6DF1\u6E0A\u796D\u732E"
+  orderDialogueTexts:
+  - "\u4E0A\u53E4\u7684\u4EEA\u5F0F\u9700\u8981\u6700\u6DF1\u5904\u7684\u6DF7\u5408\u3002"
+  - "\u6211\u9700\u8981\u4E00\u676F\u80FD\u5C55\u73B0\u6DF1\u6D77\u529B\u91CF\u7684\u996E\u54C1\u3002"
+  coffeeRequirements:
+  - bean: {fileID: 11400000, guid: 8089f6b45303d27478476a6d33e8a06d, type: 2}
+    grindType: 2
+    targetVolume: 100
+  - bean: {fileID: 11400000, guid: d091b320013118141b164165549b748d, type: 2}
+    grindType: 2
+    targetVolume: 50
+  liquidRequirements:
+  - liquid: {fileID: 11400000, guid: 592b5ddd058968a4f823fe3600934308, type: 2}
+    targetVolume: 50
+  - liquid: {fileID: 11400000, guid: fbfbbaf1fd1e4864d96d32f7f0022e9e, type: 2}
+    targetVolume: 100
+  - liquid: {fileID: 11400000, guid: d50492a32e01b014daec2e4e330e4ffe, type: 2}
+    targetVolume: 100
+  toppingRequirement:
+    requiredToppings:
+    - {fileID: 11400000, guid: fea4aa374af7010468f3340c8b19bd4a, type: 2}
+  ignoreIngredientUnlockFilter: 1

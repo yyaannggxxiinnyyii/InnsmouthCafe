@@ -21,7 +21,7 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.06889995
   smoothness:
     m_OverrideState: 1
     m_Value: 0.2
@@ -45,7 +45,6 @@ MonoBehaviour:
   - {fileID: 87960350444192339}
   - {fileID: -4336475332780184380}
   - {fileID: 5770972459867003555}
-  - {fileID: 866664102482622827}
   - {fileID: 236847651339464785}
   - {fileID: 7376515514949723153}
 --- !u!114 &87960350444192339
@@ -63,7 +62,7 @@ MonoBehaviour:
   active: 1
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.016199961
 --- !u!114 &236847651339464785
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -79,38 +78,19 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0
   contrast:
-    m_OverrideState: 1
-    m_Value: 8
-  colorFilter:
     m_OverrideState: 0
+    m_Value: 0
+  colorFilter:
+    m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   hueShift:
     m_OverrideState: 0
     m_Value: 0
   saturation:
     m_OverrideState: 1
-    m_Value: -8
---- !u!114 &866664102482622827
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb60a22f311433c4c962b888d1393f88, type: 3}
-  m_Name: PaniniProjection
-  m_EditorClassIdentifier: 
-  active: 1
-  distance:
-    m_OverrideState: 0
-    m_Value: 0
-  cropToFit:
-    m_OverrideState: 0
-    m_Value: 1
+    m_Value: 5
 --- !u!114 &2770302315057775424
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -126,7 +106,7 @@ MonoBehaviour:
   active: 1
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: -0.008952082
   xMultiplier:
     m_OverrideState: 0
     m_Value: 1
@@ -157,7 +137,7 @@ MonoBehaviour:
     m_Value: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.053999867
   response:
     m_OverrideState: 1
     m_Value: 0.8
@@ -179,7 +159,7 @@ MonoBehaviour:
   active: 1
   temperature:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 0
   tint:
     m_OverrideState: 1
     m_Value: 4

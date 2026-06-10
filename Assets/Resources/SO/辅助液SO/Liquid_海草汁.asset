@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   liquidId: haicaozhi
   liquidName: "\u6D77\u8349\u6C41"
-  icon: {fileID: 21300000, guid: 34c7c3541a0f2c244bf62e67c8548d3a, type: 3}
+  icon: {fileID: 21300000, guid: e3f0a53910727324aaf919ef5ceefff5, type: 3}
   displayColor: {r: 0, g: 0.4716981, b: 0.098123305, a: 1}
-  description: "\u589E\u52A0\u5976\u9999\u548C\u4E1D\u6ED1\u53E3\u611F"
+  description: "\u795E\u79D8\u6E05\u51C9\u7684\u6D77\u8349\u6C41\u3002"

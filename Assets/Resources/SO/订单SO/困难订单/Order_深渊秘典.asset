@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f06373cee9fd8214ca357b53e942a59d, type: 3}
+  m_Name: "Order_\u6df1\u6e0a\u79d8\u5178"
+  m_EditorClassIdentifier:
+  orderId: hard002
+  orderName: "\u6df1\u6e0a\u79d8\u5178"
+  orderDialogueTexts:
+  - "\u6211\u8981\u4e00\u676f\u5e26\u6709\u6d77\u8349\u6e05\u9999\u7684\uff0c\u8981\u6709\u84dd\u8272\u7684\u3002"
+  - "\u6df1\u6e0a\u7684\u84dd\u8272\u548c\u6d77\u8349\u7684\u6e05\u9999\uff0c\u8fd9\u624d\u662f\u6211\u8981\u7684\u3002"
+  coffeeRequirements:
+  - bean: {fileID: 11400000, guid: d3b40c5ba7431134e9247f655a08e642, type: 2}
+    grindType: 0
+    targetVolume: 75
+  - bean: {fileID: 11400000, guid: 8089f6b45303d27478476a6d33e8a06d, type: 2}
+    grindType: 1
+    targetVolume: 50
+  liquidRequirements:
+  - liquid: {fileID: 11400000, guid: 41f3a838f2472f94a9b9c1a7203cb5fc, type: 2}
+    targetVolume: 150
+  - liquid: {fileID: 11400000, guid: b0e942e0f1e6c7140884beb333ffda87, type: 2}
+    targetVolume: 175
+  toppingRequirement:
+    requiredToppings:
+    - {fileID: 11400000, guid: fea4aa374af7010468f3340c8b19bd4a, type: 2}

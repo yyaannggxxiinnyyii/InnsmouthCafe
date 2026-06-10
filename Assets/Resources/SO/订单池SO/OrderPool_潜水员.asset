@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13653cb960447054a9b187a495b02076, type: 3}
+  m_Name: "OrderPool_\u6F5C\u6C34\u5458"
+  m_EditorClassIdentifier: 
+  poolId: pool_diver
+  poolName: "\u6F5C\u6C34\u5458\u6C60"
+  orders:
+  - {fileID: 11400000, guid: 6bc090b6ae1d80d47a443cfc3bedb3b8, type: 2}

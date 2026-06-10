@@ -15,5 +15,6 @@ MonoBehaviour:
   toppingId: starfish
   toppingName: "\u6D77\u661F"
   icon: {fileID: 21300000, guid: 630e896cd845edc418df327bb2c45c8b, type: 3}
+  unlockIcon: {fileID: 21300000, guid: 142d976b20164334794cd7366689da9f, type: 3}
   displaySize: {x: 80, y: 80}
   description: "\u795E\u79D8\u7684\u6D77\u661F\u88C5\u9970"

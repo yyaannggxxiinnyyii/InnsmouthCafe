@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: "Topping_\u51B0\u6DC7\u6DCB"
   m_EditorClassIdentifier: 
   toppingId: ice_cream
-  toppingName: "\u51B0\u6DC7\u6DCB"
+  toppingName: "\u51B0\u6FC0\u51CC"
   icon: {fileID: 21300000, guid: 2660c7eaf7277364ca14e87b561b36be, type: 3}
+  unlockIcon: {fileID: 21300000, guid: 52491c183558b22499f7b5cf9ecd07e6, type: 3}
   displaySize: {x: 80, y: 80}
   description: "\u51B0\u723D\u5976\u9999\u7684\u51B0\u6DC7\u6DCB"
