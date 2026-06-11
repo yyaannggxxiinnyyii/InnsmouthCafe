@@ -21,6 +21,9 @@ namespace InnsmouthCafe.Data
         [Tooltip("顾客头像（用于环形耐心条中心图标）")]
         public Sprite avatarSprite;
 
+        [Tooltip("普通单订单小票上显示的订单者头像；启用顾客组时改用顾客组成员的订单头像")]
+        public Sprite ordererAvatarSprite;
+
         [Tooltip("正常/等待状态立绘")]
         public Sprite normalSprite;
 

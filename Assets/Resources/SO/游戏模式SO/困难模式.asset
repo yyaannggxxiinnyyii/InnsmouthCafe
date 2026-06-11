@@ -16,8 +16,8 @@ MonoBehaviour:
   totalDays: 5
   dayConfigs:
   - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
-  - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
-  - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
-  - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
-  - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
+  - {fileID: 11400000, guid: a8277cb49a145844083a6d9297c3eb95, type: 2}
+  - {fileID: 11400000, guid: a8277cb49a145844083a6d9297c3eb95, type: 2}
+  - {fileID: 11400000, guid: a8277cb49a145844083a6d9297c3eb95, type: 2}
+  - {fileID: 11400000, guid: a8277cb49a145844083a6d9297c3eb95, type: 2}
   startDelay: 1

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using InnsmouthCafe.Data;
 
@@ -67,22 +68,43 @@ public class OrderManager : Singleton<OrderManager>
             return null;
         }
 
-        if (customer.orderPoolEntries == null || customer.orderPoolEntries.Count == 0)
+        return SelectOrderPoolFromEntries(customer.orderPoolEntries, customer.customerName, true);
+    }
+
+    /// <summary>
+    /// 从指定订单池条目中按权重选择订单池。
+    /// </summary>
+    /// <param name="orderPoolEntries">候选订单池条目。</param>
+    /// <param name="ownerName">订单池归属名称，用于日志。</param>
+    /// <param name="allowDefaultFallback">无有效订单池时是否允许使用默认订单池。</param>
+    /// <returns>选中的订单池，失败返回 null。</returns>
+    private OrderPoolSO SelectOrderPoolFromEntries(
+        List<CustomerOrderPoolEntry> orderPoolEntries,
+        string ownerName,
+        bool allowDefaultFallback)
+    {
+        if (orderPoolEntries == null || orderPoolEntries.Count == 0)
         {
-            Debug.LogWarning($"[Order] 顾客 {customer.customerName} 没有配置订单池，使用默认订单池");
-            return GetDefaultOrderPool(customer.customerName);
+            if (allowDefaultFallback)
+            {
+                Debug.LogWarning($"[Order] {ownerName} 没有配置订单池，使用默认订单池");
+                return GetDefaultOrderPool(ownerName);
+            }
+
+            Debug.LogError($"[Order] {ownerName} 没有配置订单池，无法生成订单");
+            return null;
         }
 
         // 过滤有效的订单池条目
-        var validEntries = new System.Collections.Generic.List<CustomerOrderPoolEntry>();
+        var validEntries = new List<CustomerOrderPoolEntry>();
         int totalWeight = 0;
 
-        foreach (var entry in customer.orderPoolEntries)
+        foreach (var entry in orderPoolEntries)
         {
             // 检查订单池是否有效
             if (entry.orderPool == null)
             {
-                Debug.LogWarning($"[Order] 顾客 {customer.customerName} 的订单池条目中存在空引用");
+                Debug.LogWarning($"[Order] {ownerName} 的订单池条目中存在空引用");
                 continue;
             }
 
@@ -112,8 +134,14 @@ public class OrderManager : Singleton<OrderManager>
         // 如果没有有效的订单池，使用默认订单池
         if (validEntries.Count == 0 || totalWeight <= 0)
         {
-            Debug.LogWarning($"[Order] 顾客 {customer.customerName} 没有有效的订单池，使用默认订单池");
-            return GetDefaultOrderPool(customer.customerName);
+            if (allowDefaultFallback)
+            {
+                Debug.LogWarning($"[Order] {ownerName} 没有有效的订单池，使用默认订单池");
+                return GetDefaultOrderPool(ownerName);
+            }
+
+            Debug.LogError($"[Order] {ownerName} 没有有效的订单池，无法生成订单");
+            return null;
         }
 
         // 按权重随机选择订单池
@@ -125,7 +153,7 @@ public class OrderManager : Singleton<OrderManager>
             currentWeight += entry.weight;
             if (randomValue < currentWeight)
             {
-                Debug.Log($"[Order] 为顾客 {customer.customerName} 选择了订单池 {entry.orderPool.poolName}");
+                Debug.Log($"[Order] 为 {ownerName} 选择了订单池 {entry.orderPool.poolName}");
                 return entry.orderPool;
             }
         }
@@ -199,6 +227,33 @@ public class OrderManager : Singleton<OrderManager>
         OrderSO selectedOrder = candidateOrders[randomIndex];
 
         Debug.Log($"[Order] 从订单池 {pool.poolName} 中随机选择了订单 {selectedOrder.orderName}");
+        return selectedOrder;
+    }
+
+    /// <summary>
+    /// 从指定订单池条目中生成订单，不触发订单生成事件。
+    /// </summary>
+    /// <param name="orderPoolEntries">候选订单池条目。</param>
+    /// <param name="ownerName">订单归属名称，用于日志。</param>
+    /// <returns>生成的订单，失败返回 null。</returns>
+    public OrderSO GenerateOrderFromPoolEntries(List<CustomerOrderPoolEntry> orderPoolEntries, string ownerName)
+    {
+        OrderPoolSO selectedPool = SelectOrderPoolFromEntries(orderPoolEntries, ownerName, false);
+        if (selectedPool == null)
+        {
+            Debug.LogError($"[Order] 为 {ownerName} 选择订单池失败");
+            return null;
+        }
+
+        OrderSO selectedOrder = GetRandomOrderFromPool(selectedPool);
+        if (selectedOrder == null)
+        {
+            Debug.LogError($"[Order] 从订单池 {selectedPool.poolName} 中为 {ownerName} 随机订单失败");
+            return null;
+        }
+
+        _lastOrder = selectedOrder;
+        Debug.Log($"[Order] 成功为 {ownerName} 生成订单 {selectedOrder.orderName}");
         return selectedOrder;
     }
 

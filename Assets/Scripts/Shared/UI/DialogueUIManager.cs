@@ -25,8 +25,25 @@ namespace InnsmouthCafe.UI
         private TextMeshProUGUI _dialogueText;
 
         [SerializeField]
-        [Tooltip("气泡容器RectTransform（挂有ContentSizeFitter的那个对象）")]
+        [Tooltip("气泡容器RectTransform（由脚本根据完整文本设置尺寸）")]
         private RectTransform _bubbleRect;
+
+        [Header("气泡自适应")]
+        [SerializeField]
+        [Tooltip("气泡宽度无效时用于计算换行的兜底文本宽度；正常情况下使用气泡当前宽度")]
+        private float _maxTextWidth = 520f;
+
+        [SerializeField]
+        [Tooltip("气泡相对文本内容的额外留白，X=左右总留白，Y=上下总留白")]
+        private Vector2 _bubblePadding = new Vector2(80f, 56f);
+
+        [SerializeField]
+        [Tooltip("气泡最小尺寸，避免短句气泡过小")]
+        private Vector2 _minBubbleSize = new Vector2(220f, 96f);
+
+        [SerializeField]
+        [Tooltip("气泡图片中不放置文本的小尾巴额外高度；只增加气泡高度，不增加文本区域高度")]
+        private float _bubbleTailExtraHeight = 0f;
 
         [Header("动画配置")]
         [SerializeField]
@@ -131,6 +148,8 @@ namespace InnsmouthCafe.UI
             {
                 return;
             }
+
+            CacheBubbleRect();
 
             // 初始化时隐藏对话气泡
             if (_dialogueBubbleCanvasGroup != null)
@@ -255,6 +274,7 @@ namespace InnsmouthCafe.UI
             if (_dialogueText != null)
             {
                 _dialogueText.text = string.Empty;
+                _dialogueText.maxVisibleCharacters = int.MaxValue;
             }
 
             if (_showDebugLog)
@@ -299,6 +319,8 @@ namespace InnsmouthCafe.UI
 
             _isShowingDialogue = true;
             OnDialogueStart?.Invoke();
+
+            PrepareBubbleLayout(_dialogueQueue.Peek(), 0);
 
             // 显示气泡
             ShowBubble(() =>
@@ -360,7 +382,7 @@ namespace InnsmouthCafe.UI
             else
             {
                 // 直接显示完整文本
-                _dialogueText.text = dialogue;
+                PrepareBubbleLayout(dialogue, int.MaxValue);
                 _isTyping = false;
                 _canClickToContinue = true;
                 OnDialogueLineComplete?.Invoke(dialogue);
@@ -385,13 +407,14 @@ namespace InnsmouthCafe.UI
         private IEnumerator TypewriterEffect(string fullText)
         {
             _isTyping = true;
-            _dialogueText.text = "";
+            PrepareBubbleLayout(fullText, 0);
 
             float delay = 1f / _typewriterSpeed;
+            int characterCount = GetCurrentTextCharacterCount();
 
-            for (int i = 0; i < fullText.Length; i++)
+            for (int visibleCount = 1; visibleCount <= characterCount; visibleCount++)
             {
-                _dialogueText.text += fullText[i];
+                _dialogueText.maxVisibleCharacters = visibleCount;
                 yield return new WaitForSeconds(delay);
             }
 
@@ -464,13 +487,9 @@ namespace InnsmouthCafe.UI
             }
 
             // 立即显示完整文本
-            _dialogueText.text = _currentFullText;
+            ShowFullCurrentText();
             _isTyping = false;
             _canClickToContinue = true;
-
-            // 强制刷新布局，确保 ContentSizeFitter 立即更新气泡大小
-            if (_bubbleRect != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_bubbleRect);
 
             OnDialogueSkipped?.Invoke();
             OnDialogueLineComplete?.Invoke(_currentFullText);
@@ -606,6 +625,103 @@ namespace InnsmouthCafe.UI
                     _dialogueBubbleCanvasGroup.blocksRaycasts = false;
                     onComplete?.Invoke();
                 });
+        }
+
+        /// <summary>
+        /// 缓存气泡 RectTransform，未手动绑定时从 CanvasGroup 所在节点获取。
+        /// </summary>
+        private void CacheBubbleRect()
+        {
+            if (_bubbleRect != null || _dialogueBubbleCanvasGroup == null)
+            {
+                return;
+            }
+
+            _bubbleRect = _dialogueBubbleCanvasGroup.GetComponent<RectTransform>();
+        }
+
+        /// <summary>
+        /// 根据完整文本提前计算气泡尺寸，避免打字机播放过程中触发布局抖动。
+        /// </summary>
+        /// <param name="fullText">需要显示的完整文本。</param>
+        /// <param name="visibleCharacters">初始可见字符数。</param>
+        private void PrepareBubbleLayout(string fullText, int visibleCharacters)
+        {
+            if (_dialogueText == null)
+            {
+                return;
+            }
+
+            CacheBubbleRect();
+
+            string safeText = fullText ?? string.Empty;
+            _dialogueText.enableWordWrapping = true;
+            _dialogueText.maxVisibleCharacters = int.MaxValue;
+            _dialogueText.text = safeText;
+
+            ResizeBubbleToText(safeText);
+
+            _dialogueText.maxVisibleCharacters = visibleCharacters;
+            _dialogueText.ForceMeshUpdate();
+        }
+
+        /// <summary>
+        /// 按当前气泡宽度计算完整文本的换行高度，只调整高度，不覆盖场景中设置的气泡宽度。
+        /// </summary>
+        /// <param name="fullText">需要计算尺寸的完整文本。</param>
+        private void ResizeBubbleToText(string fullText)
+        {
+            if (_bubbleRect == null || _dialogueText == null)
+            {
+                return;
+            }
+
+            float maxTextWidth = Mathf.Max(1f, _maxTextWidth);
+            float bubbleWidth = Mathf.Max(_bubbleRect.rect.width, _bubbleRect.sizeDelta.x);
+            if (bubbleWidth <= _bubblePadding.x + 1f)
+            {
+                bubbleWidth = Mathf.Max(_minBubbleSize.x, maxTextWidth + _bubblePadding.x);
+            }
+
+            float textWidth = Mathf.Max(1f, bubbleWidth - _bubblePadding.x);
+            float minTextHeight = Mathf.Max(1f, _minBubbleSize.y - _bubblePadding.y);
+
+            Vector2 preferredWrap = _dialogueText.GetPreferredValues(
+                fullText,
+                textWidth,
+                Mathf.Infinity);
+
+            float textHeight = Mathf.Max(preferredWrap.y, minTextHeight);
+            float bodyHeight = Mathf.Max(_minBubbleSize.y, textHeight + _bubblePadding.y);
+            float bubbleHeight = bodyHeight + Mathf.Max(0f, _bubbleTailExtraHeight);
+
+            _bubbleRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bubbleHeight);
+
+            RectTransform textRect = _dialogueText.rectTransform;
+            textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textWidth);
+            textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, textHeight);
+        }
+
+        /// <summary>
+        /// 立即显示当前完整文本，用于跳过打字机。
+        /// </summary>
+        private void ShowFullCurrentText()
+        {
+            PrepareBubbleLayout(_currentFullText, int.MaxValue);
+        }
+
+        /// <summary>
+        /// 获取当前文本的 TMP 字符数量，确保 maxVisibleCharacters 按最终排版推进。
+        /// </summary>
+        private int GetCurrentTextCharacterCount()
+        {
+            if (_dialogueText == null)
+            {
+                return 0;
+            }
+
+            _dialogueText.ForceMeshUpdate();
+            return _dialogueText.textInfo.characterCount;
         }
 
         /// <summary>

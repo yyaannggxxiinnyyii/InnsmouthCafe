@@ -10,9 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9eb545944db6b4b42928cfc2a3e52cd5, type: 3}
-  m_Name: "\u56F0\u96BE"
+  m_Name: "\u56F0\u96BE_1"
   m_EditorClassIdentifier: 
-  fixedQueue: []
+  fixedQueue:
+  - {fileID: 11400000, guid: 7eb64395cdbe7ec40852754bf84f4851, type: 2}
   randomNormalPool:
   - {fileID: 11400000, guid: 6ddb5b3eb46b87b48a1272ca757d6105, type: 2}
   - {fileID: 11400000, guid: 7c84f0c729b901c41aed01ae12e81a9d, type: 2}
@@ -28,5 +29,18 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e, type: 2}
   - {fileID: 11400000, guid: 2439771a89a4d0243bdfc923482a1b32, type: 2}
   randomSpecialCount: 1
-  unlockedLiquidsOnDayStart: []
-  unlockedToppingsOnDayStart: []
+  unlockedLiquidsOnDayStart:
+  - {fileID: 11400000, guid: 592b5ddd058968a4f823fe3600934308, type: 2}
+  - {fileID: 11400000, guid: d50492a32e01b014daec2e4e330e4ffe, type: 2}
+  - {fileID: 11400000, guid: b0e942e0f1e6c7140884beb333ffda87, type: 2}
+  - {fileID: 11400000, guid: fbfbbaf1fd1e4864d96d32f7f0022e9e, type: 2}
+  - {fileID: 11400000, guid: ec5127fca8b3511439a4d316b557dc97, type: 2}
+  - {fileID: 11400000, guid: 41f3a838f2472f94a9b9c1a7203cb5fc, type: 2}
+  - {fileID: 11400000, guid: f9938274dc5162a4ebe7d9efff64978d, type: 2}
+  - {fileID: 11400000, guid: 1077fa5ed919ca8439407609e91a965c, type: 2}
+  unlockedToppingsOnDayStart:
+  - {fileID: 11400000, guid: d8d67d18b8c61494cb3b1a0b3d0c8306, type: 2}
+  - {fileID: 11400000, guid: 3ef6e195629047b47a3fcbf395fb175a, type: 2}
+  - {fileID: 11400000, guid: 8fc1479473eec0e4fb5dec3bc897a60e, type: 2}
+  - {fileID: 11400000, guid: 0c9b1a58aa814034fb8f3f783d17f255, type: 2}
+  - {fileID: 11400000, guid: fea4aa374af7010468f3340c8b19bd4a, type: 2}

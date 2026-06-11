@@ -18,6 +18,17 @@ namespace InnsmouthCafe.Data
         [Tooltip("特殊顾客进入当天队列后，在每日开店前应用的效果列表")]
         public List<SpecialCustomerEffectSO> dayStartEffects = new List<SpecialCustomerEffectSO>();
 
+        [Header("顾客组订单")]
+        [Tooltip("是否启用顾客组多订单；关闭时按普通单订单顾客处理")]
+        public bool useCustomerOrderGroup;
+
+        [Tooltip("顾客组内每个订单成员配置；为空时按普通单订单顾客处理")]
+        public List<CustomerOrderParticipantConfig> orderParticipants = new List<CustomerOrderParticipantConfig>();
+
+        [TextArea(2, 4)]
+        [Tooltip("顾客组所有订单完成后的统一反馈文本；为空时使用顾客默认评价文本")]
+        public List<string> groupCompletedFeedbackTexts = new List<string>();
+
         [Header("收集物奖励")]
         [Tooltip("Perfect 接待后获得的收集物；为空则不发放收集物")]
         public CollectibleSO collectibleRewardOnPerfect;

@@ -43,6 +43,22 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("对话文本组件")]
         private TextMeshProUGUI _dialogueText;
 
+        [SerializeField] [Tooltip("对话气泡 RectTransform；为空时自动从 CanvasGroup 所在节点获取")]
+        private RectTransform _bubbleRect;
+
+        [Header("气泡自适应")]
+        [SerializeField] [Tooltip("气泡宽度无效时用于计算换行的兜底文本宽度；正常情况下使用气泡当前宽度")]
+        private float _maxTextWidth = 420f;
+
+        [SerializeField] [Tooltip("气泡相对文本内容的额外留白，X=左右总留白，Y=上下总留白")]
+        private Vector2 _bubblePadding = new Vector2(72f, 48f);
+
+        [SerializeField] [Tooltip("气泡最小尺寸，避免短句气泡过小")]
+        private Vector2 _minBubbleSize = new Vector2(180f, 82f);
+
+        [SerializeField] [Tooltip("气泡图片中不放置文本的小尾巴额外高度；只增加气泡高度，不增加文本区域高度")]
+        private float _bubbleTailExtraHeight = 0f;
+
         [SerializeField] [Tooltip("气泡淡入淡出时长（秒）")]
         private float _bubbleFadeDuration = 0.25f;
 
@@ -143,6 +159,8 @@ namespace InnsmouthCafe.UI
             if (_npcRect == null)
                 _npcRect = GetComponent<RectTransform>();
 
+            CacheBubbleRect();
+
             _restPosition = _npcRect.anchoredPosition;
 
             // 初始移到屏幕外等待入场
@@ -156,7 +174,10 @@ namespace InnsmouthCafe.UI
             }
 
             if (_dialogueText != null)
+            {
                 _dialogueText.text = string.Empty;
+                _dialogueText.maxVisibleCharacters = int.MaxValue;
+            }
 
             if (_squishButton != null)
                 _squishButton.onClick.AddListener(OnSquishClicked);
@@ -362,6 +383,8 @@ namespace InnsmouthCafe.UI
         /// <summary>显示一句台词（气泡淡入 + 打字机 + 停留）</summary>
         private IEnumerator ShowLine(string line, bool clearFirst = false)
         {
+            PrepareBubbleLayout(line, 0);
+
             // 气泡淡入（首句或已隐藏时）
             if (_bubbleGroup != null && _bubbleGroup.alpha < 1f)
             {
@@ -372,14 +395,7 @@ namespace InnsmouthCafe.UI
 
             if (_dialogueText != null)
             {
-                if (clearFirst)
-                    _dialogueText.text = string.Empty;
-
-                foreach (char c in line)
-                {
-                    _dialogueText.text += c;
-                    yield return new WaitForSeconds(_typeCharDelay);
-                }
+                yield return PlayTypewriter();
             }
 
             yield return new WaitForSeconds(_lineHoldDuration);
@@ -397,7 +413,117 @@ namespace InnsmouthCafe.UI
             _bubbleGroup.blocksRaycasts = false;
 
             if (_dialogueText != null)
+            {
                 _dialogueText.text = string.Empty;
+                _dialogueText.maxVisibleCharacters = int.MaxValue;
+            }
+        }
+
+        /// <summary>
+        /// 缓存气泡 RectTransform，未手动绑定时从 CanvasGroup 所在节点获取。
+        /// </summary>
+        private void CacheBubbleRect()
+        {
+            if (_bubbleRect != null || _bubbleGroup == null)
+            {
+                return;
+            }
+
+            _bubbleRect = _bubbleGroup.GetComponent<RectTransform>();
+        }
+
+        /// <summary>
+        /// 根据完整台词提前计算气泡尺寸，避免打字机播放过程中触发布局抖动。
+        /// </summary>
+        /// <param name="line">需要显示的完整台词。</param>
+        /// <param name="visibleCharacters">初始可见字符数。</param>
+        private void PrepareBubbleLayout(string line, int visibleCharacters)
+        {
+            if (_dialogueText == null)
+            {
+                return;
+            }
+
+            CacheBubbleRect();
+
+            string safeLine = line ?? string.Empty;
+            _dialogueText.enableWordWrapping = true;
+            _dialogueText.maxVisibleCharacters = int.MaxValue;
+            _dialogueText.text = safeLine;
+
+            ResizeBubbleToText(safeLine);
+
+            _dialogueText.maxVisibleCharacters = visibleCharacters;
+            _dialogueText.ForceMeshUpdate();
+        }
+
+        /// <summary>
+        /// 按当前气泡宽度计算完整台词的换行高度，只调整高度，不覆盖场景中设置的气泡宽度。
+        /// </summary>
+        /// <param name="line">需要计算尺寸的完整台词。</param>
+        private void ResizeBubbleToText(string line)
+        {
+            if (_bubbleRect == null || _dialogueText == null)
+            {
+                return;
+            }
+
+            float maxTextWidth = Mathf.Max(1f, _maxTextWidth);
+            float bubbleWidth = Mathf.Max(_bubbleRect.rect.width, _bubbleRect.sizeDelta.x);
+            if (bubbleWidth <= _bubblePadding.x + 1f)
+            {
+                bubbleWidth = Mathf.Max(_minBubbleSize.x, maxTextWidth + _bubblePadding.x);
+            }
+
+            float textWidth = Mathf.Max(1f, bubbleWidth - _bubblePadding.x);
+            float minTextHeight = Mathf.Max(1f, _minBubbleSize.y - _bubblePadding.y);
+
+            Vector2 preferredWrap = _dialogueText.GetPreferredValues(
+                line,
+                textWidth,
+                Mathf.Infinity);
+
+            float textHeight = Mathf.Max(preferredWrap.y, minTextHeight);
+            float bodyHeight = Mathf.Max(_minBubbleSize.y, textHeight + _bubblePadding.y);
+            float bubbleHeight = bodyHeight + Mathf.Max(0f, _bubbleTailExtraHeight);
+
+            _bubbleRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bubbleHeight);
+
+            RectTransform textRect = _dialogueText.rectTransform;
+            textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textWidth);
+            textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, textHeight);
+        }
+
+        /// <summary>
+        /// 推进当前完整文本的可见字符数，实现不改变文本内容的打字机效果。
+        /// </summary>
+        private IEnumerator PlayTypewriter()
+        {
+            if (_dialogueText == null)
+            {
+                yield break;
+            }
+
+            int characterCount = GetCurrentTextCharacterCount();
+            for (int visibleCount = 1; visibleCount <= characterCount; visibleCount++)
+            {
+                _dialogueText.maxVisibleCharacters = visibleCount;
+                yield return new WaitForSeconds(_typeCharDelay);
+            }
+        }
+
+        /// <summary>
+        /// 获取当前文本的 TMP 字符数量，确保 maxVisibleCharacters 按最终排版推进。
+        /// </summary>
+        private int GetCurrentTextCharacterCount()
+        {
+            if (_dialogueText == null)
+            {
+                return 0;
+            }
+
+            _dialogueText.ForceMeshUpdate();
+            return _dialogueText.textInfo.characterCount;
         }
 
         // ── 拍扁互动 ──────────────────────────────────────────
@@ -480,16 +606,12 @@ namespace InnsmouthCafe.UI
             _bubbleGroup.DOKill();
             _bubbleGroup.alpha = 0f;
             _bubbleGroup.blocksRaycasts = false;
-            _dialogueText.text = string.Empty;
+            PrepareBubbleLayout(line, 0);
 
             _bubbleGroup.DOFade(1f, _bubbleFadeDuration);
             yield return new WaitForSeconds(_bubbleFadeDuration);
 
-            foreach (char c in line)
-            {
-                _dialogueText.text += c;
-                yield return new WaitForSeconds(_typeCharDelay);
-            }
+            yield return PlayTypewriter();
 
             yield return new WaitForSeconds(_lineHoldDuration);
 
@@ -497,6 +619,7 @@ namespace InnsmouthCafe.UI
             yield return new WaitForSeconds(_bubbleFadeDuration);
 
             _dialogueText.text = string.Empty;
+            _dialogueText.maxVisibleCharacters = int.MaxValue;
         }
     }
 }

@@ -12,13 +12,15 @@ namespace InnsmouthCafe.Managers
     public class GameInputManager : MonoBehaviour
     {
         [Header("引用")]
-        [SerializeField] [Tooltip("订单小票UI（为空时自动查找）")]
-        private OrderTicketUI _orderTicketUI;
+        [SerializeField] [Tooltip("订单小票控制器（为空时自动查找）")]
+        private OrderTicketController _orderTicketController;
 
         private void Start()
         {
-            if (_orderTicketUI == null)
-                _orderTicketUI = FindObjectOfType<OrderTicketUI>();
+            if (_orderTicketController == null)
+            {
+                _orderTicketController = FindObjectOfType<OrderTicketController>();
+            }
         }
 
         private void Update()
@@ -37,13 +39,18 @@ namespace InnsmouthCafe.Managers
             // Q 按住展开小票，松开收起
             if (Input.GetKeyDown(KeyCode.Q))
             {
-                if (_orderTicketUI != null && _orderTicketUI.gameObject.activeInHierarchy)
-                    _orderTicketUI.ExpandToDetail();
+                if (_orderTicketController != null)
+                {
+                    _orderTicketController.ShowSelectedDetail();
+                }
             }
+
             if (Input.GetKeyUp(KeyCode.Q))
             {
-                if (_orderTicketUI != null && _orderTicketUI.gameObject.activeInHierarchy)
-                    _orderTicketUI.CollapseToPreview();
+                if (_orderTicketController != null)
+                {
+                    _orderTicketController.CollapseDetail();
+                }
             }
         }
     }

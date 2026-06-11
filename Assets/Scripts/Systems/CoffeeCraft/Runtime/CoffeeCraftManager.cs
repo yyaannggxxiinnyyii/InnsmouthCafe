@@ -794,6 +794,36 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         return submittedCoffee;
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// 测试工具：无惩罚清理当前制作状态，避免调试跳流程时触发正式浪费扣分。
+    /// </summary>
+    public void DebugResetCraftState()
+    {
+        _currentOrder = null;
+        _currentCoffeeData = new CoffeeData();
+        _currentBatch = new CurrentBeanBatchData();
+        _isPouring = false;
+        _currentPouringLiquid = null;
+        _accumulatedOverflow = 0f;
+        _isExtracting = false;
+        _currentExtractionVolume = 0f;
+        _targetExtractionVolume = 0f;
+        _currentExtractingSegmentIndex = -1;
+        _mainState = CraftMainState.None;
+        _moduleState = CraftModuleState.CupSelect;
+
+        OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
+        OnBatchDataChanged?.Invoke(_currentBatch);
+        OnMainStateChanged?.Invoke(_mainState);
+        OnModuleStateChanged?.Invoke(_moduleState);
+        OnPouringChanged?.Invoke(null);
+        OnCraftReset?.Invoke();
+
+        Debug.Log("[CoffeeCraftDebug] 当前制作状态已无惩罚清理");
+    }
+#endif
+
     /// <summary>
     /// 提交后重置所有数据
     /// </summary>

@@ -107,6 +107,11 @@ public class GameFlowManager : Singleton<GameFlowManager>
     private CoffeeScoringData _currentScoringData;
 
     /// <summary>
+    /// 当前顾客组订单会话；普通顾客也会以单个订单槽的形式进入该会话。
+    /// </summary>
+    private CustomerOrderSessionData _currentOrderSession = new CustomerOrderSessionData();
+
+    /// <summary>
     /// 当天剩余顾客数
     /// </summary>
     private int _remainingCustomers = 0;
@@ -229,6 +234,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         _isGameRunning = true;
         _currentDay = 0;
+        ClearCurrentOrderSession();
 
         // 重置理智值
         SanityManager.Instance.ResetSanity();
@@ -694,6 +700,12 @@ public class GameFlowManager : Singleton<GameFlowManager>
     {
         SetState(GameFlowState.CustomerTalking);
 
+        if (ShouldUseCustomerOrderGroup(customer))
+        {
+            StartCustomerGroupDialogue(customer);
+            return;
+        }
+
         // 先预生成订单，用于点单对白内容，但暂不触发小票显示
         _currentOrderSO = OrderManager.Instance.PrepareOrderForCustomer(customer);
         if (_currentOrderSO == null)
@@ -715,16 +727,533 @@ public class GameFlowManager : Singleton<GameFlowManager>
                 return;
             }
 
-            _currentOrderData = _currentOrderSO.ToData();
+            InitializeSingleOrderSession(customer, _currentOrderSO);
             StartWaitingForCraft();
         });
     }
+
+    /// <summary>
+    /// 判断当前顾客是否启用顾客组多订单。
+    /// </summary>
+    /// <param name="customer">当前接待的顾客。</param>
+    /// <returns>启用顾客组且存在成员配置时返回 true。</returns>
+    private bool ShouldUseCustomerOrderGroup(CustomerSO customer)
+    {
+        SpecialCustomerProfileSO profile = customer?.specialProfile;
+        return profile != null
+            && profile.useCustomerOrderGroup
+            && profile.orderParticipants != null
+            && profile.orderParticipants.Count > 0;
+    }
+
+    /// <summary>
+    /// 开始顾客组多订单点单对白。
+    /// </summary>
+    /// <param name="customer">当前接待的主顾客。</param>
+    private void StartCustomerGroupDialogue(CustomerSO customer)
+    {
+        if (!InitializeCustomerOrderGroupSession(customer, out List<string> orderDialogues))
+        {
+            Debug.LogError($"[GameFlow] 为顾客组 {customer.customerName} 初始化多订单失败");
+            return;
+        }
+
+        DialogueUIManager.Instance.ShowDialogueSequence(orderDialogues, () =>
+        {
+            RefreshCurrentOrderSessionTickets();
+            StartWaitingForCraft();
+        });
+    }
+
+    /// <summary>
+    /// 初始化顾客组订单会话，为每个成员生成一张订单小票。
+    /// </summary>
+    /// <param name="customer">当前接待的主顾客。</param>
+    /// <param name="orderDialogues">生成的点单对白列表。</param>
+    /// <returns>初始化成功返回 true。</returns>
+    private bool InitializeCustomerOrderGroupSession(CustomerSO customer, out List<string> orderDialogues)
+    {
+        orderDialogues = new List<string>();
+
+        if (customer == null || !ShouldUseCustomerOrderGroup(customer))
+        {
+            return false;
+        }
+
+        if (_currentOrderSession == null)
+        {
+            _currentOrderSession = new CustomerOrderSessionData();
+        }
+
+        string sessionId = BuildOrderSessionId(customer);
+        _currentOrderSession.Initialize(sessionId, customer);
+
+        List<CustomerOrderParticipantConfig> participants = customer.specialProfile.orderParticipants;
+        for (int i = 0; i < participants.Count; i++)
+        {
+            CustomerOrderParticipantConfig participant = participants[i];
+            if (participant == null)
+            {
+                Debug.LogWarning($"[GameFlow] 顾客组 {customer.customerName} 的第 {i + 1} 个成员为空，已跳过");
+                continue;
+            }
+
+            string participantName = BuildParticipantDisplayName(participant, i);
+            OrderSO order = OrderManager.Instance.GenerateOrderFromPoolEntries(
+                participant.orderPoolEntries,
+                $"{customer.customerName}-{participantName}");
+            if (order == null)
+            {
+                Debug.LogError($"[GameFlow] 顾客组 {customer.customerName} 的成员 {participantName} 生成订单失败");
+                _currentOrderSession.Clear();
+                return false;
+            }
+
+            string slotId = BuildCustomerOrderGroupSlotId(sessionId, participant, i);
+            CustomerOrderSlotData slot = new CustomerOrderSlotData();
+            slot.Initialize(slotId, participantName, order, participant.ordererAvatarSprite);
+            _currentOrderSession.AddSlot(slot);
+            orderDialogues.Add(GetParticipantOrderDialogue(participant, order, participantName));
+        }
+
+        if (_currentOrderSession.SlotCount == 0)
+        {
+            return false;
+        }
+
+        _currentOrderSession.TrySelectSlot(0);
+        SyncCurrentOrderFields(_currentOrderSession.SelectedSlot);
+        return true;
+    }
+
+    /// <summary>
+    /// 构建顾客组成员显示名。
+    /// </summary>
+    /// <param name="participant">顾客组成员配置。</param>
+    /// <param name="index">成员索引。</param>
+    private string BuildParticipantDisplayName(CustomerOrderParticipantConfig participant, int index)
+    {
+        return !string.IsNullOrEmpty(participant.displayName)
+            ? participant.displayName
+            : $"订单者{index + 1}";
+    }
+
+    /// <summary>
+    /// 构建顾客组订单槽ID。
+    /// </summary>
+    /// <param name="sessionId">订单会话ID。</param>
+    /// <param name="participant">顾客组成员配置。</param>
+    /// <param name="index">成员索引。</param>
+    private string BuildCustomerOrderGroupSlotId(
+        string sessionId,
+        CustomerOrderParticipantConfig participant,
+        int index)
+    {
+        string participantId = !string.IsNullOrEmpty(participant.participantId)
+            ? participant.participantId
+            : $"participant_{index}";
+        return $"{sessionId}_{participantId}";
+    }
+
+    /// <summary>
+    /// 获取顾客组成员的点单对白。
+    /// </summary>
+    /// <param name="participant">顾客组成员配置。</param>
+    /// <param name="order">该成员生成的订单。</param>
+    /// <param name="participantName">成员显示名。</param>
+    private string GetParticipantOrderDialogue(
+        CustomerOrderParticipantConfig participant,
+        OrderSO order,
+        string participantName)
+    {
+        if (participant.orderDialogueTexts != null && participant.orderDialogueTexts.Count > 0)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, participant.orderDialogueTexts.Count);
+            string dialogue = participant.orderDialogueTexts[randomIndex];
+            if (!string.IsNullOrEmpty(dialogue))
+            {
+                return dialogue;
+            }
+        }
+
+        string orderDialogue = OrderManager.Instance.GetRandomOrderDialogue(order);
+        return string.IsNullOrEmpty(participantName)
+            ? orderDialogue
+            : $"{participantName}：{orderDialogue}";
+    }
+
+    /// <summary>
+    /// 初始化普通单订单会话，为后续顾客组多订单流程提供统一入口。
+    /// </summary>
+    /// <param name="customer">当前接待的主顾客。</param>
+    /// <param name="order">当前顾客确认后的订单。</param>
+    private void InitializeSingleOrderSession(CustomerSO customer, OrderSO order)
+    {
+        if (customer == null || order == null)
+        {
+            Debug.LogError("[GameFlow] 初始化单订单会话失败：顾客或订单为空");
+            ClearCurrentOrderSession();
+            return;
+        }
+
+        if (_currentOrderSession == null)
+        {
+            _currentOrderSession = new CustomerOrderSessionData();
+        }
+
+        string sessionId = BuildOrderSessionId(customer);
+        string displayName = string.IsNullOrEmpty(customer.customerName)
+            ? customer.name
+            : customer.customerName;
+
+        CustomerOrderSlotData slot = new CustomerOrderSlotData();
+        slot.Initialize($"{sessionId}_slot_0", displayName, order, customer.ordererAvatarSprite);
+
+        _currentOrderSession.Initialize(sessionId, customer);
+        _currentOrderSession.AddSlot(slot);
+        SyncCurrentOrderFields(slot);
+    }
+
+    /// <summary>
+    /// 构建当前接待使用的订单会话ID。
+    /// </summary>
+    /// <param name="customer">当前接待的主顾客。</param>
+    private string BuildOrderSessionId(CustomerSO customer)
+    {
+        string customerId = customer == null || string.IsNullOrEmpty(customer.customerId)
+            ? "customer"
+            : customer.customerId;
+
+        return $"day_{_currentDay}_served_{_todayCustomersServed}_{customerId}";
+    }
+
+    /// <summary>
+    /// 获取当前选中的订单槽。
+    /// </summary>
+    private CustomerOrderSlotData GetCurrentOrderSlot()
+    {
+        return _currentOrderSession?.SelectedSlot;
+    }
+
+    /// <summary>
+    /// 将当前订单槽同步到旧单订单字段，保持现有评分、奖励和UI流程可继续复用。
+    /// </summary>
+    /// <param name="slot">当前选中的订单槽。</param>
+    private void SyncCurrentOrderFields(CustomerOrderSlotData slot)
+    {
+        _currentOrderSO = slot?.orderSO;
+        _currentOrderData = slot?.requirementData;
+        _currentScoringData = slot?.scoringData;
+    }
+
+    /// <summary>
+    /// 刷新当前订单会话小票，普通单订单和顾客组多订单都使用同一套完成态显示流程。
+    /// </summary>
+    /// <param name="allowAutoShowSelectedDetail">是否允许小票控制器按配置自动展开当前小票详情。</param>
+    private void RefreshCurrentOrderSessionTickets(bool allowAutoShowSelectedDetail = true)
+    {
+        if (_currentOrderSession == null || _currentOrderSession.SlotCount <= 0)
+        {
+            return;
+        }
+
+        CacheReferences();
+        _orderTicketController?.RefreshSession(_currentOrderSession, allowAutoShowSelectedDetail);
+    }
+
+    /// <summary>
+    /// 当前是否处于单个顾客组的多订单接待。
+    /// </summary>
+    private bool IsCurrentCustomerOrderGroupSession()
+    {
+        return _currentOrderSession != null && _currentOrderSession.SlotCount > 1;
+    }
+
+    /// <summary>
+    /// 尝试切换到下一张仍待提交的小票。
+    /// </summary>
+    /// <returns>存在下一张待提交小票并切换成功时返回 true。</returns>
+    private bool TrySelectNextWaitingOrderSlot()
+    {
+        if (_currentOrderSession == null || !_currentOrderSession.SelectFirstWaitingSlot())
+        {
+            return false;
+        }
+
+        SyncCurrentOrderFields(_currentOrderSession.SelectedSlot);
+        RefreshCurrentOrderSessionTickets();
+        return true;
+    }
+
+    /// <summary>
+    /// 清理当前订单会话和兼容旧流程的当前订单字段。
+    /// </summary>
+    private void ClearCurrentOrderSession()
+    {
+        _currentOrderSession?.Clear();
+        _currentOrderSO = null;
+        _currentOrderData = null;
+        _currentScoringData = null;
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// 测试工具：按指定评价档位直接结算当前顾客订单，并继续走反馈、奖励与离场流程。
+    /// </summary>
+    /// <param name="feedbackLevel">评价档位，0=差评，1=中评，2=好评，3=Perfect。</param>
+    /// <returns>成功发起结算返回 true。</returns>
+    public bool DebugCompleteCurrentOrder(int feedbackLevel)
+    {
+        if (!CanDebugCompleteCurrentOrder())
+        {
+            Debug.LogWarning($"[GameFlowDebug] 当前状态不能结束订单：{_currentState}");
+            return false;
+        }
+
+        if (CustomerManager.Instance == null || CustomerManager.Instance.CurrentCustomer == null)
+        {
+            Debug.LogWarning("[GameFlowDebug] 当前没有可结算的顾客");
+            return false;
+        }
+
+        if (_currentOrderSO == null)
+        {
+            _currentOrderSO = OrderManager.Instance?.CurrentOrder;
+        }
+
+        CustomerOrderSlotData currentSlot = GetCurrentOrderSlot();
+        if (currentSlot == null && _currentOrderSO != null)
+        {
+            InitializeSingleOrderSession(CustomerManager.Instance.CurrentCustomer, _currentOrderSO);
+            currentSlot = GetCurrentOrderSlot();
+        }
+
+        CacheReferences();
+        StopAllCoroutines();
+        _orderTicketController?.ResetTicket();
+        _customerDisplayUI?.HidePatienceBar();
+        DialogueUIManager.Instance?.ForceClearDialogue();
+        ViewSwitchManager.Instance?.SetCanSwitch(false);
+        ViewSwitchManager.Instance?.ShowView(GameViewType.Bar);
+        CoffeeCraftManager.Instance?.DebugResetCraftState();
+
+        CoffeeScoringData scoringData = CreateDebugScoringData(feedbackLevel);
+        currentSlot?.TryCompleteScoring(scoringData);
+        SyncCurrentOrderFields(currentSlot);
+        RecordDebugOrderStatistics(scoringData.feedbackLevel);
+        SanityManager.Instance?.ApplyFeedbackSanityChange(scoringData.feedbackLevel);
+        ActionLogBus.Log($"测试结算订单：{BuildFeedbackLabel(feedbackLevel)}", Color.cyan);
+
+        StartCustomerFeedback(scoringData);
+        return true;
+    }
+
+    /// <summary>
+    /// 测试工具：结束当天营业并进入日结算流程。
+    /// </summary>
+    /// <returns>成功发起日结返回 true。</returns>
+    public bool DebugEndCurrentDay()
+    {
+        if (!_isGameRunning)
+        {
+            Debug.LogWarning("[GameFlowDebug] 游戏未运行，无法结束当天营业");
+            return false;
+        }
+
+        if (_currentState == GameFlowState.DayEnd || _currentState == GameFlowState.GameEnd)
+        {
+            Debug.LogWarning($"[GameFlowDebug] 当前状态不能重复结束当天：{_currentState}");
+            return false;
+        }
+
+        StopAllCoroutines();
+        PrepareDebugFlowInterruption();
+        _remainingCustomers = 0;
+        StartDayEnd();
+        return true;
+    }
+
+    /// <summary>
+    /// 测试工具：按正式结局分发流程触发指定结局，并写入图鉴。
+    /// </summary>
+    /// <param name="ending">需要触发的结局。</param>
+    /// <returns>成功触发返回 true。</returns>
+    public bool DebugTriggerEnding(GameEnding ending)
+    {
+        if (_currentState == GameFlowState.GameEnd)
+        {
+            Debug.LogWarning("[GameFlowDebug] 游戏已经处于结局状态，无法重复触发");
+            return false;
+        }
+
+        StopAllCoroutines();
+        PrepareDebugFlowInterruption();
+        SetState(GameFlowState.GameEnd);
+        _isGameRunning = false;
+
+        HandleModeUnlock(GetDebugSanityForEnding(ending));
+        GalleryManager.Instance?.MarkEndingUnlocked(ending);
+        OnGameEnding?.Invoke(ending);
+        OnGameEnd?.Invoke(_currentDay);
+
+        Debug.Log($"[GameFlowDebug] 已触发指定结局：{ending}");
+        return true;
+    }
+
+    /// <summary>
+    /// 测试工具：指定下一位顾客。
+    /// </summary>
+    /// <param name="customer">下一位顾客配置。</param>
+    /// <returns>成功设置返回 true。</returns>
+    public bool DebugSetNextCustomer(CustomerSO customer)
+    {
+        if (CustomerManager.Instance == null)
+        {
+            Debug.LogWarning("[GameFlowDebug] CustomerManager 不存在，无法指定下一位顾客");
+            return false;
+        }
+
+        bool success = CustomerManager.Instance.DebugSetNextCustomer(customer, out bool appended);
+        if (success && appended)
+        {
+            _remainingCustomers = Mathf.Max(_remainingCustomers, 0) + 1;
+        }
+
+        return success;
+    }
+
+    /// <summary>
+    /// 测试工具：查询当前是否允许直接结算当前订单。
+    /// </summary>
+    public bool CanDebugCompleteCurrentOrder()
+    {
+        return _currentState == GameFlowState.CustomerEntering
+            || _currentState == GameFlowState.CustomerTalking
+            || _currentState == GameFlowState.WaitingForCraft;
+    }
+
+    /// <summary>
+    /// 测试工具：创建指定档位的评分数据。
+    /// </summary>
+    /// <param name="feedbackLevel">评价档位，0=差评，1=中评，2=好评，3=Perfect。</param>
+    private CoffeeScoringData CreateDebugScoringData(int feedbackLevel)
+    {
+        int normalizedFeedback = Mathf.Clamp(feedbackLevel, 0, 2);
+        bool isPerfect = feedbackLevel >= 3;
+        float score = feedbackLevel switch
+        {
+            <= 0 => 25f,
+            1 => 65f,
+            2 => 85f,
+            _ => 100f
+        };
+
+        CoffeeQuality quality = isPerfect
+            ? CoffeeQuality.Perfect
+            : normalizedFeedback switch
+            {
+                2 => CoffeeQuality.Acceptable,
+                1 => CoffeeQuality.Acceptable,
+                _ => CoffeeQuality.Terrible
+            };
+
+        return new CoffeeScoringData
+        {
+            coffeeMatchScore = score,
+            liquidMatchScore = score,
+            toppingMatchScore = score,
+            volumeMatchScore = score,
+            cupAdaptationScore = score,
+            finalScore = score,
+            qualityLevel = quality,
+            feedbackLevel = normalizedFeedback,
+            scoringDetail = $"测试工具强制结算：{BuildFeedbackLabel(feedbackLevel)}"
+        };
+    }
+
+    /// <summary>
+    /// 测试工具：记录指定档位的日统计数据。
+    /// </summary>
+    /// <param name="feedbackLevel">归一化后的评价档位。</param>
+    private void RecordDebugOrderStatistics(int feedbackLevel)
+    {
+        _todayCustomersServed++;
+
+        switch (Mathf.Clamp(feedbackLevel, 0, 2))
+        {
+            case 2:
+                _todaySatisfiedCount++;
+                break;
+            case 1:
+                _todayNeutralCount++;
+                break;
+            default:
+                _todayDissatisfiedCount++;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 测试工具：中断当前流程前清理可能残留的对话、订单和顾客状态。
+    /// </summary>
+    private void PrepareDebugFlowInterruption()
+    {
+        CacheReferences();
+        SetState(GameFlowState.None);
+        DialogueUIManager.Instance?.ForceClearDialogue();
+        _orderTicketController?.ResetTicket();
+        _customerDisplayUI?.HidePatienceBar();
+        CoffeeCraftManager.Instance?.DebugResetCraftState();
+        OrderManager.Instance?.ResetOrder();
+        CustomerManager.Instance?.DebugClearCurrentCustomer();
+        ClearCurrentOrderSession();
+        ViewSwitchManager.Instance?.SetCanSwitch(false);
+        ViewSwitchManager.Instance?.ShowView(GameViewType.Bar);
+    }
+
+    /// <summary>
+    /// 测试工具：获取评价档位显示名。
+    /// </summary>
+    /// <param name="feedbackLevel">评价档位，0=差评，1=中评，2=好评，3=Perfect。</param>
+    private string BuildFeedbackLabel(int feedbackLevel)
+    {
+        return feedbackLevel switch
+        {
+            <= 0 => "差评",
+            1 => "中评",
+            2 => "好评",
+            _ => "Perfect"
+        };
+    }
+
+    /// <summary>
+    /// 测试工具：为指定结局提供符合正式阈值判断的理智值。
+    /// </summary>
+    /// <param name="ending">需要模拟的结局。</param>
+    private float GetDebugSanityForEnding(GameEnding ending)
+    {
+        return ending switch
+        {
+            GameEnding.Good => _goodEndingThreshold,
+            GameEnding.Return => _returnEndingThreshold,
+            _ => Mathf.Max(0f, _returnEndingThreshold - 1f)
+        };
+    }
+#endif
 
     /// <summary>
     /// 进入等待制作阶段
     /// </summary>
     private void StartWaitingForCraft()
     {
+        CustomerOrderSlotData currentSlot = GetCurrentOrderSlot();
+        if (currentSlot == null || currentSlot.requirementData == null)
+        {
+            Debug.LogError("[GameFlow] 当前订单会话为空，无法进入制作阶段");
+            return;
+        }
+
+        SyncCurrentOrderFields(currentSlot);
         SetState(GameFlowState.WaitingForCraft);
 
         // 顾客开始等待
@@ -734,7 +1263,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
         ViewSwitchManager.Instance.SetCanSwitch(true);
 
         // 初始化制作系统
-        CoffeeCraftManager.Instance.StartNewCraft(_currentOrderData);
+        CoffeeCraftManager.Instance.StartNewCraft(currentSlot.requirementData);
 
         if (_showDebugLog)
         {
@@ -763,19 +1292,6 @@ public class GameFlowManager : Singleton<GameFlowManager>
         // 提交咖啡，获取数据
         CoffeeData coffeeData = CoffeeCraftManager.Instance.SubmitCoffee();
 
-        // 提交后立即隐藏并重置小票
-        if (_orderTicketController != null)
-        {
-            _orderTicketController.ResetTicket();
-        }
-        else if (_showDebugLog)
-        {
-            Debug.LogWarning("[GameFlow] 未找到 OrderTicketController，无法自动隐藏小票");
-        }
-
-        // 提交时立即隐藏耐心条
-        _customerDisplayUI?.HidePatienceBar();
-
         // 禁止视图切换
         ViewSwitchManager.Instance.SetCanSwitch(false);
 
@@ -791,22 +1307,80 @@ public class GameFlowManager : Singleton<GameFlowManager>
     /// </summary>
     private void StartScoring(CoffeeData coffeeData)
     {
+        CustomerOrderSlotData currentSlot = GetCurrentOrderSlot();
+        OrderSO currentOrder = currentSlot != null ? currentSlot.orderSO : _currentOrderSO;
+        if (currentOrder == null)
+        {
+            Debug.LogError("[GameFlow] 当前订单为空，无法评分");
+            return;
+        }
+
+        currentSlot?.TrySubmitCoffee(coffeeData);
+        SyncCurrentOrderFields(currentSlot);
         SetState(GameFlowState.Scoring);
 
         // 提交订单
-        OrderManager.Instance.SubmitOrder(_currentOrderSO, coffeeData);
+        OrderManager.Instance.SubmitOrder(currentOrder, coffeeData);
 
         // 计算评分
         CoffeeScoringData scoringData = ScoringManager.Instance.CalculateScore(
-            _currentOrderSO, coffeeData, _gameModeConfig.gameMode
+            currentOrder, coffeeData, _gameModeConfig.gameMode
         );
+
+        currentSlot?.TryCompleteScoring(scoringData);
+        SyncCurrentOrderFields(currentSlot);
 
         if (_showDebugLog)
         {
             Debug.Log($"[GameFlow] 评分完成: {scoringData.finalScore}分, 等级: {scoringData.qualityLevel}, 反馈: {scoringData.feedbackLevel}");
         }
 
+        bool isCustomerOrderGroupSession = IsCurrentCustomerOrderGroupSession();
+        if (isCustomerOrderGroupSession && TrySelectNextWaitingOrderSlot())
+        {
+            if (_showDebugLog)
+            {
+                Debug.Log("[GameFlow] 顾客组仍有未完成订单，继续等待下一杯制作");
+            }
+
+            StartWaitingForCraft();
+            return;
+        }
+
+        if (isCustomerOrderGroupSession)
+        {
+            scoringData = BuildCurrentOrderSessionScoringData(scoringData);
+            SyncCurrentOrderFields(currentSlot);
+        }
+
+        RefreshCurrentOrderSessionTickets(false);
+        StartCoroutine(FinalizeScoredOrderAfterTicketRefresh(scoringData));
+    }
+
+    /// <summary>
+    /// 等待小票完成态刷新到画面后，再进入订单结算流程。
+    /// </summary>
+    /// <param name="scoringData">最终用于结算的评分数据。</param>
+    private IEnumerator FinalizeScoredOrderAfterTicketRefresh(CoffeeScoringData scoringData)
+    {
+        yield return null;
+        FinalizeScoredOrder(scoringData);
+    }
+
+    /// <summary>
+    /// 完成一次订单接待的统计、日志、理智值变化和顾客反馈流程。
+    /// </summary>
+    /// <param name="scoringData">用于本次结算的评分数据。</param>
+    private void FinalizeScoredOrder(CoffeeScoringData scoringData)
+    {
+        if (scoringData == null)
+        {
+            Debug.LogError("[GameFlow] 评分数据为空，无法完成订单结算");
+            return;
+        }
+
         // 记录统计
+        _customerDisplayUI?.HidePatienceBar();
         _todayCustomersServed++;
         switch (scoringData.feedbackLevel)
         {
@@ -836,6 +1410,86 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         // 显示反馈
         StartCustomerFeedback(scoringData);
+    }
+
+    /// <summary>
+    /// 聚合当前顾客组全部订单的评分结果。
+    /// </summary>
+    /// <param name="fallbackScoringData">无法聚合时使用的兜底评分。</param>
+    /// <returns>顾客组统一结算评分。</returns>
+    private CoffeeScoringData BuildCurrentOrderSessionScoringData(CoffeeScoringData fallbackScoringData)
+    {
+        if (_currentOrderSession == null || _currentOrderSession.SlotCount <= 1)
+        {
+            return fallbackScoringData;
+        }
+
+        int validCount = 0;
+        float coffeeMatchScore = 0f;
+        float liquidMatchScore = 0f;
+        float toppingMatchScore = 0f;
+        float volumeMatchScore = 0f;
+        float cupAdaptationScore = 0f;
+        float finalScore = 0f;
+        int feedbackLevel = 2;
+        CoffeeQuality qualityLevel = CoffeeQuality.Perfect;
+        bool hasOverflow = false;
+        bool hasMissingComponents = false;
+        float overflowSanityLoss = 0f;
+
+        foreach (CustomerOrderSlotData slot in _currentOrderSession.orderSlots)
+        {
+            CoffeeScoringData scoringData = slot?.scoringData;
+            if (scoringData == null)
+            {
+                continue;
+            }
+
+            validCount++;
+            coffeeMatchScore += scoringData.coffeeMatchScore;
+            liquidMatchScore += scoringData.liquidMatchScore;
+            toppingMatchScore += scoringData.toppingMatchScore;
+            volumeMatchScore += scoringData.volumeMatchScore;
+            cupAdaptationScore += scoringData.cupAdaptationScore;
+            finalScore += scoringData.finalScore;
+            feedbackLevel = Mathf.Min(feedbackLevel, scoringData.feedbackLevel);
+            qualityLevel = GetLowerCoffeeQuality(qualityLevel, scoringData.qualityLevel);
+            hasOverflow |= scoringData.hasOverflow;
+            hasMissingComponents |= scoringData.hasMissingComponents;
+            overflowSanityLoss += scoringData.overflowSanityLoss;
+        }
+
+        if (validCount == 0)
+        {
+            return fallbackScoringData;
+        }
+
+        return new CoffeeScoringData
+        {
+            coffeeMatchScore = coffeeMatchScore / validCount,
+            liquidMatchScore = liquidMatchScore / validCount,
+            toppingMatchScore = toppingMatchScore / validCount,
+            volumeMatchScore = volumeMatchScore / validCount,
+            cupAdaptationScore = cupAdaptationScore / validCount,
+            finalScore = finalScore / validCount,
+            qualityLevel = qualityLevel,
+            feedbackLevel = feedbackLevel,
+            hasOverflow = hasOverflow,
+            overflowSanityLoss = overflowSanityLoss,
+            hasMissingComponents = hasMissingComponents,
+            scoringDetail = $"顾客组订单统一结算：{validCount} 张订单，最终档位取最低评价"
+        };
+    }
+
+    /// <summary>
+    /// 获取两个品质等级中较低的等级。
+    /// </summary>
+    /// <param name="left">左侧品质等级。</param>
+    /// <param name="right">右侧品质等级。</param>
+    /// <returns>较低品质等级。</returns>
+    private CoffeeQuality GetLowerCoffeeQuality(CoffeeQuality left, CoffeeQuality right)
+    {
+        return (CoffeeQuality)Mathf.Min((int)left, (int)right);
     }
 
     /// <summary>
@@ -1101,9 +1755,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         // 重置订单
         OrderManager.Instance.ResetOrder();
-        _currentOrderSO = null;
-        _currentOrderData = null;
-        _currentScoringData = null;
+        ClearCurrentOrderSession();
 
         // 有动画组件：等退场动画完成后再推进
         // 无动画组件：直接推进

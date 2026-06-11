@@ -12,7 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d2b2aa2f3204a1b8c1f68a2f1b4e9a7, type: 3}
   m_Name: "SpecialCustomerProfile_\u53CC\u5934\u9CA8"
   m_EditorClassIdentifier: 
+  specialCustomerAnnouncementLine: 
   dayStartEffects: []
+  useCustomerOrderGroup: 1
+  orderParticipants:
+  - participantId: 
+    displayName: "\u6BD5\u59C6"
+    ordererAvatarSprite: {fileID: 0}
+    orderPoolEntries:
+    - orderPool: {fileID: 11400000, guid: 1c5cb0dc5f7892542bfb561adab3402f, type: 2}
+      weight: 1
+    orderDialogueTexts: []
+  - participantId: 
+    displayName: "\u585E\u62C9\u65AF"
+    ordererAvatarSprite: {fileID: 0}
+    orderPoolEntries:
+    - orderPool: {fileID: 11400000, guid: 639a406da60e8e142a3678dcf5460571, type: 2}
+      weight: 1
+    orderDialogueTexts: []
+  groupCompletedFeedbackTexts: []
   collectibleRewardOnPerfect: {fileID: 11400000, guid: 0cd6bcf149c66894c941ce46e2149307, type: 2}
   rewardLiquidsOnPerfect: []
   rewardToppingsOnPerfect: []

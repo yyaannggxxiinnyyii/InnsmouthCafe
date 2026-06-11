@@ -304,6 +304,71 @@ public class CustomerManager : Singleton<CustomerManager>
             return true;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// 测试工具：将指定顾客设为下一位出场顾客；没有后续队列时追加到队尾。
+        /// </summary>
+        /// <param name="customer">需要安排为下一位的顾客配置。</param>
+        /// <param name="appended">是否因为队列已空而追加了新顾客。</param>
+        /// <returns>设置成功返回 true。</returns>
+        public bool DebugSetNextCustomer(CustomerSO customer, out bool appended)
+        {
+            appended = false;
+
+            if (customer == null)
+            {
+                Debug.LogWarning("[CustomerDebug] 指定下一位顾客失败：顾客配置为空");
+                return false;
+            }
+
+            if (_todayQueue == null)
+            {
+                _todayQueue = new List<CustomerSO>();
+            }
+
+            if (_currentCustomerIndex < _todayQueue.Count)
+            {
+                _todayQueue[_currentCustomerIndex] = customer;
+            }
+            else
+            {
+                _todayQueue.Add(customer);
+                appended = true;
+            }
+
+            if (customer.specialProfile != null)
+            {
+                _seenSpecialCustomers.Add(customer);
+            }
+
+            Debug.Log($"[CustomerDebug] 下一位顾客已指定为：{customer.customerName}");
+            return true;
+        }
+
+        /// <summary>
+        /// 测试工具：直接清理当前顾客，并通知显示层播放离场或隐藏逻辑。
+        /// </summary>
+        public void DebugClearCurrentCustomer()
+        {
+            CustomerSO leavingCustomer = _currentCustomer;
+
+            _currentCustomer = null;
+            _currentWaitTime = 0f;
+            _isTimerRunning = false;
+            _hasTriggeredAngry = false;
+            _currentState = CustomerState.None;
+
+            OnCustomerStateChanged?.Invoke(_currentState);
+
+            if (leavingCustomer != null)
+            {
+                OnCustomerLeft?.Invoke(leavingCustomer);
+            }
+
+            Debug.Log("[CustomerDebug] 当前顾客已由测试工具清理");
+        }
+#endif
+
         private void ChangeState(CustomerState newState)
         {
             _currentState = newState;
