@@ -39,6 +39,15 @@ namespace InnsmouthCafe.UI
 
             SynchronizeSourceMaterialProperties();
             _effectController.ApplyToMaterial(_runtimeMaterial);
+
+            // 处于 Stencil Mask 下时，UGUI 会通过 StencilMaterial 生成一份包了模板测试的材质副本
+            // 用于渲染，源材质的每帧改动不会传递过去。这里同步写入真正用于渲染的材质，
+            // 保证带 Mask、带 RectMask2D、无遮罩三种情况都能正确跟随卡牌倾斜。
+            Material renderMaterial = _overlayImage.materialForRendering;
+            if (renderMaterial != null && renderMaterial != _runtimeMaterial)
+            {
+                _effectController.ApplyToMaterial(renderMaterial);
+            }
         }
 
         protected virtual void OnDestroy()

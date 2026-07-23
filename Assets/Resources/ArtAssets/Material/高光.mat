@@ -57,13 +57,13 @@ Material:
     - _HeightMapInfluence: 1
     - _HeightSampleDistance: 1.5
     - _HighlightAngle: 45
-    - _HighlightCenterOffset: -0.54
+    - _HighlightCenterOffset: 0
     - _HighlightFollowStrength: 0
     - _HighlightIntensity: 1
-    - _HighlightOpacity: 1
+    - _HighlightOpacity: 0.09
     - _HighlightRotationOffset: 0
     - _HighlightRotationRange: 15
-    - _HighlightSoftness: 0.5
+    - _HighlightSoftness: 1
     - _HighlightTravel: 0.3
     - _HighlightWidth: 0.01
     - _HolographicIntensity: 1

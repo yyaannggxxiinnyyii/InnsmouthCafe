@@ -121,6 +121,11 @@ namespace InnsmouthCafe.UI
         private bool _canClickToContinue = false;
 
         /// <summary>
+        /// 是否正在完成当前对话，防止淡出期间重复触发完成流程
+        /// </summary>
+        private bool _isCompletingDialogue = false;
+
+        /// <summary>
         /// 对话开始事件
         /// </summary>
         public event Action OnDialogueStart;
@@ -188,6 +193,8 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
+            PrepareForNewDialogue();
+
             // 清空队列，显示新对话
             _dialogueQueue.Clear();
             _dialogueQueue.Enqueue(dialogue);
@@ -209,6 +216,8 @@ namespace InnsmouthCafe.UI
                 onComplete?.Invoke();
                 return;
             }
+
+            PrepareForNewDialogue();
 
             // 清空队列，添加新对话
             _dialogueQueue.Clear();
@@ -242,6 +251,7 @@ namespace InnsmouthCafe.UI
             _isShowingDialogue = false;
             _isTyping = false;
             _canClickToContinue = false;
+            _isCompletingDialogue = false;
 
             if (_showDebugLog)
             {
@@ -262,6 +272,7 @@ namespace InnsmouthCafe.UI
             _isShowingDialogue = false;
             _isTyping = false;
             _canClickToContinue = false;
+            _isCompletingDialogue = false;
 
             if (_dialogueBubbleCanvasGroup != null)
             {
@@ -305,6 +316,19 @@ namespace InnsmouthCafe.UI
                 StopCoroutine(_autoContinueCoroutine);
                 _autoContinueCoroutine = null;
             }
+        }
+
+        /// <summary>
+        /// 取消上一段对话遗留的协程和气泡动画，并重置新对话所需状态。
+        /// </summary>
+        private void PrepareForNewDialogue()
+        {
+            StopDialogueRoutine();
+            _dialogueBubbleCanvasGroup?.DOKill();
+            _isShowingDialogue = false;
+            _isTyping = false;
+            _canClickToContinue = false;
+            _isCompletingDialogue = false;
         }
 
         /// <summary>
@@ -563,6 +587,20 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private void CompleteDialogue()
         {
+            if (!_isShowingDialogue || _isCompletingDialogue)
+            {
+                return;
+            }
+
+            _isCompletingDialogue = true;
+            _isTyping = false;
+            _canClickToContinue = false;
+            StopDialogueRoutine();
+
+            // 淡出期间可能开始新对话，必须先取走旧回调，避免旧完成回调清空新状态。
+            Action onComplete = _currentOnComplete;
+            _currentOnComplete = null;
+
             if (_showDebugLog)
             {
                 Debug.Log("[DialogueUI] 所有对话完成");
@@ -571,12 +609,9 @@ namespace InnsmouthCafe.UI
             // 隐藏气泡
             HideBubble(() =>
             {
-                // 先缓存并清空回调，避免回调中再次 ShowDialogue 时被后续代码覆盖
-                Action onComplete = _currentOnComplete;
-                _currentOnComplete = null;
-
                 // 气泡隐藏完成后，触发回调
                 _isShowingDialogue = false;
+                _isCompletingDialogue = false;
                 OnDialogueComplete?.Invoke();
                 onComplete?.Invoke();
             });
@@ -596,6 +631,7 @@ namespace InnsmouthCafe.UI
 
             _dialogueBubbleCanvasGroup.interactable = true;
             _dialogueBubbleCanvasGroup.blocksRaycasts = true;
+            _dialogueBubbleCanvasGroup.DOKill();
 
             _dialogueBubbleCanvasGroup.DOFade(1f, _fadeDuration)
                 .SetEase(Ease.OutQuad)
@@ -617,6 +653,7 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
+            _dialogueBubbleCanvasGroup.DOKill();
             _dialogueBubbleCanvasGroup.DOFade(0f, _fadeDuration)
                 .SetEase(Ease.InQuad)
                 .OnComplete(() =>

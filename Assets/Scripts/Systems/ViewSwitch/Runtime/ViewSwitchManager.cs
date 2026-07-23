@@ -375,6 +375,13 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     /// <param name="viewType">界面类型</param>
     public void ShowView(GameViewType viewType)
     {
+        // 强制显示视图时必须终止旧滑动，否则旧 Tween 完成后会覆盖当前视图。
+        if (_scenePanelsContainer != null)
+        {
+            _scenePanelsContainer.DOKill();
+        }
+
+        _isSwitching = false;
         _currentViewType = viewType;
         _currentViewIndex = _viewList.IndexOf(viewType);
 

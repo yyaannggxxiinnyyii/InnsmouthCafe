@@ -119,12 +119,22 @@ namespace InnsmouthCafe.Data
         /// <summary>
         /// 教学模式 - 固定流程，容错率高
         /// </summary>
-        Tutorial,
+        Tutorial = 0,
 
         /// <summary>
         /// 普通模式 - 标准挑战
         /// </summary>
-        Normal
+        Normal = 1,
+
+        /// <summary>
+        /// 困难模式 - 提高经营与制作难度
+        /// </summary>
+        Hard = 2,
+
+        /// <summary>
+        /// 无尽模式 - 持续经营直至满足结束条件
+        /// </summary>
+        Endless = 3
     }
 
     /// <summary>

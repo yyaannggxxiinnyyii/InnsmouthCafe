@@ -18,6 +18,10 @@ namespace InnsmouthCafe.UI
         [Tooltip("资源图标")]
         private Image _iconImage;
 
+        [SerializeField]
+        [Tooltip("使用资源图标轮廓显示浮雕效果的覆盖层")]
+        private Image _iconEmbossImage;
+
         [Header("牌背状态")]
         [SerializeField]
         [Tooltip("未解锁时遮挡牌面的牌背 CanvasGroup")]
@@ -44,13 +48,17 @@ namespace InnsmouthCafe.UI
                 _nameText.text = itemName;
             }
 
-            if (_iconImage == null)
+            if (_iconImage != null)
             {
-                return;
+                _iconImage.sprite = icon;
+                _iconImage.enabled = icon != null;
             }
 
-            _iconImage.sprite = icon;
-            _iconImage.enabled = icon != null;
+            if (_iconEmbossImage != null)
+            {
+                _iconEmbossImage.sprite = icon;
+                _iconEmbossImage.enabled = icon != null;
+            }
         }
 
         /// <summary>

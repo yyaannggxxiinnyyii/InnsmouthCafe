@@ -32,6 +32,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fbfbbaf1fd1e4864d96d32f7f0022e9e, type: 2}
   - {fileID: 11400000, guid: 1077fa5ed919ca8439407609e91a965c, type: 2}
   - {fileID: 11400000, guid: 592b5ddd058968a4f823fe3600934308, type: 2}
+  - {fileID: 11400000, guid: b0e942e0f1e6c7140884beb333ffda87, type: 2}
+  - {fileID: 11400000, guid: ec5127fca8b3511439a4d316b557dc97, type: 2}
   unlockedToppingsOnDayStart:
   - {fileID: 11400000, guid: d8d67d18b8c61494cb3b1a0b3d0c8306, type: 2}
   - {fileID: 11400000, guid: 8fc1479473eec0e4fb5dec3bc897a60e, type: 2}

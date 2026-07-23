@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
@@ -9,8 +8,8 @@ namespace InnsmouthCafe.UI
 {
     /// <summary>
     /// 模式选择面板UI
-    /// 作为主菜单子面板，展示可选游戏模式（普通）
-    /// 未解锁模式灰显并显示锁图标
+    /// 作为主菜单子面板，展示普通和困难游戏模式
+    /// 未开放模式保留显示并禁用交互
     /// </summary>
     public class ModeSelectPanelUI : MonoBehaviour
     {
@@ -22,17 +21,15 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("普通模式按钮")]
         private Button _normalButton;
 
-        [Header("锁图标")]
-        [SerializeField] [Tooltip("普通模式锁图标（未解锁时显示）")]
-        private GameObject _normalLock;
-
-        [Header("按钮文本")]
-        [SerializeField] [Tooltip("普通模式按钮文本")]
-        private TextMeshProUGUI _normalText;
+        [SerializeField] [Tooltip("困难模式按钮")]
+        private Button _hardButton;
 
         [Header("模式配置")]
         [SerializeField] [Tooltip("普通模式配置SO")]
         private GameModeConfigSO _normalConfig;
+
+        [SerializeField] [Tooltip("困难模式配置SO")]
+        private GameModeConfigSO _hardConfig;
 
         [Header("底部按钮")]
         [SerializeField] [Tooltip("返回主菜单按钮")]
@@ -42,13 +39,6 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("面板淡入淡出时长")]
         private float _fadeDuration = 0.25f;
 
-        [Header("锁定状态颜色")]
-        [SerializeField] [Tooltip("按钮锁定时的颜色")]
-        private Color _lockedColor = new Color(0.5f, 0.5f, 0.5f, 0.6f);
-
-        [SerializeField] [Tooltip("按钮解锁时的颜色")]
-        private Color _unlockedColor = Color.white;
-
         private MainMenuUI _mainMenu;
 
         private void Awake()
@@ -56,6 +46,7 @@ namespace InnsmouthCafe.UI
             _mainMenu = FindObjectOfType<MainMenuUI>();
 
             _normalButton?.onClick.AddListener(OnNormalClicked);
+            _hardButton?.onClick.AddListener(OnHardClicked);
             _backButton?.onClick.AddListener(OnBackClicked);
         }
 
@@ -84,27 +75,18 @@ namespace InnsmouthCafe.UI
         {
             bool normalUnlocked = GameManager.Instance != null
                 && GameManager.Instance.IsModeUnlocked(GameMode.Normal);
+            bool hardUnlocked = GameManager.Instance != null
+                && GameManager.Instance.IsModeUnlocked(GameMode.Hard);
 
-            SetButtonState(_normalButton, _normalLock, _normalText, normalUnlocked);
+            SetButtonInteractable(_normalButton, normalUnlocked);
+            SetButtonInteractable(_hardButton, hardUnlocked);
         }
 
-        /// <summary>设置单个模式按钮的可交互/锁定状态</summary>
-        private void SetButtonState(Button button, GameObject lockIcon, TextMeshProUGUI text, bool unlocked)
+        /// <summary>设置模式按钮是否允许点击。</summary>
+        private void SetButtonInteractable(Button button, bool interactable)
         {
             if (button != null)
-            {
-                button.interactable = unlocked;
-
-                var buttonImage = button.GetComponent<Image>();
-                if (buttonImage != null)
-                    buttonImage.color = unlocked ? _unlockedColor : _lockedColor;
-            }
-
-            if (lockIcon != null)
-                lockIcon.SetActive(!unlocked);
-
-            if (text != null)
-                text.color = unlocked ? Color.white : new Color(1f, 1f, 1f, 0.4f);
+                button.interactable = interactable;
         }
 
         // ── 按钮回调 ────────────────────────────────────────────
@@ -118,6 +100,18 @@ namespace InnsmouthCafe.UI
             }
 
             GameManager.Instance?.StartGameWithConfig(_normalConfig);
+        }
+
+        /// <summary>使用困难模式配置启动新游戏。</summary>
+        private void OnHardClicked()
+        {
+            if (_hardConfig == null)
+            {
+                Debug.LogError("[ModeSelect] 困难模式配置未设置");
+                return;
+            }
+
+            GameManager.Instance?.StartGameWithConfig(_hardConfig);
         }
 
         private void OnBackClicked()

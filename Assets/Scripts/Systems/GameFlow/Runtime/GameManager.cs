@@ -197,6 +197,8 @@ public class GameManager : Singleton<GameManager>
                 return true; // 教学模式始终可用
             case GameMode.Normal:
                 return PlayerPrefs.GetInt(PrefKeyNormalUnlocked, 0) == 1;
+            case GameMode.Hard:
+                return true;
             default:
                 return false;
         }

@@ -27,8 +27,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e, type: 2}
   - {fileID: 11400000, guid: 2439771a89a4d0243bdfc923482a1b32, type: 2}
   randomSpecialCount: 1
-  unlockedLiquidsOnDayStart:
-  - {fileID: 11400000, guid: b0e942e0f1e6c7140884beb333ffda87, type: 2}
-  - {fileID: 11400000, guid: ec5127fca8b3511439a4d316b557dc97, type: 2}
+  unlockedLiquidsOnDayStart: []
   unlockedToppingsOnDayStart:
   - {fileID: 11400000, guid: 0c9b1a58aa814034fb8f3f783d17f255, type: 2}

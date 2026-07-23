@@ -9,12 +9,28 @@ namespace InnsmouthCafe.UI
     [RequireComponent(typeof(Button))]
     public class GalleryOpenButton : MonoBehaviour
     {
+        [SerializeField]
+        [Tooltip("图鉴入口红点")]
+        private GameObject _redDot;
+
         private Button _button;
+        private GalleryManager _galleryManager;
 
         private void Awake()
         {
             _button = GetComponent<Button>();
             _button.onClick.AddListener(OpenGallery);
+        }
+
+        private void OnEnable()
+        {
+            BindGalleryManager();
+            RefreshRedDot();
+        }
+
+        private void OnDisable()
+        {
+            UnbindGalleryManager();
         }
 
         private void OnDestroy()
@@ -43,6 +59,49 @@ namespace InnsmouthCafe.UI
             }
 
             galleryPanel.Show();
+        }
+
+        /// <summary>
+        /// 绑定图鉴状态变化事件，用于实时刷新入口红点。
+        /// </summary>
+        private void BindGalleryManager()
+        {
+            GalleryManager galleryManager = GalleryManager.Instance;
+            if (_galleryManager == galleryManager)
+            {
+                return;
+            }
+
+            UnbindGalleryManager();
+            _galleryManager = galleryManager;
+            if (_galleryManager != null)
+            {
+                _galleryManager.OnGalleryChanged += RefreshRedDot;
+            }
+        }
+
+        /// <summary>
+        /// 解绑图鉴状态变化事件。
+        /// </summary>
+        private void UnbindGalleryManager()
+        {
+            if (_galleryManager != null)
+            {
+                _galleryManager.OnGalleryChanged -= RefreshRedDot;
+            }
+
+            _galleryManager = null;
+        }
+
+        /// <summary>
+        /// 根据图鉴未读状态刷新入口红点。
+        /// </summary>
+        private void RefreshRedDot()
+        {
+            if (_redDot != null)
+            {
+                _redDot.SetActive(_galleryManager != null && _galleryManager.HasAnyUnread());
+            }
         }
     }
 }

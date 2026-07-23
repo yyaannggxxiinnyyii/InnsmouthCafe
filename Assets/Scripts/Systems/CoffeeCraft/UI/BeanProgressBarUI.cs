@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
 
@@ -22,6 +23,14 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("豆量文本")]
         private TextMeshProUGUI _beanAmountText;
 
+        [Header("显隐设置")]
+        [SerializeField] [Tooltip("控制整个豆量进度条显隐的 CanvasGroup")]
+        private CanvasGroup _canvasGroup;
+
+        [SerializeField] [Tooltip("渐隐渐出时长（秒）")]
+        [Range(0f, 1f)]
+        private float _fadeDuration = 0.2f;
+
         [Header("配置")]
         [SerializeField] [Tooltip("最大豆量（克）")]
         private float _maxBeanAmount = 20f;
@@ -34,10 +43,12 @@ namespace InnsmouthCafe.UI
         private Color _defaultColor = new Color(0.5f, 0.5f, 0.5f);
 
         private CoffeeCraftManager _manager;
+        private bool _isVisible;
 
         private void Awake()
         {
             _manager = CoffeeCraftManager.Instance;
+            _canvasGroup ??= GetComponent<CanvasGroup>();
 
             // 初始化显示
             if (_fill != null)
@@ -47,6 +58,7 @@ namespace InnsmouthCafe.UI
             }
 
             UpdateBeanAmountText(0f, _maxBeanAmount);
+            SetVisible(false, true);
         }
 
         private void Start()
@@ -54,6 +66,7 @@ namespace InnsmouthCafe.UI
             if (_manager != null)
             {
                 _manager.OnBatchDataChanged += OnBatchDataChanged;
+                RefreshDisplay(_manager.CurrentBatch);
             }
         }
 
@@ -63,6 +76,8 @@ namespace InnsmouthCafe.UI
             {
                 _manager.OnBatchDataChanged -= OnBatchDataChanged;
             }
+
+            _canvasGroup?.DOKill();
         }
 
         /// <summary>
@@ -83,6 +98,7 @@ namespace InnsmouthCafe.UI
                 UpdateFillAmount(0f);
                 UpdateBeanAmountText(0f, _maxBeanAmount);
                 UpdateFillColor(_defaultColor);
+                SetVisible(false);
                 return;
             }
 
@@ -106,6 +122,42 @@ namespace InnsmouthCafe.UI
             {
                 UpdateFillColor(_defaultColor);
             }
+
+            SetVisible(displayAmount > 0f);
+        }
+
+        /// <summary>
+        /// 根据当前是否已取豆，控制整个进度条渐隐渐出。
+        /// </summary>
+        private void SetVisible(bool visible, bool immediate = false)
+        {
+            if (_canvasGroup == null || (!immediate && _isVisible == visible))
+            {
+                return;
+            }
+
+            _isVisible = visible;
+            _canvasGroup.DOKill();
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
+
+            float targetAlpha = visible ? 1f : 0f;
+            if (immediate || _fadeDuration <= 0f)
+            {
+                _canvasGroup.alpha = targetAlpha;
+                _canvasGroup.interactable = visible;
+                _canvasGroup.blocksRaycasts = visible;
+                return;
+            }
+
+            _canvasGroup.DOFade(targetAlpha, _fadeDuration)
+                .SetEase(Ease.InOutQuad)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    _canvasGroup.interactable = visible;
+                    _canvasGroup.blocksRaycasts = visible;
+                });
         }
 
         /// <summary>

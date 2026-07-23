@@ -21,6 +21,10 @@ namespace InnsmouthCafe.UI
         private Image _iconImage;
 
         [SerializeField]
+        [Tooltip("使用收集物图标轮廓显示浮雕效果的覆盖层")]
+        private Image _iconEmbossImage;
+
+        [SerializeField]
         [Tooltip("点击打开收集物详情的按钮")]
         private Button _openDetailButton;
 
@@ -77,10 +81,17 @@ namespace InnsmouthCafe.UI
                 _nameText.text = collectible.collectibleName;
             }
 
+            Sprite iconSprite = collectible.icon;
             if (_iconImage != null)
             {
-                _iconImage.sprite = collectible.icon;
-                _iconImage.enabled = collectible.icon != null;
+                _iconImage.sprite = iconSprite;
+                _iconImage.enabled = iconSprite != null;
+            }
+
+            if (_iconEmbossImage != null)
+            {
+                _iconEmbossImage.sprite = iconSprite;
+                _iconEmbossImage.enabled = iconSprite != null;
             }
         }
 

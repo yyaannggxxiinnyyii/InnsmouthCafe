@@ -65,7 +65,7 @@ public static class CoffeeTutorialFlow
                 TutorialStep.RequireClick(CoffeeTutorialTargets.SwitchNext,"点击切换按钮，进入加液和小料界面。",TutorialEvents.ViewSwitchCraftMix),
                 TutorialStep.Say("这个场景用来添加咖啡辅助液和风味小料。"),
                 TutorialStep.Highlight(CoffeeTutorialTargets.Liquid_1, "这里是鲸鱼奶、水母汁，还有冰块。"),
-                TutorialStep.Highlight(CoffeeTutorialTargets.Liquid_2, "这里是海草汁，以及深海水。"),
+                //TutorialStep.Highlight(CoffeeTutorialTargets.Liquid_2, "这里是海草汁，以及深海水。"),
                 TutorialStep.Highlight(CoffeeTutorialTargets.Topping, "这些是小料，拖拽小料到杯口绿色显示区域即可添加小料。"),
                 TutorialStep.Say("咖啡制作完成后，返回吧台界面，点击提交订单。"),
                 TutorialStep.FreePlayUntilEvent(TutorialEvents.CoffeeSubmit),

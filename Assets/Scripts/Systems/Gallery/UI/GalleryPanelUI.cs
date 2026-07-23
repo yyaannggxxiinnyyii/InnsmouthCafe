@@ -128,12 +128,16 @@ namespace InnsmouthCafe.UI
         private EndingConfigSO _endingConfigSO;
 
         [SerializeField]
-        [Tooltip("结局条目父节点")]
-        private Transform _endingContentRoot;
+        [Tooltip("迷失结局固定槽位")]
+        private GalleryEndingItemUI _lostEndingSlot;
 
         [SerializeField]
-        [Tooltip("结局条目预制体；为空时运行时创建基础条目")]
-        private GalleryEndingItemUI _endingItemPrefab;
+        [Tooltip("回归结局固定槽位")]
+        private GalleryEndingItemUI _returnEndingSlot;
+
+        [SerializeField]
+        [Tooltip("好结局固定槽位")]
+        private GalleryEndingItemUI _goodEndingSlot;
 
         [SerializeField]
         [Tooltip("结局重播面板；局外图鉴需要绑定 EndingPanelUI")]
@@ -147,8 +151,6 @@ namespace InnsmouthCafe.UI
         private readonly List<GalleryCollectibleItemUI> _collectibleItems = new List<GalleryCollectibleItemUI>();
         private readonly List<GalleryIngredientItemUI> _liquidItems = new List<GalleryIngredientItemUI>();
         private readonly List<GalleryIngredientItemUI> _toppingItems = new List<GalleryIngredientItemUI>();
-        private readonly List<GalleryEndingItemUI> _endingItems = new List<GalleryEndingItemUI>();
-        private readonly List<GameEnding> _unlockedEndingEntries = new List<GameEnding>();
 
         private const string CollectibleResourcePath = "SO/收集物SO";
         private const string CharacterResourcePath = "SO/顾客SO";
@@ -770,32 +772,30 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 刷新结局图鉴列表；未收集结局不生成条目。
+        /// 刷新三个固定结局槽位的解锁状态与回放入口。
         /// </summary>
         private void RefreshEndingList()
         {
             EnsureEndingConfigLoaded();
-            RebuildUnlockedEndingEntries();
+            bool canReplay = _allowEndingReplay && ResolveEndingReplayPanel() != null;
+            RefreshEndingSlot(_lostEndingSlot, GameEnding.Lost, canReplay);
+            RefreshEndingSlot(_returnEndingSlot, GameEnding.Return, canReplay);
+            RefreshEndingSlot(_goodEndingSlot, GameEnding.Good, canReplay);
+        }
 
-            if (!EnsureEndingItems())
+        /// <summary>
+        /// 刷新指定固定槽位，未解锁时保留占位显示并禁用回放。
+        /// </summary>
+        private void RefreshEndingSlot(GalleryEndingItemUI slot, GameEnding ending, bool canReplay)
+        {
+            if (slot == null)
             {
                 return;
             }
 
-            for (int i = 0; i < _endingItems.Count; i++)
-            {
-                if (i >= _unlockedEndingEntries.Count)
-                {
-                    _endingItems[i].gameObject.SetActive(false);
-                    continue;
-                }
-
-                GameEnding ending = _unlockedEndingEntries[i];
-                EndingConfig endingConfig = _endingConfigSO != null ? _endingConfigSO.GetEndingConfig(ending) : null;
-                bool canViewDetail = _allowEndingReplay && ResolveEndingReplayPanel() != null;
-                _endingItems[i].gameObject.SetActive(true);
-                _endingItems[i].Configure(ending, endingConfig, canViewDetail, ShowEndingReplay);
-            }
+            bool isUnlocked = IsEndingUnlocked(ending);
+            EndingConfig endingConfig = _endingConfigSO != null ? _endingConfigSO.GetEndingConfig(ending) : null;
+            slot.Configure(ending, endingConfig, isUnlocked, canReplay, ShowEndingReplay);
         }
 
         /// <summary>
@@ -816,28 +816,6 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 重建已收集结局列表，保持固定结局顺序。
-        /// </summary>
-        private void RebuildUnlockedEndingEntries()
-        {
-            _unlockedEndingEntries.Clear();
-            AddEndingIfUnlocked(GameEnding.Lost);
-            AddEndingIfUnlocked(GameEnding.Return);
-            AddEndingIfUnlocked(GameEnding.Good);
-        }
-
-        /// <summary>
-        /// 如果指定结局已收集，则加入本次显示列表。
-        /// </summary>
-        private void AddEndingIfUnlocked(GameEnding ending)
-        {
-            if (IsEndingUnlocked(ending))
-            {
-                _unlockedEndingEntries.Add(ending);
-            }
-        }
-
-        /// <summary>
         /// 查询结局是否已收集；主菜单场景没有 GalleryManager 时回退到 PlayerPrefs。
         /// </summary>
         private bool IsEndingUnlocked(GameEnding ending)
@@ -849,84 +827,6 @@ namespace InnsmouthCafe.UI
 
             int generation = PlayerPrefs.GetInt(GalleryGenerationKey, 0);
             return PlayerPrefs.GetInt($"{EndingPrefKeyPrefix}{generation}_{ending}", 0) == 1;
-        }
-
-        /// <summary>
-        /// 确保结局条目实例数量与已收集结局数量一致。
-        /// </summary>
-        private bool EnsureEndingItems()
-        {
-            if (_endingContentRoot == null)
-            {
-                Debug.LogWarning("[Gallery] 结局图鉴ContentRoot未绑定，无法刷新结局条目");
-                return false;
-            }
-
-            while (_endingItems.Count < _unlockedEndingEntries.Count)
-            {
-                GalleryEndingItemUI item = CreateEndingItem(_endingContentRoot);
-                _endingItems.Add(item);
-            }
-
-            for (int i = 0; i < _endingItems.Count; i++)
-            {
-                _endingItems[i].gameObject.SetActive(i < _unlockedEndingEntries.Count);
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 创建结局条目实例，优先使用预制体，未配置时创建基础运行时条目。
-        /// </summary>
-        private GalleryEndingItemUI CreateEndingItem(Transform parent)
-        {
-            if (_endingItemPrefab != null)
-            {
-                return Instantiate(_endingItemPrefab, parent);
-            }
-
-            GameObject itemObject = new GameObject(
-                "结局图鉴条目",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image),
-                typeof(GalleryEndingItemUI));
-            itemObject.transform.SetParent(parent, false);
-
-            RectTransform itemRect = itemObject.GetComponent<RectTransform>();
-            itemRect.sizeDelta = new Vector2(300f, 380f);
-
-            Image background = itemObject.GetComponent<Image>();
-            background.color = new Color(1f, 1f, 1f, 0.85f);
-
-            Image endingIcon = CreateRuntimeImage(
-                "结局图标",
-                itemObject.transform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(220f, 170f),
-                new Vector2(0f, 62f));
-
-            TextMeshProUGUI nameText = CreateRuntimeText(
-                "结局名",
-                itemObject.transform,
-                string.Empty,
-                28f,
-                TextAlignmentOptions.Center);
-            RectTransform nameRect = nameText.GetComponent<RectTransform>();
-            nameRect.sizeDelta = new Vector2(240f, 64f);
-            nameRect.anchoredPosition = new Vector2(0f, -72f);
-
-            Button detailButton = CreateRuntimeButton(
-                "详细查看按钮",
-                itemObject.transform,
-                "详细查看",
-                new Vector2(150f, 48f),
-                new Vector2(0f, -150f));
-
-            GalleryEndingItemUI item = itemObject.GetComponent<GalleryEndingItemUI>();
-            item.UseRuntimeReferences(endingIcon, nameText, detailButton);
-            return item;
         }
 
         /// <summary>

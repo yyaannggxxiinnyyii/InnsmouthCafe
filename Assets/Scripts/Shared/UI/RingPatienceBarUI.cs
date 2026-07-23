@@ -52,6 +52,11 @@ namespace InnsmouthCafe.UI
 
         // ── 生命周期 ──────────────────────────────────────────
 
+        private void OnEnable()
+        {
+            EnsureLastSibling();
+        }
+
         private void Start()
         {
             // 初始完全透明，不拦截射线
@@ -77,6 +82,11 @@ namespace InnsmouthCafe.UI
                 // OnViewSwitched：切换完成时兜底校正（直接跳转时无动画）
                 ViewSwitchManager.Instance.OnViewSwitched      += OnViewSwitched;
             }
+        }
+
+        private void LateUpdate()
+        {
+            EnsureLastSibling();
         }
 
         private void OnDestroy()
@@ -185,6 +195,20 @@ namespace InnsmouthCafe.UI
         }
 
         // ── 显隐逻辑 ──────────────────────────────────────────
+
+        /// <summary>
+        /// 确保耐心条始终位于当前父节点的最后一个兄弟位置。
+        /// </summary>
+        private void EnsureLastSibling()
+        {
+            Transform parent = transform.parent;
+            if (parent == null || transform.GetSiblingIndex() == parent.childCount - 1)
+            {
+                return;
+            }
+
+            transform.SetAsLastSibling();
+        }
 
         /// <summary>
         /// 根据当前视图和耐心激活状态决定是否显示
