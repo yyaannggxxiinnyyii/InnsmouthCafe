@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -48.815014, y: 74.7}
-  m_SizeDelta: {x: 97.63, y: 97.63}
+  m_AnchoredPosition: {x: -68, y: 75.1}
+  m_SizeDelta: {x: 66.8149, y: 66.8149}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4102983866350639922
 CanvasRenderer:
@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: be02a9a1b071db94a83698339925e3a0, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 45c9ef7d79d84a14da257fb7c190c6b6, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -228,6 +228,9 @@ MonoBehaviour:
   _participantAvatarImage: {fileID: 5935172995734359471}
   _selectedMarker: {fileID: 1422995974344312409}
   _completedMarker: {fileID: 5779166462678492872}
+  _terribleQualityIcon: {fileID: 21300000, guid: 98e4b07574ccf6e49892d9a7d3369868, type: 3}
+  _acceptableQualityIcon: {fileID: 21300000, guid: 218cc9be7a87fe941aa600b19af720e9, type: 3}
+  _perfectQualityIcon: {fileID: 21300000, guid: e5b005badb90eb849a64454b423635f5, type: 3}
 --- !u!1 &8548393754731306937
 GameObject:
   m_ObjectHideFlags: 0

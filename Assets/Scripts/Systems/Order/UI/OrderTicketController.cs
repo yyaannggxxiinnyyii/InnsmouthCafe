@@ -161,11 +161,13 @@ namespace InnsmouthCafe.UI
         /// <returns>选择成功返回 true。</returns>
         public bool SelectSlot(int slotIndex)
         {
+            CustomerOrderSlotData previousSlot = _currentSession?.SelectedSlot;
             if (_currentSession == null || !_currentSession.TrySelectSlot(slotIndex))
             {
                 return false;
             }
 
+            CollapseDetailIfSelectionChanged(previousSlot, _currentSession.SelectedSlot);
             RefreshPreviewSelection();
             OnSlotSelected?.Invoke(_currentSession.SelectedSlot);
             return true;
@@ -178,11 +180,13 @@ namespace InnsmouthCafe.UI
         /// <returns>选择成功返回 true。</returns>
         public bool SelectSlot(string slotId)
         {
+            CustomerOrderSlotData previousSlot = _currentSession?.SelectedSlot;
             if (_currentSession == null || !_currentSession.TrySelectSlot(slotId))
             {
                 return false;
             }
 
+            CollapseDetailIfSelectionChanged(previousSlot, _currentSession.SelectedSlot);
             RefreshPreviewSelection();
             OnSlotSelected?.Invoke(_currentSession.SelectedSlot);
             return true;
@@ -348,6 +352,27 @@ namespace InnsmouthCafe.UI
 
             SelectSlot(item.BoundSlot.slotId);
             ShowSlotDetail(item.BoundSlot, false);
+        }
+
+        /// <summary>
+        /// 选中小票发生切换时收起旧详情，避免展开状态下直接替换详情内容。
+        /// </summary>
+        /// <param name="previousSlot">切换前选中的订单槽。</param>
+        /// <param name="currentSlot">切换后选中的订单槽。</param>
+        private void CollapseDetailIfSelectionChanged(
+            CustomerOrderSlotData previousSlot,
+            CustomerOrderSlotData currentSlot)
+        {
+            if (_detailPanel == null
+                || previousSlot == null
+                || currentSlot == null
+                || previousSlot.slotId == currentSlot.slotId
+                || !_detailPanel.IsDetailVisibleOrAnimating)
+            {
+                return;
+            }
+
+            _detailPanel.CollapseForSlotSwitch();
         }
 
         /// <summary>

@@ -245,9 +245,6 @@ public class GameFlowManager : Singleton<GameFlowManager>
         // 重置特殊客人出现记录（新局开始，所有特殊客人重新可用）
         CustomerManager.Instance.ResetSeenSpecials();
 
-        // 重置材料解锁状态（新局开始，按初始配置和每日配置重新解锁）
-        IngredientUnlockManager.Instance?.ResetUnlocks();
-
         OnGameStart?.Invoke();
 
         // 启动非主轨道BGM（环境音等）

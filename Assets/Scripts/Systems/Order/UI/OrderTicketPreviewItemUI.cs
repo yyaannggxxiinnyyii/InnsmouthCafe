@@ -25,8 +25,21 @@ namespace InnsmouthCafe.UI
         private Image _selectedMarker;
 
         [SerializeField]
-        [Tooltip("已提交或已完成状态图片")]
+        [Tooltip("订单品质图标显示图片")]
         private Image _completedMarker;
+
+        [Header("订单品质图标")]
+        [SerializeField]
+        [Tooltip("糟糕品质图标，对应 Terrible")]
+        private Sprite _terribleQualityIcon;
+
+        [SerializeField]
+        [Tooltip("合格品质图标，对应 Acceptable")]
+        private Sprite _acceptableQualityIcon;
+
+        [SerializeField]
+        [Tooltip("完美品质图标，对应 Perfect")]
+        private Sprite _perfectQualityIcon;
 
         /// <summary>
         /// 小票缩略项被选择时触发。
@@ -91,7 +104,7 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 刷新完成标记。
+        /// 刷新订单品质图标。
         /// </summary>
         public void RefreshState()
         {
@@ -100,9 +113,21 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
-            bool completed = BoundSlot != null
-                && BoundSlot.state != CustomerOrderSlotState.WaitingForSubmission;
-            _completedMarker.gameObject.SetActive(completed);
+            bool hasScoringResult = BoundSlot != null
+                && BoundSlot.scoringData != null
+                && BoundSlot.state == CustomerOrderSlotState.Completed;
+            _completedMarker.gameObject.SetActive(hasScoringResult);
+
+            if (!hasScoringResult)
+            {
+                return;
+            }
+
+            Sprite qualityIcon = GetQualityIcon(BoundSlot.scoringData.qualityLevel);
+            if (qualityIcon != null)
+            {
+                _completedMarker.sprite = qualityIcon;
+            }
         }
 
         /// <summary>
@@ -137,6 +162,26 @@ namespace InnsmouthCafe.UI
             Sprite avatarSprite = BoundSlot?.GetOrdererAvatar();
             _participantAvatarImage.sprite = avatarSprite;
             _participantAvatarImage.enabled = avatarSprite != null;
+        }
+
+        /// <summary>
+        /// 根据订单品质获取对应的小票品质图标。
+        /// </summary>
+        /// <param name="quality">订单评分品质。</param>
+        /// <returns>配置过的品质图标；未配置时返回当前图片原图作为兜底。</returns>
+        private Sprite GetQualityIcon(CoffeeQuality quality)
+        {
+            Sprite icon = quality switch
+            {
+                CoffeeQuality.Perfect => _perfectQualityIcon,
+                CoffeeQuality.Acceptable => _acceptableQualityIcon,
+                CoffeeQuality.Terrible => _terribleQualityIcon,
+                _ => null
+            };
+
+            return icon != null
+                ? icon
+                : _completedMarker.sprite;
         }
     }
 }

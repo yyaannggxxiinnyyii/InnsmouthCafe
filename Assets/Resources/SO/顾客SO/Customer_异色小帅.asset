@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customerId: C101
   customerName: "\u5F02\u8272\u5C0F\u5E05"
-  avatarSprite: {fileID: 21300000, guid: ed76456da1dd75740a4fdce5db458c6d, type: 3}
+  avatarSprite: {fileID: 21300000, guid: 6f77b9edb1d8ace49b02faed6d996154, type: 3}
+  ordererAvatarSprite: {fileID: 21300000, guid: 72b39254acfdda242ac6437a5288502c, type: 3}
   normalSprite: {fileID: 21300000, guid: 0ff3cdda88519e844bbbc0789f3b82d6, type: 3}
   impatientSprite: {fileID: 21300000, guid: 8b21f6ad896a2124b9cae715a18694e9, type: 3}
   angrySprite: {fileID: 21300000, guid: 6670639445ba16b4f9c76af8b0811518, type: 3}

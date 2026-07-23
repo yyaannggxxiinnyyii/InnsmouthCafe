@@ -16,16 +16,16 @@ MonoBehaviour:
   dayStartEffects: []
   useCustomerOrderGroup: 1
   orderParticipants:
-  - participantId: 
+  - participantId: shashabimu
     displayName: "\u6BD5\u59C6"
-    ordererAvatarSprite: {fileID: 0}
+    ordererAvatarSprite: {fileID: 21300000, guid: c0bdbebd1d6673b4c9ff96432d07401c, type: 3}
     orderPoolEntries:
     - orderPool: {fileID: 11400000, guid: 1c5cb0dc5f7892542bfb561adab3402f, type: 2}
       weight: 1
     orderDialogueTexts: []
-  - participantId: 
+  - participantId: shashasailasi
     displayName: "\u585E\u62C9\u65AF"
-    ordererAvatarSprite: {fileID: 0}
+    ordererAvatarSprite: {fileID: 21300000, guid: 45c9ef7d79d84a14da257fb7c190c6b6, type: 3}
     orderPoolEntries:
     - orderPool: {fileID: 11400000, guid: 639a406da60e8e142a3678dcf5460571, type: 2}
       weight: 1

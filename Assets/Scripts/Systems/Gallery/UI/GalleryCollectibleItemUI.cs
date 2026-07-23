@@ -24,10 +24,10 @@ namespace InnsmouthCafe.UI
         [Tooltip("点击打开收集物详情的按钮")]
         private Button _openDetailButton;
 
-        [Header("锁定状态")]
+        [Header("牌背状态")]
         [SerializeField]
-        [Tooltip("收集物未获得时显示的占位图标")]
-        private Sprite _lockedIconSprite;
+        [Tooltip("未解锁时遮挡牌面的牌背 CanvasGroup")]
+        private CanvasGroup _cardBackCanvasGroup;
 
         private CollectibleSO _currentCollectible;
         private bool _isObtained;
@@ -64,25 +64,24 @@ namespace InnsmouthCafe.UI
             _isObtained = isObtained;
             _onSelected = onSelected;
 
-            if (collectible == null || !isObtained)
+            SetCardBackVisible(!isObtained);
+            SetButtonInteractable(isObtained);
+
+            if (collectible == null)
             {
-                SetLockedState();
                 return;
             }
 
-            SetText(_nameText, collectible.collectibleName);
-            SetSprite(_iconImage, collectible.icon);
-            SetButtonInteractable(true);
-        }
+            if (_nameText != null)
+            {
+                _nameText.text = collectible.collectibleName;
+            }
 
-        /// <summary>
-        /// 显示未获得状态，并禁止打开收集物详情。
-        /// </summary>
-        private void SetLockedState()
-        {
-            SetText(_nameText, "???");
-            SetSprite(_iconImage, _lockedIconSprite);
-            SetButtonInteractable(false);
+            if (_iconImage != null)
+            {
+                _iconImage.sprite = collectible.icon;
+                _iconImage.enabled = collectible.icon != null;
+            }
         }
 
         /// <summary>
@@ -99,28 +98,18 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 设置文本内容。
+        /// 设置牌背显隐及射线遮挡状态。
         /// </summary>
-        private void SetText(TextMeshProUGUI text, string value)
+        private void SetCardBackVisible(bool visible)
         {
-            if (text != null)
-            {
-                text.text = value;
-            }
-        }
-
-        /// <summary>
-        /// 设置图片内容，并在图片为空时隐藏 Image。
-        /// </summary>
-        private void SetSprite(Image image, Sprite sprite)
-        {
-            if (image == null)
+            if (_cardBackCanvasGroup == null)
             {
                 return;
             }
 
-            image.sprite = sprite;
-            image.enabled = sprite != null;
+            _cardBackCanvasGroup.alpha = visible ? 1f : 0f;
+            _cardBackCanvasGroup.interactable = visible;
+            _cardBackCanvasGroup.blocksRaycasts = visible;
         }
 
         /// <summary>

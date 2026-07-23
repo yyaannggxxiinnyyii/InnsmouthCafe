@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace InnsmouthCafe.UI
 {
     /// <summary>
-    /// 资源图鉴条目UI，负责显示辅助液或小料的图标与名称，并在未解锁时显示占位图标。
+    /// 资源图鉴条目UI，负责显示辅助液或小料的图标与名称，并通过牌背遮挡未解锁内容。
     /// </summary>
     public class GalleryIngredientItemUI : MonoBehaviour
     {
@@ -18,10 +18,10 @@ namespace InnsmouthCafe.UI
         [Tooltip("资源图标")]
         private Image _iconImage;
 
-        [Header("锁定状态")]
+        [Header("牌背状态")]
         [SerializeField]
-        [Tooltip("资源未解锁时显示的占位图标")]
-        private Sprite _lockedIconSprite;
+        [Tooltip("未解锁时遮挡牌面的牌背 CanvasGroup")]
+        private CanvasGroup _cardBackCanvasGroup;
 
         /// <summary>
         /// 使用运行时生成的控件引用，供没有预制体绑定时兜底创建条目。
@@ -37,48 +37,35 @@ namespace InnsmouthCafe.UI
         /// </summary>
         public void Configure(string itemName, Sprite icon, bool isUnlocked)
         {
-            if (!isUnlocked)
+            SetCardBackVisible(!isUnlocked);
+
+            if (_nameText != null)
             {
-                SetLockedState();
-                return;
+                _nameText.text = itemName;
             }
 
-            SetText(_nameText, itemName);
-            SetSprite(_iconImage, icon);
-        }
-
-        /// <summary>
-        /// 显示未解锁状态。
-        /// </summary>
-        private void SetLockedState()
-        {
-            SetText(_nameText, "???");
-            SetSprite(_iconImage, _lockedIconSprite);
-        }
-
-        /// <summary>
-        /// 设置文本内容。
-        /// </summary>
-        private void SetText(TextMeshProUGUI text, string value)
-        {
-            if (text != null)
-            {
-                text.text = value;
-            }
-        }
-
-        /// <summary>
-        /// 设置图片内容，并在图片为空时隐藏 Image。
-        /// </summary>
-        private void SetSprite(Image image, Sprite sprite)
-        {
-            if (image == null)
+            if (_iconImage == null)
             {
                 return;
             }
 
-            image.sprite = sprite;
-            image.enabled = sprite != null;
+            _iconImage.sprite = icon;
+            _iconImage.enabled = icon != null;
+        }
+
+        /// <summary>
+        /// 设置牌背显隐及射线遮挡状态。
+        /// </summary>
+        private void SetCardBackVisible(bool visible)
+        {
+            if (_cardBackCanvasGroup == null)
+            {
+                return;
+            }
+
+            _cardBackCanvasGroup.alpha = visible ? 1f : 0f;
+            _cardBackCanvasGroup.interactable = visible;
+            _cardBackCanvasGroup.blocksRaycasts = visible;
         }
     }
 }

@@ -5,7 +5,7 @@ using InnsmouthCafe.Data;
 using UnityEngine;
 
 /// <summary>
-/// 材料解锁管理器，维护当前局内已解锁的辅助液和小料状态。
+/// 材料解锁管理器，维护持久化的辅助液和小料解锁状态。
 /// </summary>
 public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
 {
@@ -26,6 +26,11 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
     private readonly HashSet<LiquidSO> _unlockedLiquids = new HashSet<LiquidSO>();
     private readonly HashSet<ToppingSO> _unlockedToppings = new HashSet<ToppingSO>();
 
+    private const string LiquidResourcePath = "SO/辅助液SO";
+    private const string ToppingResourcePath = "SO/小料SO";
+    private const string LiquidPrefKeyPrefix = "Ingredient_Liquid_";
+    private const string ToppingPrefKeyPrefix = "Ingredient_Topping_";
+
     /// <summary>材料解锁状态变化事件。</summary>
     public event Action OnUnlockStateChanged;
 
@@ -39,23 +44,62 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
         }
 
         DontDestroyOnLoad(gameObject);
-        RefreshDebugLists();
+        LoadPersistedUnlocks();
     }
 
     /// <summary>
-    /// 重置本局材料解锁状态；初始材料由第 1 天每日配置负责解锁。
+    /// 查询辅助液是否有持久化解锁记录。
     /// </summary>
-    public void ResetUnlocks()
+    public static bool HasLiquidUnlockRecord(LiquidSO liquid)
     {
-        _unlockedLiquids.Clear();
-        _unlockedToppings.Clear();
-        RefreshDebugLists();
-
-        OnUnlockStateChanged?.Invoke();
-
-        if (_showDebugLog)
+        if (liquid == null || string.IsNullOrEmpty(liquid.liquidId))
         {
-            Debug.Log("[IngredientUnlock] 材料解锁状态已重置，当前无已解锁材料");
+            return false;
+        }
+
+        return PlayerPrefs.GetInt(GetLiquidPrefKey(liquid), 0) == 1;
+    }
+
+    /// <summary>
+    /// 查询小料是否有持久化解锁记录。
+    /// </summary>
+    public static bool HasToppingUnlockRecord(ToppingSO topping)
+    {
+        if (topping == null || string.IsNullOrEmpty(topping.toppingId))
+        {
+            return false;
+        }
+
+        return PlayerPrefs.GetInt(GetToppingPrefKey(topping), 0) == 1;
+    }
+
+    /// <summary>
+    /// 清除全部材料解锁记录，供清除游戏进度时调用。
+    /// </summary>
+    public static void ClearAllUnlocks()
+    {
+        foreach (LiquidSO liquid in Resources.LoadAll<LiquidSO>(LiquidResourcePath))
+        {
+            if (liquid != null && !string.IsNullOrEmpty(liquid.liquidId))
+            {
+                PlayerPrefs.DeleteKey(GetLiquidPrefKey(liquid));
+            }
+        }
+
+        foreach (ToppingSO topping in Resources.LoadAll<ToppingSO>(ToppingResourcePath))
+        {
+            if (topping != null && !string.IsNullOrEmpty(topping.toppingId))
+            {
+                PlayerPrefs.DeleteKey(GetToppingPrefKey(topping));
+            }
+        }
+
+        PlayerPrefs.Save();
+
+        if (Instance != null)
+        {
+            Instance.LoadPersistedUnlocks();
+            Instance.OnUnlockStateChanged?.Invoke();
         }
     }
 
@@ -64,7 +108,7 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
     /// </summary>
     public bool IsLiquidUnlocked(LiquidSO liquid)
     {
-        return liquid != null && _unlockedLiquids.Contains(liquid);
+        return HasLiquidUnlockRecord(liquid);
     }
 
     /// <summary>
@@ -72,7 +116,7 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
     /// </summary>
     public bool IsToppingUnlocked(ToppingSO topping)
     {
-        return topping != null && _unlockedToppings.Contains(topping);
+        return HasToppingUnlockRecord(topping);
     }
 
     /// <summary>
@@ -80,14 +124,17 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
     /// </summary>
     public bool UnlockLiquid(LiquidSO liquid)
     {
-        if (liquid == null)
+        if (liquid == null || string.IsNullOrEmpty(liquid.liquidId))
         {
             return false;
         }
 
-        bool added = _unlockedLiquids.Add(liquid);
+        bool added = !HasLiquidUnlockRecord(liquid);
         if (added)
         {
+            PlayerPrefs.SetInt(GetLiquidPrefKey(liquid), 1);
+            PlayerPrefs.Save();
+            _unlockedLiquids.Add(liquid);
             RefreshDebugLists();
             LogUnlock($"辅助液：{liquid.liquidName}");
             OnUnlockStateChanged?.Invoke();
@@ -101,14 +148,17 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
     /// </summary>
     public bool UnlockTopping(ToppingSO topping)
     {
-        if (topping == null)
+        if (topping == null || string.IsNullOrEmpty(topping.toppingId))
         {
             return false;
         }
 
-        bool added = _unlockedToppings.Add(topping);
+        bool added = !HasToppingUnlockRecord(topping);
         if (added)
         {
+            PlayerPrefs.SetInt(GetToppingPrefKey(topping), 1);
+            PlayerPrefs.Save();
+            _unlockedToppings.Add(topping);
             RefreshDebugLists();
             LogUnlock($"小料：{topping.toppingName}");
             OnUnlockStateChanged?.Invoke();
@@ -308,5 +358,48 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
 
         _debugUnlockedToppings.Clear();
         _debugUnlockedToppings.AddRange(_unlockedToppings);
+    }
+
+    /// <summary>
+    /// 从持久化记录恢复运行时缓存，供启动和清除进度后刷新调试状态。
+    /// </summary>
+    private void LoadPersistedUnlocks()
+    {
+        _unlockedLiquids.Clear();
+        _unlockedToppings.Clear();
+
+        foreach (LiquidSO liquid in Resources.LoadAll<LiquidSO>(LiquidResourcePath))
+        {
+            if (HasLiquidUnlockRecord(liquid))
+            {
+                _unlockedLiquids.Add(liquid);
+            }
+        }
+
+        foreach (ToppingSO topping in Resources.LoadAll<ToppingSO>(ToppingResourcePath))
+        {
+            if (HasToppingUnlockRecord(topping))
+            {
+                _unlockedToppings.Add(topping);
+            }
+        }
+
+        RefreshDebugLists();
+    }
+
+    /// <summary>
+    /// 获取辅助液解锁记录的存档键名。
+    /// </summary>
+    private static string GetLiquidPrefKey(LiquidSO liquid)
+    {
+        return $"{LiquidPrefKeyPrefix}{liquid.liquidId}";
+    }
+
+    /// <summary>
+    /// 获取小料解锁记录的存档键名。
+    /// </summary>
+    private static string GetToppingPrefKey(ToppingSO topping)
+    {
+        return $"{ToppingPrefKeyPrefix}{topping.toppingId}";
     }
 }

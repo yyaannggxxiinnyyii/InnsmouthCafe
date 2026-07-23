@@ -124,9 +124,20 @@ namespace InnsmouthCafe.UI
         /// </summary>
         public OrderSO BoundOrder { get; private set; }
 
+        /// <summary>
+        /// 详情面板当前是否正在展开、收起或保持展开。
+        /// </summary>
+        public bool IsDetailVisibleOrAnimating => _isExpanded || _isAnimating || _isPendingExpand;
+
+        /// <summary>
+        /// 详情面板当前是否正在播放展开或收起动画。
+        /// </summary>
+        public bool IsAnimating => _isAnimating;
+
         private RectTransform _canvasRect;
         private bool _isExpanded;
         private bool _isAnimating;
+        private bool _isPendingExpand;
         private bool _pendingAutoCollapse;
         private bool _isDragging;
         private Vector2 _dragStartPointerPos;
@@ -183,6 +194,7 @@ namespace InnsmouthCafe.UI
             DisplayCoffeeRequirements(order);
             DisplayLiquidRequirements(order);
             DisplayToppingRequirements(order);
+            _isPendingExpand = true;
             StartCoroutine(RefreshLayoutThenExpand(autoCollapse));
         }
 
@@ -228,11 +240,35 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
+        /// 切换选中小票时收起详情面板，允许打断正在展开的详情动画。
+        /// </summary>
+        public void CollapseForSlotSwitch()
+        {
+            if (!_isExpanded && !_isAnimating && !_isPendingExpand)
+            {
+                return;
+            }
+
+            if (_isAnimating || _isPendingExpand)
+            {
+                StopAllCoroutines();
+                _pendingAutoCollapse = false;
+                _isPendingExpand = false;
+                HideImmediate();
+                OnDetailHidden?.Invoke();
+                return;
+            }
+
+            Collapse();
+        }
+
+        /// <summary>
         /// 清空详情内容并立即隐藏面板。
         /// </summary>
         public void ResetDetail()
         {
             StopAllCoroutines();
+            _isPendingExpand = false;
             BoundSlot = null;
             BoundOrder = null;
             ClearDetail();
@@ -320,6 +356,7 @@ namespace InnsmouthCafe.UI
             yield return null;
             yield return null;
             ForceRebuildLayout();
+            _isPendingExpand = false;
             Expand();
 
             if (!autoCollapse)
@@ -395,6 +432,7 @@ namespace InnsmouthCafe.UI
             _detailRect?.DOKill();
             _isExpanded = false;
             _isAnimating = false;
+            _isPendingExpand = false;
             _isDragging = false;
 
             if (_detailCanvasGroup != null)

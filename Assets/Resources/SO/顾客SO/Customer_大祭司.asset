@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customerId: C03
   customerName: "\u5927\u796D\u53F8"
-  avatarSprite: {fileID: 21300000, guid: 6f9ca86a4fb43ff48a5782251c38cc2d, type: 3}
+  avatarSprite: {fileID: 21300000, guid: 497460532169a7e4f971d7e3e351b5f7, type: 3}
+  ordererAvatarSprite: {fileID: 21300000, guid: 98a1c51e639c21f4c889793d34cd589b, type: 3}
   normalSprite: {fileID: 21300000, guid: cd7b893c31e12644a99079c38e48aabf, type: 3}
   impatientSprite: {fileID: 21300000, guid: a53c551ef80f5814e9acfc8db725b435, type: 3}
   angrySprite: {fileID: 21300000, guid: 1ea0e2756fd7bf1408bf9b47f4873b8d, type: 3}
@@ -24,6 +25,8 @@ MonoBehaviour:
   - orderPool: {fileID: 11400000, guid: 6361ae4a49c510347876532b192a1e38, type: 2}
     weight: 50
   specialProfile: {fileID: 11400000, guid: b717964df306bac4191924c70511aff0, type: 2}
+  galleryCharacterDescription: "\u6D77\u6D0B\u4F20\u627F\u7740\u65E0\u6570\u79D8\u800C\u4E0D\u5BA3\u7684\u4F20\u8BF4\uFF0C\u5984\u56FE\u4E0E\u4E4B\u4EA4\u8C08\u7684\u4EE3\u4EF7\u662F\u4F60\u7684\u7406\u667A@\uFFE5\uFF01@#@%#%\uFFE5\u2026\u2026"
+  galleryEffectDescription: "\u9065\u8FDC\u800C\u5DE8\u5927\u7684\u8F70\u9E23\u541E\u566C\u4E86\u4F60\u7684\u7406\u667A\uFF0C\u522B\u76F4\u89C6\u4E0D\u53EF\u7406\u89E3\u4E4B\u7269\u3002\r\n\u6548\u679C\uFF1A\u5C4F\u5E55\u51FA\u73B0\u626D\u66F2\u7279\u6548\uFF0C\u5BF9\u8BDD\u6587\u672C\u53D8\u4E3A\u4E71\u7801\uFF0C\u63A5\u5355\u671F\u95F4\u7406\u667A\u6301\u7EED\u51CF\u5C11\u3002\u6301\u7EED\u76EF\u7740\u5927\u796D\u53F8\u4E00\u6BB5\u65F6\u95F4\u540E\u5B83\u4F1A\u9ED1\u8138\uFF0C\u76F4\u63A5\u89E6\u53D1\u574F\u7ED3\u5C40\u3002"
   enterDialogueTexts:
   - '@@#$%***$@?'
   hasCollectible: 1

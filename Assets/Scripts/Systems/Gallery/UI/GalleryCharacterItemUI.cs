@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace InnsmouthCafe.UI
 {
     /// <summary>
-    /// 角色图鉴预览条目UI，负责显示角色立绘与名称，并在可查看时通知外部打开详情面板。
+    /// 角色图鉴预览条目UI，负责显示角色立绘与名称，并通过牌背遮挡未遇见角色。
     /// </summary>
     public class GalleryCharacterItemUI : MonoBehaviour
     {
@@ -21,13 +21,21 @@ namespace InnsmouthCafe.UI
         private Image _portraitImage;
 
         [SerializeField]
+        [Tooltip("使用角色立绘轮廓显示镭射效果的覆盖层")]
+        private Image _portraitEffectImage;
+
+        [SerializeField]
+        [Tooltip("使用角色立绘轮廓显示浮雕效果的覆盖层")]
+        private Image _portraitEmbossImage;
+
+        [SerializeField]
         [Tooltip("点击打开角色详情的按钮")]
         private Button _openDetailButton;
 
-        [Header("锁定状态")]
+        [Header("牌背状态")]
         [SerializeField]
-        [Tooltip("角色未遇见时显示的占位立绘")]
-        private Sprite _lockedPortraitSprite;
+        [Tooltip("未遇见时遮挡牌面的牌背 CanvasGroup")]
+        private CanvasGroup _cardBackCanvasGroup;
 
         private CustomerSO _currentCustomer;
         private bool _isEncountered;
@@ -53,25 +61,34 @@ namespace InnsmouthCafe.UI
             _isPerfected = isPerfected;
             _onSelected = onSelected;
 
-            if (customer == null || !isEncountered)
+            SetCardBackVisible(!isEncountered);
+            SetButtonInteractable(isEncountered);
+
+            if (customer == null)
             {
-                SetLockedState();
                 return;
             }
 
-            SetText(_nameText, customer.customerName);
-            SetSprite(_portraitImage, customer.normalSprite);
-            SetButtonInteractable(true);
-        }
+            if (_nameText != null)
+            {
+                _nameText.text = customer.customerName;
+            }
 
-        /// <summary>
-        /// 显示未遇见状态，并禁止打开角色详情。
-        /// </summary>
-        private void SetLockedState()
-        {
-            SetText(_nameText, "???");
-            SetSprite(_portraitImage, _lockedPortraitSprite);
-            SetButtonInteractable(false);
+            Sprite portraitSprite = customer.normalSprite;
+            if (_portraitImage != null)
+            {
+                _portraitImage.sprite = portraitSprite;
+            }
+
+            if (_portraitEffectImage != null)
+            {
+                _portraitEffectImage.sprite = portraitSprite;
+            }
+
+            if (_portraitEmbossImage != null)
+            {
+                _portraitEmbossImage.sprite = portraitSprite;
+            }
         }
 
         /// <summary>
@@ -88,28 +105,18 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 设置文本内容。
+        /// 设置牌背显隐及射线遮挡状态。
         /// </summary>
-        private void SetText(TextMeshProUGUI text, string value)
+        private void SetCardBackVisible(bool visible)
         {
-            if (text != null)
-            {
-                text.text = value;
-            }
-        }
-
-        /// <summary>
-        /// 设置图片内容，并在图片为空时隐藏 Image。
-        /// </summary>
-        private void SetSprite(Image image, Sprite sprite)
-        {
-            if (image == null)
+            if (_cardBackCanvasGroup == null)
             {
                 return;
             }
 
-            image.sprite = sprite;
-            image.enabled = sprite != null;
+            _cardBackCanvasGroup.alpha = visible ? 1f : 0f;
+            _cardBackCanvasGroup.interactable = visible;
+            _cardBackCanvasGroup.blocksRaycasts = visible;
         }
 
         /// <summary>

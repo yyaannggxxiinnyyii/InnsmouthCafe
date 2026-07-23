@@ -725,8 +725,7 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private bool IsLiquidUnlocked(LiquidSO liquid)
         {
-            return IngredientUnlockManager.Instance != null
-                   && IngredientUnlockManager.Instance.IsLiquidUnlocked(liquid);
+            return IngredientUnlockManager.HasLiquidUnlockRecord(liquid);
         }
 
         /// <summary>
@@ -734,8 +733,7 @@ namespace InnsmouthCafe.UI
         /// </summary>
         private bool IsToppingUnlocked(ToppingSO topping)
         {
-            return IngredientUnlockManager.Instance != null
-                   && IngredientUnlockManager.Instance.IsToppingUnlocked(topping);
+            return IngredientUnlockManager.HasToppingUnlockRecord(topping);
         }
 
         /// <summary>

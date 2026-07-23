@@ -15,12 +15,7 @@ MonoBehaviour:
   specialCustomerAnnouncementLine: 
   dayStartEffects: []
   useCustomerOrderGroup: 0
-  orderParticipants:
-  - participantId: 
-    displayName: 
-    ordererAvatarSprite: {fileID: 0}
-    orderPoolEntries: []
-    orderDialogueTexts: []
+  orderParticipants: []
   groupCompletedFeedbackTexts: []
   collectibleRewardOnPerfect: {fileID: 11400000, guid: d59edd83cf87ddd42b29280e40699df1, type: 2}
   rewardLiquidsOnPerfect: []
