@@ -3823,6 +3823,7 @@ MonoBehaviour:
   _canvasGroup: {fileID: 1132475159}
   _normalButton: {fileID: 1601541861}
   _hardButton: {fileID: 2100000102}
+  _endlessButton: {fileID: 1568742800}
   _normalConfig: {fileID: 11400000, guid: 6a792a35bd3f3434eb0929702785fc9f, type: 2}
   _hardConfig: {fileID: 11400000, guid: 38b4bb8f2f0f4fc08e31b4272852c9d3, type: 2}
   _backButton: {fileID: 579917953}

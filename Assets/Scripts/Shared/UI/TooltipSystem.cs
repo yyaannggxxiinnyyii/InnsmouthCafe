@@ -37,6 +37,62 @@ public class TooltipSystem : Singleton<TooltipSystem>
         HideImmediate();
     }
 
+    /// <summary>
+    /// 获取当前 Canvas 下的 Tooltip；主菜单未预制该节点时创建运行时兜底面板。
+    /// </summary>
+    public static TooltipSystem EnsureForCanvas(Canvas canvas, TMP_FontAsset fontAsset = null)
+    {
+        TooltipSystem existing = Instance;
+        if (existing != null || canvas == null)
+        {
+            return existing;
+        }
+
+        GameObject panelObject = new GameObject(
+            "Tooltip",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(CanvasGroup));
+        panelObject.layer = canvas.gameObject.layer;
+
+        RectTransform panelRect = panelObject.GetComponent<RectTransform>();
+        panelRect.SetParent(canvas.transform, false);
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0f, 1f);
+        panelRect.sizeDelta = new Vector2(420f, 150f);
+
+        Image background = panelObject.GetComponent<Image>();
+        background.color = new Color(0.08f, 0.075f, 0.065f, 0.96f);
+        background.raycastTarget = false;
+
+        TextMeshProUGUI titleText = CreateRuntimeText(
+            panelRect,
+            "Title",
+            fontAsset,
+            28f,
+            new Vector2(18f, 98f),
+            new Vector2(-18f, -12f));
+        TextMeshProUGUI descriptionText = CreateRuntimeText(
+            panelRect,
+            "Description",
+            fontAsset,
+            22f,
+            new Vector2(18f, 14f),
+            new Vector2(-18f, -56f));
+
+        TooltipSystem tooltip = panelObject.AddComponent<TooltipSystem>();
+        tooltip._canvasGroup = panelObject.GetComponent<CanvasGroup>();
+        tooltip._panelRect = panelRect;
+        tooltip._titleText = titleText;
+        tooltip._descriptionText = descriptionText;
+        tooltip._mouseOffset = new Vector2(24f, 34f);
+        tooltip._screenPadding = 24f;
+        tooltip.Hide();
+        return tooltip;
+    }
+
     private void Update()
     {
         if (_isShown)
@@ -59,6 +115,7 @@ public class TooltipSystem : Singleton<TooltipSystem>
         if (_panelRect != null)
         {
             _panelRect.gameObject.SetActive(true);
+            _panelRect.SetAsLastSibling();
         }
 
         SetCanvasVisible(true);
@@ -120,6 +177,39 @@ public class TooltipSystem : Singleton<TooltipSystem>
         screenPos.y = Mathf.Clamp(screenPos.y, minY, maxY);
         return screenPos;
     }
+
+    /// <summary>
+    /// 创建运行时 Tooltip 使用的文本节点。
+    /// </summary>
+    private static TextMeshProUGUI CreateRuntimeText(
+        RectTransform parent,
+        string objectName,
+        TMP_FontAsset fontAsset,
+        float fontSize,
+        Vector2 offsetMin,
+        Vector2 offsetMax)
+    {
+        GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer));
+        textObject.layer = parent.gameObject.layer;
+
+        RectTransform rect = textObject.GetComponent<RectTransform>();
+        rect.SetParent(parent, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = offsetMin;
+        rect.offsetMax = offsetMax;
+
+        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+        if (fontAsset != null)
+        {
+            text.font = fontAsset;
+        }
+        text.fontSize = fontSize;
+        text.color = Color.white;
+        text.alignment = TextAlignmentOptions.TopLeft;
+        text.raycastTarget = false;
+        return text;
+    }
 }
 
 public class HoverTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
@@ -134,6 +224,18 @@ public class HoverTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointer
     private void Awake()
     {
         _source = _tooltipSource as IItemTooltipSource;
+    }
+
+    private void OnDisable()
+    {
+        _isPointerOver = false;
+        if (_showCoroutine != null)
+        {
+            StopCoroutine(_showCoroutine);
+            _showCoroutine = null;
+        }
+
+        TooltipSystem.Instance?.Hide();
     }
 
     public void Configure(ScriptableObject tooltipSource, float delay = 0.5f)

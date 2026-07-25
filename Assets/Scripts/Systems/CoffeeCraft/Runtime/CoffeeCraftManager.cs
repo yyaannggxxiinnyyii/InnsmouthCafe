@@ -17,55 +17,6 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
     [SerializeField] private CraftMainState _mainState = CraftMainState.None;
     [SerializeField] private CraftModuleState _moduleState = CraftModuleState.CupSelect;
 
-    [Header("配置参数")]
-    [SerializeField]
-    [Tooltip("每次取豆克数")]
-    private float _beanPerClick = 5f;
-
-    [SerializeField]
-    [Tooltip("单批次最大豆量")]
-    private float _maxBeanPerBatch = 20f;
-
-    [SerializeField]
-    [Tooltip("豆液转换比例（1g豆=Xml液）")]
-    private float _beanToLiquidRatio = 5f;
-
-    [Header("倒液速度")]
-    [SerializeField]
-    [Tooltip("慢倒速度（ml/s）")]
-    private float _slowPourSpeed = 35f;
-
-    [SerializeField]
-    [Tooltip("快倒速度（ml/s）")]
-    private float _fastPourSpeed = 90f;
-
-    [Header("溢出惩罚")]
-    [SerializeField]
-    [Tooltip("每溢出多少ml扣理智")]
-    private float _overflowPenaltyInterval = 25f;
-
-    [SerializeField]
-    [Tooltip("每次溢出扣除的理智值")]
-    private float _overflowSanityPenalty = 0.2f;
-
-    [Header("萃取配置")]
-    [SerializeField]
-    [Tooltip("萃取速度（ml/s）")]
-    private float _extractionSpeed = 20f;
-
-    [Header("理智值惩罚")]
-    [SerializeField]
-    [Tooltip("倒掉豆子理智惩罚")]
-    private float _clearBeansSanityPenalty = 0.2f;
-
-    [SerializeField]
-    [Tooltip("倒掉咖啡粉理智惩罚")]
-    private float _clearPowderSanityPenalty = 0.3f;
-
-    [SerializeField]
-    [Tooltip("倒掉整杯咖啡理智惩罚")]
-    private float _clearWholeCoffeeSanityPenalty = 0.4f;
-
     /// 倒液状态
     private bool _isPouring = false;
     private LiquidSO _currentPouringLiquid;
@@ -207,7 +158,8 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
             return;
         }
 
-        if (_currentBatch.beanGram + _beanPerClick > _maxBeanPerBatch)
+        CoffeeCraftBalanceSettings balance = GameplayBalanceManager.Instance.Config.CoffeeCraft;
+        if (_currentBatch.beanGram + balance.beanPerClick > balance.maxBeanPerBatch)
         {
             ActionLogBus.Log("单批次豆量已达上限", new Color(1f, 0.6f, 0f));
             return;
@@ -221,7 +173,7 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         }
 
         _currentBatch.bean = bean;
-        _currentBatch.beanGram += _beanPerClick;
+        _currentBatch.beanGram += balance.beanPerClick;
         _moduleState = CraftModuleState.GrindSelect;
 
         OnBatchDataChanged?.Invoke(_currentBatch);
@@ -231,8 +183,8 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         // 播放取豆音效
         AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanAdd);
 
-        ActionLogBus.Log($"添加咖啡豆：{bean.beanName} 5g");
-        Debug.Log($"[CoffeeCraft] 添加{bean.beanName}豆{_beanPerClick}g，当前批次：{_currentBatch.beanGram}g");
+        ActionLogBus.Log($"添加咖啡豆：{bean.beanName} {balance.beanPerClick}g");
+        Debug.Log($"[CoffeeCraft] 添加{bean.beanName}豆{balance.beanPerClick}g，当前批次：{_currentBatch.beanGram}g");
     }
 
     /// <summary>
@@ -257,9 +209,10 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         AudioManager.Instance?.PlaySfx(SoundId.CoffeeBeanClear);
 
         // 扣除理智值
-        SanityManager.Instance?.ReduceSanity(_clearBeansSanityPenalty, "浪费咖啡豆");
+        float penalty = GameplayBalanceManager.Instance.Config.CoffeeCraft.clearBeansSanityPenalty;
+        SanityManager.Instance?.ReduceSanity(penalty, "浪费咖啡豆");
         ActionLogBus.Log($"倒入垃圾桶：咖啡豆 {oldGram}g");
-        Debug.Log($"[CoffeeCraft] 倒掉豆子：{oldGram}g，理智值-{_clearBeansSanityPenalty}");
+        Debug.Log($"[CoffeeCraft] 倒掉豆子：{oldGram}g，理智值-{penalty}");
     }
 
     /// <summary>
@@ -310,9 +263,10 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         AudioManager.Instance?.PlaySfx(SoundId.CoffeePowderClear);
 
         // 扣除理智值
-        SanityManager.Instance?.ReduceSanity(_clearPowderSanityPenalty, "倒掉咖啡粉");
+        float penalty = GameplayBalanceManager.Instance.Config.CoffeeCraft.clearPowderSanityPenalty;
+        SanityManager.Instance?.ReduceSanity(penalty, "倒掉咖啡粉");
         ActionLogBus.Log($"倒入垃圾桶：咖啡粉");
-        Debug.Log($"[CoffeeCraft] 倒掉咖啡粉，理智值-{_clearPowderSanityPenalty}");
+        Debug.Log($"[CoffeeCraft] 倒掉咖啡粉，理智值-{penalty}");
     }
 
     /// <summary>
@@ -347,7 +301,8 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         }
 
         // 计算目标萃取量
-        _targetExtractionVolume = _currentBatch.beanGram * _beanToLiquidRatio;
+        _targetExtractionVolume = _currentBatch.beanGram
+            * GameplayBalanceManager.Instance.Config.CoffeeCraft.beanToLiquidRatio;
         _currentExtractionVolume = 0f;
         _isExtracting = true;
 
@@ -479,7 +434,8 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         // 处理萃取进度
         if (_isExtracting)
         {
-            float extractAmount = _extractionSpeed * Time.deltaTime;
+            float extractAmount = GameplayBalanceManager.Instance.Config.CoffeeCraft.extractionSpeed
+                * Time.deltaTime;
             _currentExtractionVolume += extractAmount;
 
             // 更新当前萃取液段的volume
@@ -516,7 +472,8 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
             }
 
             bool isFastPour = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            float speed = isFastPour ? _fastPourSpeed : _slowPourSpeed;
+            CoffeeCraftBalanceSettings balance = GameplayBalanceManager.Instance.Config.CoffeeCraft;
+            float speed = isFastPour ? balance.fastPourSpeed : balance.slowPourSpeed;
             float amount = speed * Time.deltaTime;
 
             AddLiquidAmount(_currentPouringLiquid, amount);
@@ -538,14 +495,17 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         {
             _accumulatedOverflow += amount;
 
-            if (_accumulatedOverflow >= _overflowPenaltyInterval)
+            CoffeeCraftBalanceSettings balance = GameplayBalanceManager.Instance.Config.CoffeeCraft;
+            if (_accumulatedOverflow >= balance.overflowPenaltyInterval)
             {
-                int penaltyCount = Mathf.FloorToInt(_accumulatedOverflow / _overflowPenaltyInterval);
-                _accumulatedOverflow -= penaltyCount * _overflowPenaltyInterval;
+                int penaltyCount = Mathf.FloorToInt(
+                    _accumulatedOverflow / balance.overflowPenaltyInterval);
+                _accumulatedOverflow -= penaltyCount * balance.overflowPenaltyInterval;
 
                 // 扣除理智值
-                SanityManager.Instance?.ReduceSanity(penaltyCount * _overflowSanityPenalty, "咖啡溢出");
-                ActionLogBus.Log($"溢出惩罚：理智值-{penaltyCount * _overflowSanityPenalty}", Color.red);
+                float penalty = penaltyCount * balance.overflowSanityPenalty;
+                SanityManager.Instance?.ReduceSanity(penalty, "咖啡溢出");
+                ActionLogBus.Log($"溢出惩罚：理智值-{penalty}", Color.red);
             }
             return;
         }
@@ -741,9 +701,10 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
         AudioManager.Instance?.PlaySfx(SoundId.CoffeeClearWhole);
 
         // 扣除理智值
-        SanityManager.Instance?.ReduceSanity(_clearWholeCoffeeSanityPenalty, "倒掉整杯咖啡");
+        float penalty = GameplayBalanceManager.Instance.Config.CoffeeCraft.clearWholeCoffeeSanityPenalty;
+        SanityManager.Instance?.ReduceSanity(penalty, "倒掉整杯咖啡");
         ActionLogBus.Log($"倒入垃圾桶：整杯咖啡");
-        Debug.Log($"[CoffeeCraft] 倒掉整杯，理智值-{_clearWholeCoffeeSanityPenalty}");
+        Debug.Log($"[CoffeeCraft] 倒掉整杯，理智值-{penalty}");
     }
 
     /// <summary>

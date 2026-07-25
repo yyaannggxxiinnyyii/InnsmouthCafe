@@ -153,6 +153,16 @@ public class GalleryManager : Singleton<GalleryManager>
     }
 
     /// <summary>
+    /// 查询三种结局是否均已收集，用于判断无尽模式的解锁条件。
+    /// </summary>
+    public bool AreAllEndingsUnlocked()
+    {
+        return IsEndingUnlocked(GameEnding.Lost)
+            && IsEndingUnlocked(GameEnding.Return)
+            && IsEndingUnlocked(GameEnding.Good);
+    }
+
+    /// <summary>
     /// 查询角色图鉴是否有未读更新。
     /// </summary>
     public bool HasCharacterUnread()

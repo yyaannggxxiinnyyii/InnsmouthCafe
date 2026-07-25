@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameMode: 2
   totalDays: 5
+  _patienceMultiplier: 0.75
+  _angrySanityDrainMultiplier: 1.5
+  _scoringErrorMargin: 3
+  _acceptableScoreThreshold: 50
+  _perfectScoreThreshold: 90
+  _positiveSanityMultiplier: 0.8
+  _negativeSanityMultiplier: 2
   dayConfigs:
   - {fileID: 11400000, guid: ac176a9e6977f854e83842130da008de, type: 2}
   - {fileID: 11400000, guid: a8277cb49a145844083a6d9297c3eb95, type: 2}

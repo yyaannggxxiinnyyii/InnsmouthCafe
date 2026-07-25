@@ -31,13 +31,6 @@ namespace InnsmouthCafe.UI
         [Range(0f, 1f)]
         private float _fadeDuration = 0.2f;
 
-        [Header("配置")]
-        [SerializeField] [Tooltip("最大豆量（克）")]
-        private float _maxBeanAmount = 20f;
-
-        [SerializeField] [Tooltip("每格豆量（克）")]
-        private float _beanPerGrid = 5f;
-
         [Header("颜色")]
         [SerializeField] [Tooltip("默认颜色（未选择豆种时）")]
         private Color _defaultColor = new Color(0.5f, 0.5f, 0.5f);
@@ -57,7 +50,7 @@ namespace InnsmouthCafe.UI
                 _fill.color = _defaultColor;
             }
 
-            UpdateBeanAmountText(0f, _maxBeanAmount);
+            UpdateBeanAmountText(0f, GetMaxBeanAmount());
             SetVisible(false, true);
         }
 
@@ -96,7 +89,7 @@ namespace InnsmouthCafe.UI
             if (batch == null)
             {
                 UpdateFillAmount(0f);
-                UpdateBeanAmountText(0f, _maxBeanAmount);
+                UpdateBeanAmountText(0f, GetMaxBeanAmount());
                 UpdateFillColor(_defaultColor);
                 SetVisible(false);
                 return;
@@ -107,10 +100,11 @@ namespace InnsmouthCafe.UI
             float displayAmount = hasGround ? 0f : batch.beanGram;
 
             // 更新填充量
-            UpdateFillAmount(displayAmount / _maxBeanAmount);
+            float maxBeanAmount = GetMaxBeanAmount();
+            UpdateFillAmount(displayAmount / maxBeanAmount);
 
             // 更新文本
-            UpdateBeanAmountText(displayAmount, _maxBeanAmount);
+            UpdateBeanAmountText(displayAmount, maxBeanAmount);
 
             // 更新颜色
             if (batch.bean != null && !hasGround)
@@ -124,6 +118,14 @@ namespace InnsmouthCafe.UI
             }
 
             SetVisible(displayAmount > 0f);
+        }
+
+        /// <summary>
+        /// 获取当前制作规则允许的单批次最大豆量。
+        /// </summary>
+        private float GetMaxBeanAmount()
+        {
+            return GameplayBalanceManager.Instance.Config.CoffeeCraft.maxBeanPerBatch;
         }
 
         /// <summary>

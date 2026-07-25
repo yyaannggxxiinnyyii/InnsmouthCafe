@@ -3199,7 +3199,7 @@ GameObject:
   - component: {fileID: 300528403}
   - component: {fileID: 300528404}
   m_Layer: 0
-  m_Name: ViewSwitchManager
+  m_Name: "\u9884\u89C8\u5207\u6362\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3989,7 +3989,7 @@ GameObject:
   - component: {fileID: 367257823}
   - component: {fileID: 367257824}
   m_Layer: 0
-  m_Name: CollectibleManager
+  m_Name: "\u5C55\u793A\u67B6\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7280,7 +7280,7 @@ GameObject:
   - component: {fileID: 620544937}
   - component: {fileID: 620544936}
   m_Layer: 0
-  m_Name: TutorialSystem
+  m_Name: "\u5F15\u5BFC\u7CFB\u7EDF"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7918,7 +7918,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMin.x
@@ -7926,7 +7926,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_SizeDelta.x
@@ -7966,11 +7966,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 224.385
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -262.33
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -14486,7 +14486,7 @@ GameObject:
   - component: {fileID: 1149951062}
   - component: {fileID: 1149951063}
   m_Layer: 0
-  m_Name: GameFlowManager
+  m_Name: "\u6E38\u620F\u6D41\u7A0B\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14521,7 +14521,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gameModeConfig: {fileID: 11400000, guid: 6a792a35bd3f3434eb0929702785fc9f, type: 2}
   _customerDisplayUI: {fileID: 1662230030}
-  _orderTicketController: {fileID: 0}
+  _orderTicketController: {fileID: 1511263039}
   _collectibleNotifyUI: {fileID: 1814218028}
   _ingredientUnlockNotifyUI: {fileID: 1058789714}
   _octopusNPC: {fileID: 171332900}
@@ -15769,7 +15769,7 @@ GameObject:
   - component: {fileID: 1183338824}
   - component: {fileID: 1183338825}
   m_Layer: 0
-  m_Name: ScoringManager
+  m_Name: "\u5F97\u5206\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -15812,6 +15812,7 @@ MonoBehaviour:
   _optimalFillRatioHigh: 1
   _sanityLossPerOverflow25ml: 2
   _acceptableThreshold: 70
+  _perfectThreshold: 90
 --- !u!1 &1185630060
 GameObject:
   m_ObjectHideFlags: 0
@@ -17660,7 +17661,7 @@ GameObject:
   - component: {fileID: 1312410798}
   - component: {fileID: 1312410799}
   m_Layer: 0
-  m_Name: SanityManager
+  m_Name: "\u7406\u667A\u503C\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -18489,7 +18490,7 @@ GameObject:
   - component: {fileID: 1353069650}
   - component: {fileID: 1353069651}
   m_Layer: 0
-  m_Name: OrderManager
+  m_Name: "\u8BA2\u5355\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20265,7 +20266,7 @@ GameObject:
   - component: {fileID: 1531627299}
   - component: {fileID: 1531627300}
   m_Layer: 0
-  m_Name: CustomerManager
+  m_Name: "\u987E\u5BA2\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -25791,7 +25792,7 @@ GameObject:
   - component: {fileID: 2023205755}
   - component: {fileID: 2023205756}
   m_Layer: 0
-  m_Name: CoffeeCraftManager
+  m_Name: "\u5496\u5561\u5236\u4F5C\u7BA1\u7406\u5668"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

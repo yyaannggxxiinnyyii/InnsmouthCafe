@@ -29,6 +29,12 @@ public class CustomerManager : Singleton<CustomerManager>
         /// </summary>
         private float _dayPatienceMultiplier = 1f;
 
+        /// <summary>当前模式的顾客耐心倍率。</summary>
+        private float _modePatienceMultiplier = 1f;
+
+        /// <summary>当前模式的顾客愤怒理智损失倍率。</summary>
+        private float _angrySanityDrainMultiplier = 1f;
+
         /// <summary>
         /// 查询当天队列中是否包含特殊顾客。
         /// </summary>
@@ -44,13 +50,6 @@ public class CustomerManager : Singleton<CustomerManager>
 
             return false;
         }
-
-        [Header("耐心阶段阈值（剩余耐心比例）")]
-        [SerializeField] [Tooltip("阶段1→2的剩余耐心比例（默认0.6，即剩余60%时进入阶段2）")]
-        [Range(0f, 1f)] private float _stageOneThreshold = 0.6f;
-
-        [SerializeField] [Tooltip("阶段2→3的剩余耐心比例（默认0.3，即剩余30%时进入阶段3）")]
-        [Range(0f, 1f)] private float _stageTwoThreshold = 0.3f;
 
         // 当前耐心的计时
         private float _currentWaitTime = 0f;
@@ -90,7 +89,9 @@ public class CustomerManager : Singleton<CustomerManager>
             // 愤怒状态持续掉 San
             if (_currentState == CustomerState.Angry)
             {
-                OnSanityDrop?.Invoke(0.1f * Time.deltaTime);
+                float lossPerSecond = GameplayBalanceManager.Instance.Config
+                    .Customer.angrySanityLossPerSecond;
+                OnSanityDrop?.Invoke(lossPerSecond * _angrySanityDrainMultiplier * Time.deltaTime);
             }
         }
 
@@ -100,11 +101,17 @@ public class CustomerManager : Singleton<CustomerManager>
         /// 随机普通池 + 随机特殊池各自防重复抽取后混合 Shuffle 追加。
         /// 固定队列中的客人会计入"已出现"，后续随机特殊池不会再抽到。
         /// </summary>
-        public void GenerateTodayQueue(DayCustomerConfigSO config, GameMode mode)
+        public void GenerateTodayQueue(DayCustomerConfigSO config, GameModeConfigSO gameModeConfig)
         {
             _todayQueue.Clear();
             _currentCustomerIndex = 0;
             _dayPatienceMultiplier = 1f;
+            _modePatienceMultiplier = gameModeConfig != null
+                ? gameModeConfig.GetPatienceMultiplier()
+                : 1f;
+            _angrySanityDrainMultiplier = gameModeConfig != null
+                ? gameModeConfig.GetAngrySanityDrainMultiplier()
+                : 1f;
 
             // 1. 固定队列（保持顺序，可强制出现已见过的特殊客人）
             if (config.fixedQueue != null && config.fixedQueue.Count > 0)
@@ -493,7 +500,9 @@ public class CustomerManager : Singleton<CustomerManager>
                 return 0f;
             }
 
-            return _currentCustomer.basePatienceTime * _dayPatienceMultiplier;
+            return _currentCustomer.basePatienceTime
+                * _modePatienceMultiplier
+                * _dayPatienceMultiplier;
         }
 
         /// <summary>
@@ -515,9 +524,10 @@ public class CustomerManager : Singleton<CustomerManager>
         {
             float remaining = GetRemainingPatienceRatio();
 
-            if (remaining > _stageOneThreshold)
+            CustomerBalanceSettings balance = GameplayBalanceManager.Instance.Config.Customer;
+            if (remaining > balance.stageOnePatienceRatio)
                 return 1;
-            else if (remaining > _stageTwoThreshold)
+            else if (remaining > balance.stageTwoPatienceRatio)
                 return 2;
             else if (remaining > 0f)
                 return 3;

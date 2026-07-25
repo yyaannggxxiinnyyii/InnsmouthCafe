@@ -2,16 +2,15 @@ using System;
 using System.Collections;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using InnsmouthCafe.Data;
 
 namespace InnsmouthCafe.UI
 {
     /// <summary>
-    /// 订单小票详情面板UI，负责展示单张订单的完整需求与展开、收起、拖拽逻辑。
+    /// 订单小票详情面板UI，负责展示单张订单的完整需求，以及展开、收起和垂直滚动预览。
     /// </summary>
-    public class OrderTicketDetailPanelUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class OrderTicketDetailPanelUI : MonoBehaviour
     {
         [Header("需求容器")]
         [SerializeField]
@@ -45,8 +44,12 @@ namespace InnsmouthCafe.UI
         private CanvasGroup _detailCanvasGroup;
 
         [SerializeField]
-        [Tooltip("详细小票的 RectTransform")]
+        [Tooltip("详细小票视窗的 RectTransform；运行时会自动由原小票内容创建")]
         private RectTransform _detailRect;
+
+        [SerializeField]
+        [Tooltip("展开后小票视窗的基础高度，实际显示高度会受详细状态缩放比例影响")]
+        private float _viewportHeight = 300f;
 
         [SerializeField]
         [Tooltip("详细状态的锚点位置（屏幕中央）")]
@@ -86,19 +89,6 @@ namespace InnsmouthCafe.UI
         [Tooltip("收起后详细小票停放的锚点位置")]
         private Vector2 _hiddenAnchoredPos = new Vector2(-300f, 300f);
 
-        [Header("拖拽配置")]
-        [SerializeField]
-        [Tooltip("拖拽判定阈值（像素），超过此距离才算拖拽")]
-        private float _dragThreshold = 10f;
-
-        [SerializeField]
-        [Tooltip("拖拽上边界（距屏幕顶部的最小距离，正值）")]
-        private float _dragBoundTop = 50f;
-
-        [SerializeField]
-        [Tooltip("拖拽下边界（距屏幕底部的最小距离，正值）")]
-        private float _dragBoundBottom = 50f;
-
         [Header("关闭按钮")]
         [SerializeField]
         [Tooltip("详细小票上的关闭/收起按钮")]
@@ -134,24 +124,17 @@ namespace InnsmouthCafe.UI
         /// </summary>
         public bool IsAnimating => _isAnimating;
 
-        private RectTransform _canvasRect;
+        private RectTransform _ticketContentRect;
+        private ScrollRect _ticketScrollRect;
         private bool _isExpanded;
         private bool _isAnimating;
         private bool _isPendingExpand;
         private bool _pendingAutoCollapse;
-        private bool _isDragging;
-        private Vector2 _dragStartPointerPos;
-        private Vector2 _dragStartAnchoredPos;
 
         private void Awake()
         {
             _closeButton?.onClick.AddListener(Collapse);
-
-            Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas != null)
-            {
-                _canvasRect = canvas.GetComponent<RectTransform>();
-            }
+            CreateScrollViewport();
         }
 
         private void Start()
@@ -276,78 +259,6 @@ namespace InnsmouthCafe.UI
         }
 
         /// <summary>
-        /// 开始拖拽详情面板。
-        /// </summary>
-        /// <param name="eventData">指针事件数据。</param>
-        public void OnBeginDrag(PointerEventData eventData)
-        {
-            if (!_isExpanded || _isAnimating || _detailRect == null)
-            {
-                return;
-            }
-
-            _dragStartPointerPos = eventData.position;
-            _dragStartAnchoredPos = _detailRect.anchoredPosition;
-            _isDragging = false;
-        }
-
-        /// <summary>
-        /// 拖拽详情面板。
-        /// </summary>
-        /// <param name="eventData">指针事件数据。</param>
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (!_isExpanded || _isAnimating || _detailRect == null)
-            {
-                return;
-            }
-
-            Vector2 delta = eventData.position - _dragStartPointerPos;
-            if (!_isDragging && Mathf.Abs(delta.y) > _dragThreshold)
-            {
-                _isDragging = true;
-            }
-
-            if (!_isDragging)
-            {
-                return;
-            }
-
-            _detailRect.DOKill();
-
-            float halfCanvasHeight = _canvasRect != null
-                ? _canvasRect.rect.height * 0.5f
-                : Screen.height * 0.5f;
-            float halfTicketHeight = _detailRect.rect.height * _detailScale * 0.5f;
-            float minY = -halfCanvasHeight + halfTicketHeight + _dragBoundBottom;
-            float maxY = halfCanvasHeight - halfTicketHeight - _dragBoundTop;
-            float newY = Mathf.Clamp(_dragStartAnchoredPos.y + delta.y, minY, maxY);
-
-            _detailRect.anchoredPosition = new Vector2(_detailRect.anchoredPosition.x, newY);
-        }
-
-        /// <summary>
-        /// 结束拖拽详情面板。
-        /// </summary>
-        /// <param name="eventData">指针事件数据。</param>
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (_isDragging)
-            {
-                StartCoroutine(ClearDragFlagNextFrame());
-            }
-        }
-
-        /// <summary>
-        /// 下一帧清除拖拽标记，避免拖拽结束瞬间触发点击。
-        /// </summary>
-        private IEnumerator ClearDragFlagNextFrame()
-        {
-            yield return null;
-            _isDragging = false;
-        }
-
-        /// <summary>
         /// 等待布局刷新后展开详情面板。
         /// </summary>
         /// <param name="autoCollapse">是否在展开后自动收起。</param>
@@ -356,6 +267,7 @@ namespace InnsmouthCafe.UI
             yield return null;
             yield return null;
             ForceRebuildLayout();
+            ResetScrollPosition();
             _isPendingExpand = false;
             Expand();
 
@@ -433,7 +345,6 @@ namespace InnsmouthCafe.UI
             _isExpanded = false;
             _isAnimating = false;
             _isPendingExpand = false;
-            _isDragging = false;
 
             if (_detailCanvasGroup != null)
             {
@@ -468,10 +379,80 @@ namespace InnsmouthCafe.UI
                 LayoutRebuilder.ForceRebuildLayoutImmediate(_toppingRequirementsContainer as RectTransform);
             }
 
-            if (_detailRect != null)
+            if (_ticketContentRect != null)
             {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_detailRect);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_ticketContentRect);
             }
+        }
+
+        /// <summary>
+        /// 创建固定高度的裁剪视窗，并将现有拼装小票作为 ScrollRect 的内容。
+        /// </summary>
+        private void CreateScrollViewport()
+        {
+            if (_detailRect == null || _detailRect.parent == null)
+            {
+                Debug.LogError("[OrderTicket] 详细小票 RectTransform 未配置，无法创建滚动视窗", this);
+                return;
+            }
+
+            _ticketContentRect = _detailRect;
+            RectTransform parentRect = _ticketContentRect.parent as RectTransform;
+            if (parentRect == null)
+            {
+                Debug.LogError("[OrderTicket] 详细小票父节点不是 RectTransform，无法创建滚动视窗", this);
+                return;
+            }
+
+            int siblingIndex = _ticketContentRect.GetSiblingIndex();
+            GameObject viewportObject = new GameObject("小票滚动视窗", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
+            RectTransform viewportRect = viewportObject.GetComponent<RectTransform>();
+            viewportRect.SetParent(parentRect, false);
+            viewportRect.SetSiblingIndex(siblingIndex);
+            viewportRect.anchorMin = _ticketContentRect.anchorMin;
+            viewportRect.anchorMax = _ticketContentRect.anchorMax;
+            viewportRect.pivot = _ticketContentRect.pivot;
+            viewportRect.anchoredPosition = _ticketContentRect.anchoredPosition;
+            viewportRect.sizeDelta = new Vector2(_ticketContentRect.sizeDelta.x, _viewportHeight);
+            viewportRect.localScale = _ticketContentRect.localScale;
+
+            Image viewportImage = viewportObject.GetComponent<Image>();
+            viewportImage.color = Color.clear;
+            viewportImage.raycastTarget = true;
+
+            _ticketContentRect.SetParent(viewportRect, false);
+            _ticketContentRect.anchorMin = new Vector2(0f, 1f);
+            _ticketContentRect.anchorMax = new Vector2(1f, 1f);
+            _ticketContentRect.pivot = new Vector2(0.5f, 1f);
+            _ticketContentRect.anchoredPosition = Vector2.zero;
+            _ticketContentRect.sizeDelta = new Vector2(0f, _ticketContentRect.sizeDelta.y);
+            _ticketContentRect.localScale = Vector3.one;
+
+            _ticketScrollRect = viewportObject.GetComponent<ScrollRect>();
+            _ticketScrollRect.content = _ticketContentRect;
+            _ticketScrollRect.viewport = viewportRect;
+            _ticketScrollRect.horizontal = false;
+            _ticketScrollRect.vertical = true;
+            _ticketScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            _ticketScrollRect.inertia = true;
+            _ticketScrollRect.decelerationRate = 0.135f;
+            _ticketScrollRect.scrollSensitivity = 20f;
+            _detailRect = viewportRect;
+        }
+
+        /// <summary>
+        /// 将新展开的小票定位到顶部，并清除上一张小票的滚动惯性。
+        /// </summary>
+        private void ResetScrollPosition()
+        {
+            if (_ticketScrollRect == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            _ticketScrollRect.StopMovement();
+            _ticketScrollRect.verticalNormalizedPosition = 1f;
         }
 
         /// <summary>

@@ -47,15 +47,6 @@ public class GameFlowManager : Singleton<GameFlowManager>
     [Tooltip("是否显示调试日志")]
     private bool _showDebugLog = true;
 
-    [Header("结局阈值")]
-    [SerializeField]
-    [Tooltip("好结局最低理智值（>= 此值为好结局）")]
-    private float _goodEndingThreshold = 90f;
-
-    [SerializeField]
-    [Tooltip("回归结局最低理智值（>= 此值为回归结局，< 好结局阈值）")]
-    private float _returnEndingThreshold = 60f;
-
     /// <summary>
     /// 当前游戏流程状态
     /// </summary>
@@ -130,6 +121,11 @@ public class GameFlowManager : Singleton<GameFlowManager>
     /// 游戏是否正在运行
     /// </summary>
     private bool _isGameRunning = false;
+
+    /// <summary>待批量结算的顾客愤怒理智损失，避免按帧写入日志。</summary>
+    private float _pendingAngrySanityLoss = 0f;
+
+    private const float AngrySanitySettlementStep = 0.1f;
 
     /// <summary>
     /// 当前游戏流程状态（只读）
@@ -234,7 +230,11 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         _isGameRunning = true;
         _currentDay = 0;
+        _pendingAngrySanityLoss = 0f;
         ClearCurrentOrderSession();
+
+        // 模式难度先于理智重置生效，后续所有增减统一使用该倍率。
+        SanityManager.Instance.ConfigureDifficulty(config);
 
         // 重置理智值
         SanityManager.Instance.ResetSanity();
@@ -278,6 +278,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
         {
             CustomerManager.Instance.OnCustomerSpawned += OnCustomerSpawned;
             CustomerManager.Instance.OnCustomerLeft += OnCustomerLeft;
+            CustomerManager.Instance.OnSanityDrop += OnCustomerAngrySanityDrop;
         }
 
         // 理智值归零事件
@@ -325,6 +326,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
         {
             CustomerManager.Instance.OnCustomerSpawned -= OnCustomerSpawned;
             CustomerManager.Instance.OnCustomerLeft -= OnCustomerLeft;
+            CustomerManager.Instance.OnSanityDrop -= OnCustomerAngrySanityDrop;
         }
 
         if (SanityManager.Instance != null)
@@ -468,7 +470,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
     private void ContinueStartNewDay(DayCustomerConfigSO dayConfig)
     {
         // 生成当天顾客队列
-        CustomerManager.Instance.GenerateTodayQueue(dayConfig, _gameModeConfig.gameMode);
+        CustomerManager.Instance.GenerateTodayQueue(dayConfig, _gameModeConfig);
         _remainingCustomers = CustomerManager.Instance.QueueCount;
         bool hasSpecialCustomerToday = CustomerManager.Instance.HasSpecialCustomerInTodayQueue();
 
@@ -1088,8 +1090,8 @@ public class GameFlowManager : Singleton<GameFlowManager>
         SetState(GameFlowState.GameEnd);
         _isGameRunning = false;
 
-        HandleModeUnlock(GetDebugSanityForEnding(ending));
         GalleryManager.Instance?.MarkEndingUnlocked(ending);
+        HandleModeUnlock(ending);
         OnGameEnding?.Invoke(ending);
         OnGameEnd?.Invoke(_currentDay);
 
@@ -1223,19 +1225,6 @@ public class GameFlowManager : Singleton<GameFlowManager>
         };
     }
 
-    /// <summary>
-    /// 测试工具：为指定结局提供符合正式阈值判断的理智值。
-    /// </summary>
-    /// <param name="ending">需要模拟的结局。</param>
-    private float GetDebugSanityForEnding(GameEnding ending)
-    {
-        return ending switch
-        {
-            GameEnding.Good => _goodEndingThreshold,
-            GameEnding.Return => _returnEndingThreshold,
-            _ => Mathf.Max(0f, _returnEndingThreshold - 1f)
-        };
-    }
 #endif
 
     /// <summary>
@@ -1321,7 +1310,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         // 计算评分
         CoffeeScoringData scoringData = ScoringManager.Instance.CalculateScore(
-            currentOrder, coffeeData, _gameModeConfig.gameMode
+            currentOrder, coffeeData, _gameModeConfig
         );
 
         currentSlot?.TryCompleteScoring(scoringData);
@@ -1745,6 +1734,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
     {
         if (_currentState != GameFlowState.CustomerLeaving) return;
 
+        FlushPendingAngrySanityLoss();
         _remainingCustomers--;
 
         if (_showDebugLog)
@@ -1758,6 +1748,40 @@ public class GameFlowManager : Singleton<GameFlowManager>
         // 无动画组件：直接推进
         if (_customerDisplayUI == null)
             ProceedAfterCustomerLeft();
+    }
+
+    /// <summary>
+    /// 将顾客愤怒状态的持续损失交给理智系统，并统一应用模式负面倍率。
+    /// </summary>
+    private void OnCustomerAngrySanityDrop(float amount)
+    {
+        if (!_isGameRunning || amount <= 0f)
+        {
+            return;
+        }
+
+        _pendingAngrySanityLoss += amount;
+        if (_pendingAngrySanityLoss < AngrySanitySettlementStep)
+        {
+            return;
+        }
+
+        float settledAmount = Mathf.Floor(
+            _pendingAngrySanityLoss / AngrySanitySettlementStep) * AngrySanitySettlementStep;
+        _pendingAngrySanityLoss -= settledAmount;
+        SanityManager.Instance?.ReduceSanity(settledAmount, "顾客愤怒");
+    }
+
+    /// <summary>结清尚未达到批量阈值的顾客愤怒理智损失。</summary>
+    private void FlushPendingAngrySanityLoss()
+    {
+        if (_pendingAngrySanityLoss <= 0f)
+        {
+            return;
+        }
+
+        SanityManager.Instance?.ReduceSanity(_pendingAngrySanityLoss, "顾客愤怒");
+        _pendingAngrySanityLoss = 0f;
     }
 
     /// <summary>
@@ -1884,8 +1908,8 @@ public class GameFlowManager : Singleton<GameFlowManager>
         float finalSanity = SanityManager.Instance.CurrentSanity;
         GameEnding ending = DetermineEnding(finalSanity);
 
-        HandleModeUnlock(finalSanity);
         GalleryManager.Instance?.MarkEndingUnlocked(ending);
+        HandleModeUnlock(ending);
 
         OnGameEnding?.Invoke(ending);
         OnGameEnd?.Invoke(_currentDay);
@@ -1900,19 +1924,18 @@ public class GameFlowManager : Singleton<GameFlowManager>
     /// </summary>
     private GameEnding DetermineEnding(float sanity)
     {
-        if (sanity >= _goodEndingThreshold) return GameEnding.Good;
-        if (sanity >= _returnEndingThreshold) return GameEnding.Return;
+        EndingBalanceSettings balance = GameplayBalanceManager.Instance.Config.Ending;
+        if (sanity >= balance.goodEndingThreshold) return GameEnding.Good;
+        if (sanity >= balance.returnEndingThreshold) return GameEnding.Return;
         return GameEnding.Lost;
     }
 
     /// <summary>
     /// 根据结局判定处理模式解锁
     /// </summary>
-    private void HandleModeUnlock(float finalSanity)
+    private void HandleModeUnlock(GameEnding ending)
     {
         if (GameManager.Instance == null || _gameModeConfig == null) return;
-
-        GameEnding ending = DetermineEnding(finalSanity);
 
         switch (_gameModeConfig.gameMode)
         {
@@ -1922,6 +1945,10 @@ public class GameFlowManager : Singleton<GameFlowManager>
                 break;
 
             case GameMode.Normal:
+                if (ending == GameEnding.Return || ending == GameEnding.Good)
+                {
+                    GameManager.Instance.UnlockMode(GameMode.Hard);
+                }
                 break;
         }
     }

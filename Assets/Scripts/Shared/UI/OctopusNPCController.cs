@@ -94,25 +94,6 @@ namespace InnsmouthCafe.UI
             "再拍我生气了！",
         };
 
-        [SerializeField] [Tooltip("每次拍击触发随机事件的总概率（0~1）")]
-        [Range(0f, 1f)]
-        private float _squishEventChance = 0.3f;
-
-        [SerializeField] [Tooltip("触发事件后，选中「随机台词」的权重")]
-        private float _weightLine = 5f;
-
-        [SerializeField] [Tooltip("触发事件后，选中「理智增加」的权重")]
-        private float _weightSanityGain = 2f;
-
-        [SerializeField] [Tooltip("每次触发增加的理智值")]
-        private float _squishSanityGainAmount = 2f;
-
-        [SerializeField] [Tooltip("触发事件后，选中「理智减少」的权重")]
-        private float _weightSanityLoss = 1f;
-
-        [SerializeField] [Tooltip("每次触发减少的理智值")]
-        private float _squishSanityLossAmount = 1f;
-
         [Header("拍扁互动")]
         [SerializeField] [Tooltip("点击触发拍扁效果的按钮")]
         private Button _squishButton;
@@ -563,13 +544,14 @@ namespace InnsmouthCafe.UI
         private void TriggerSquishEvents()
         {
             // 先判断这次拍击是否触发任何事件
-            if (UnityEngine.Random.value >= _squishEventChance) return;
+            OctopusBalanceSettings balance = GameplayBalanceManager.Instance.Config.Octopus;
+            if (UnityEngine.Random.value >= balance.squishEventChance) return;
 
             // 按权重随机选一个事件
-            float totalWeight = _weightLine + _weightSanityGain + _weightSanityLoss;
+            float totalWeight = balance.lineWeight + balance.sanityGainWeight + balance.sanityLossWeight;
             float roll = UnityEngine.Random.value * totalWeight;
 
-            if (roll < _weightLine)
+            if (roll < balance.lineWeight)
             {
                 // 随机台词
                 if (_squishRandomLines != null && _squishRandomLines.Length > 0)
@@ -579,17 +561,17 @@ namespace InnsmouthCafe.UI
                         StartCoroutine(ShowSquishLine(line));
                 }
             }
-            else if (roll < _weightLine + _weightSanityGain)
+            else if (roll < balance.lineWeight + balance.sanityGainWeight)
             {
                 // 理智增加
-                SanityManager.Instance?.AddSanity(_squishSanityGainAmount, "拍拍小章鱼");
-                ActionLogBus.Log($"小章鱼很开心，理智 +{_squishSanityGainAmount}", Color.green);
+                SanityManager.Instance?.AddSanity(balance.sanityGainAmount, "拍拍小章鱼");
+                ActionLogBus.Log($"小章鱼很开心，理智 +{balance.sanityGainAmount}", Color.green);
             }
             else
             {
                 // 理智减少
-                SanityManager.Instance?.ReduceSanity(_squishSanityLossAmount, "拍拍小章鱼");
-                ActionLogBus.Log($"小章鱼不高兴了，理智 -{_squishSanityLossAmount}", Color.red);
+                SanityManager.Instance?.ReduceSanity(balance.sanityLossAmount, "拍拍小章鱼");
+                ActionLogBus.Log($"小章鱼不高兴了，理智 -{balance.sanityLossAmount}", Color.red);
             }
         }
 

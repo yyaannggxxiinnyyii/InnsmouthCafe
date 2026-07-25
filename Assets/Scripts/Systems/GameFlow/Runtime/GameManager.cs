@@ -26,6 +26,7 @@ public class GameManager : Singleton<GameManager>
     // 模式解锁 PlayerPrefs 键名
     private const string PrefKeyTutorialDone = "ModeUnlock_Tutorial_Done";
     private const string PrefKeyNormalUnlocked = "ModeUnlock_Normal";
+    private const string PrefKeyHardUnlocked = "ModeUnlock_Hard";
 
     /// <summary>窗口模式下可选分辨率列表</summary>
     public static readonly (int width, int height)[] WindowedResolutions =
@@ -198,7 +199,10 @@ public class GameManager : Singleton<GameManager>
             case GameMode.Normal:
                 return PlayerPrefs.GetInt(PrefKeyNormalUnlocked, 0) == 1;
             case GameMode.Hard:
-                return true;
+                return PlayerPrefs.GetInt(PrefKeyHardUnlocked, 0) == 1;
+            case GameMode.Endless:
+                return GalleryManager.Instance != null
+                    && GalleryManager.Instance.AreAllEndingsUnlocked();
             default:
                 return false;
         }
@@ -207,15 +211,26 @@ public class GameManager : Singleton<GameManager>
     /// <summary>解锁指定模式</summary>
     public void UnlockMode(GameMode mode)
     {
-        if (mode == GameMode.Normal)
+        if (IsModeUnlocked(mode))
         {
-            PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
-            PlayerPrefs.Save();
-            Debug.Log("[GameManager] 普通模式已解锁");
+            return;
         }
-        else
+
+        switch (mode)
         {
-            Debug.LogWarning($"[GameManager] 不支持解锁模式: {mode}");
+            case GameMode.Normal:
+                PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
+                PlayerPrefs.Save();
+                Debug.Log("[GameManager] 普通模式已解锁");
+                break;
+            case GameMode.Hard:
+                PlayerPrefs.SetInt(PrefKeyHardUnlocked, 1);
+                PlayerPrefs.Save();
+                Debug.Log("[GameManager] 困难模式已解锁");
+                break;
+            default:
+                Debug.LogWarning($"[GameManager] 不支持直接解锁模式: {mode}");
+                break;
         }
     }
 
@@ -225,6 +240,7 @@ public class GameManager : Singleton<GameManager>
         PlayerPrefs.DeleteKey(SaveExistsKey);
         PlayerPrefs.DeleteKey(PrefKeyTutorialDone);
         PlayerPrefs.DeleteKey(PrefKeyNormalUnlocked);
+        PlayerPrefs.DeleteKey(PrefKeyHardUnlocked);
 
         // 重置收集物
         if (CollectibleManager.Instance != null)
@@ -253,6 +269,10 @@ public class GameManager : Singleton<GameManager>
     {
         PlayerPrefs.SetInt(PrefKeyTutorialDone, 1);
         PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
+        PlayerPrefs.SetInt(PrefKeyHardUnlocked, 1);
+        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Lost);
+        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Return);
+        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Good);
         PlayerPrefs.Save();
         Debug.Log("[GameManager] 所有模式已解锁");
     }

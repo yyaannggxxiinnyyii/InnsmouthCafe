@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
@@ -24,6 +25,9 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("困难模式按钮")]
         private Button _hardButton;
 
+        [SerializeField] [Tooltip("无尽模式按钮")]
+        private Button _endlessButton;
+
         [Header("模式配置")]
         [SerializeField] [Tooltip("普通模式配置SO")]
         private GameModeConfigSO _normalConfig;
@@ -41,6 +45,11 @@ namespace InnsmouthCafe.UI
 
         private MainMenuUI _mainMenu;
 
+        private const string NormalUnlockTip = "完成新手教程后解锁";
+        private const string HardUnlockTip = "在普通模式中达成回归结局或好结局后解锁";
+        private const string EndlessUnlockTip = "累计收集迷失、回归、好结局后解锁";
+        private const string EndlessDevelopmentTip = "已满足解锁条件，无尽模式开发中";
+
         private void Awake()
         {
             _mainMenu = FindObjectOfType<MainMenuUI>();
@@ -48,6 +57,8 @@ namespace InnsmouthCafe.UI
             _normalButton?.onClick.AddListener(OnNormalClicked);
             _hardButton?.onClick.AddListener(OnHardClicked);
             _backButton?.onClick.AddListener(OnBackClicked);
+
+            EnsureTooltipSystem();
         }
 
         // ── 显示/隐藏 ─────────────────────────────────────────
@@ -62,6 +73,7 @@ namespace InnsmouthCafe.UI
         /// <summary>隐藏面板</summary>
         public void Hide(bool immediate = false)
         {
+            TooltipSystem.Instance?.Hide();
             if (immediate)
                 SetGroupState(_canvasGroup, false);
             else
@@ -77,9 +89,52 @@ namespace InnsmouthCafe.UI
                 && GameManager.Instance.IsModeUnlocked(GameMode.Normal);
             bool hardUnlocked = GameManager.Instance != null
                 && GameManager.Instance.IsModeUnlocked(GameMode.Hard);
+            bool endlessConditionMet = GameManager.Instance != null
+                && GameManager.Instance.IsModeUnlocked(GameMode.Endless);
 
             SetButtonInteractable(_normalButton, normalUnlocked);
             SetButtonInteractable(_hardButton, hardUnlocked);
+            SetButtonInteractable(_endlessButton, false);
+
+            ConfigureUnlockTooltip(_normalButton, !normalUnlocked, "普通模式", NormalUnlockTip);
+            ConfigureUnlockTooltip(_hardButton, !hardUnlocked, "困难模式", HardUnlockTip);
+            ConfigureUnlockTooltip(
+                _endlessButton,
+                true,
+                "无尽模式",
+                endlessConditionMet ? EndlessDevelopmentTip : EndlessUnlockTip);
+        }
+
+        /// <summary>确保主菜单 Canvas 中存在通用 Tooltip 实例。</summary>
+        private void EnsureTooltipSystem()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            TextMeshProUGUI fontSource = _normalButton != null
+                ? _normalButton.GetComponentInChildren<TextMeshProUGUI>(true)
+                : null;
+            TooltipSystem.EnsureForCanvas(canvas, fontSource != null ? fontSource.font : null);
+        }
+
+        /// <summary>配置模式按钮的悬停解锁说明。</summary>
+        private void ConfigureUnlockTooltip(
+            Button button,
+            bool shouldShow,
+            string title,
+            string description)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            HoverTooltipTrigger trigger = button.GetComponent<HoverTooltipTrigger>();
+            if (trigger == null)
+            {
+                trigger = button.gameObject.AddComponent<HoverTooltipTrigger>();
+            }
+
+            trigger.ConfigureText(title, description);
+            trigger.enabled = shouldShow;
         }
 
         /// <summary>设置模式按钮是否允许点击。</summary>

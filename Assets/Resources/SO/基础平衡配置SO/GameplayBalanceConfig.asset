@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fbe68f382044ffc9f19c7d16ef4f73e, type: 3}
+  m_Name: GameplayBalanceConfig
+  m_EditorClassIdentifier: 
+  _customer:
+    angrySanityLossPerSecond: 0.1
+    stageOnePatienceRatio: 0.6
+    stageTwoPatienceRatio: 0.3
+  _sanity:
+    initialSanity: 100
+    minSanity: 0
+    maxSanity: 100
+    satisfiedReward: 3
+    neutralChange: 0
+    dissatisfiedPenalty: -5
+    highThreshold: 80
+    mediumThreshold: 50
+    lowThreshold: 20
+  _coffeeCraft:
+    beanPerClick: 5
+    maxBeanPerBatch: 20
+    beanToLiquidRatio: 5
+    slowPourSpeed: 35
+    fastPourSpeed: 90
+    overflowPenaltyInterval: 25
+    overflowSanityPenalty: 0.2
+    extractionSpeed: 20
+    clearBeansSanityPenalty: 0.2
+    clearPowderSanityPenalty: 0.3
+    clearWholeCoffeeSanityPenalty: 0.4
+  _scoring:
+    coffeeMatchWeight: 0.3
+    liquidMatchWeight: 0.3
+    toppingMatchWeight: 0.1
+    volumeMatchWeight: 0.3
+    cupAdaptationWeight: 0
+    defaultErrorMargin: 10
+    optimalFillRatioLow: 0.4
+    optimalFillRatioHigh: 1
+    acceptableScoreThreshold: 70
+    perfectScoreThreshold: 90
+    overflowScoreMultiplier: 0.9
+  _ending:
+    goodEndingThreshold: 90
+    returnEndingThreshold: 60
+  _octopus:
+    squishEventChance: 0.3
+    lineWeight: 5
+    sanityGainWeight: 2
+    sanityGainAmount: 1
+    sanityLossWeight: 1
+    sanityLossAmount: 0.2

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using InnsmouthCafe.Data;
 
     /// <summary>
     /// 理智值等级
@@ -58,51 +59,6 @@ using UnityEngine;
     /// </summary>
     public class SanityManager : Singleton<SanityManager>
     {
-        [Header("理智值配置")]
-        [SerializeField]
-        [Tooltip("初始理智值")]
-        [Range(0, 100)]
-        private float _initialSanity = 100f;
-
-        [SerializeField]
-        [Tooltip("最小理智值")]
-        [Range(0, 100)]
-        private float _minSanity = 0f;
-
-        [SerializeField]
-        [Tooltip("最大理智值")]
-        [Range(0, 100)]
-        private float _maxSanity = 100f;
-
-        [Header("理智值变化量配置")]
-        [SerializeField]
-        [Tooltip("满意评价理智值奖励")]
-        private float _satisfiedReward = 5f;
-
-        [SerializeField]
-        [Tooltip("一般评价理智值变化")]
-        private float _neutralChange = 0f;
-
-        [SerializeField]
-        [Tooltip("不满意评价理智值惩罚")]
-        private float _dissatisfiedPenalty = -5f;
-
-        [Header("理智值等级阈值")]
-        [SerializeField]
-        [Tooltip("高理智阈值 (>=此值为High)")]
-        [Range(0, 100)]
-        private float _highThreshold = 80f;
-
-        [SerializeField]
-        [Tooltip("中等理智阈值 (>=此值为Medium)")]
-        [Range(0, 100)]
-        private float _mediumThreshold = 50f;
-
-        [SerializeField]
-        [Tooltip("低理智阈值 (>=此值为Low)")]
-        [Range(0, 100)]
-        private float _lowThreshold = 20f;
-
         [Header("调试")]
         [SerializeField]
         [Tooltip("是否显示调试日志")]
@@ -115,6 +71,12 @@ using UnityEngine;
         [SerializeField]
         [Tooltip("最大历史记录数量")]
         private int _maxHistoryCount = 100;
+
+        /// <summary>当前模式正面理智变化倍率。</summary>
+        private float _positiveSanityMultiplier = 1f;
+
+        /// <summary>当前模式负面理智变化倍率。</summary>
+        private float _negativeSanityMultiplier = 1f;
 
         [Header("当前状态 - 只读")]
         [SerializeField]
@@ -138,7 +100,8 @@ using UnityEngine;
         /// <summary>
         /// 当前理智值百分比 (0-1)
         /// </summary>
-        public float SanityRatio => Mathf.Clamp01(_currentSanity / _maxSanity);
+        public float SanityRatio => Mathf.Clamp01(
+            _currentSanity / GameplayBalanceManager.Instance.Config.Sanity.maxSanity);
 
         /// <summary>
         /// 当前理智值等级
@@ -177,13 +140,26 @@ using UnityEngine;
             }
 
             // 初始化理智值
-            _currentSanity = _initialSanity;
+            _currentSanity = GameplayBalanceManager.Instance.Config.Sanity.initialSanity;
             _currentLevel = CalculateSanityLevel(_currentSanity);
 
             if (_showDebugLog)
             {
                 Debug.Log($"[SanityManager] 初始化完成，初始理智值: {_currentSanity}, 等级: {_currentLevel}");
             }
+        }
+
+        /// <summary>
+        /// 应用当前模式的统一难度参数；未配置时使用原始理智变化量。
+        /// </summary>
+        public void ConfigureDifficulty(GameModeConfigSO gameModeConfig)
+        {
+            _positiveSanityMultiplier = gameModeConfig != null
+                ? gameModeConfig.GetPositiveSanityMultiplier()
+                : 1f;
+            _negativeSanityMultiplier = gameModeConfig != null
+                ? gameModeConfig.GetNegativeSanityMultiplier()
+                : 1f;
         }
 
         /// <summary>
@@ -226,9 +202,9 @@ using UnityEngine;
         {
             float change = feedbackLevel switch
             {
-                0 => _dissatisfiedPenalty,
-                1 => _neutralChange,
-                2 => _satisfiedReward,
+                0 => GameplayBalanceManager.Instance.Config.Sanity.dissatisfiedPenalty,
+                1 => GameplayBalanceManager.Instance.Config.Sanity.neutralChange,
+                2 => GameplayBalanceManager.Instance.Config.Sanity.satisfiedReward,
                 _ => 0f
             };
 
@@ -253,7 +229,8 @@ using UnityEngine;
         public void SetSanity(float value)
         {
             float oldValue = _currentSanity;
-            _currentSanity = Mathf.Clamp(value, _minSanity, _maxSanity);
+            SanityBalanceSettings balance = GameplayBalanceManager.Instance.Config.Sanity;
+            _currentSanity = Mathf.Clamp(value, balance.minSanity, balance.maxSanity);
 
             if (Mathf.Approximately(oldValue, _currentSanity))
             {
@@ -277,7 +254,7 @@ using UnityEngine;
         public void ResetSanity()
         {
             float oldValue = _currentSanity;
-            _currentSanity = _initialSanity;
+            _currentSanity = GameplayBalanceManager.Instance.Config.Sanity.initialSanity;
             _currentLevel = CalculateSanityLevel(_currentSanity);
 
             string reason = "重置理智值";
@@ -336,8 +313,11 @@ using UnityEngine;
         /// </summary>
         private void ChangeSanity(float delta, string reason)
         {
+            delta *= delta >= 0f ? _positiveSanityMultiplier : _negativeSanityMultiplier;
+
             float oldValue = _currentSanity;
-            _currentSanity = Mathf.Clamp(_currentSanity + delta, _minSanity, _maxSanity);
+            SanityBalanceSettings balance = GameplayBalanceManager.Instance.Config.Sanity;
+            _currentSanity = Mathf.Clamp(_currentSanity + delta, balance.minSanity, balance.maxSanity);
 
             // 如果值没有实际变化（已到达边界），仍然记录但不触发事件
             if (Mathf.Approximately(oldValue, _currentSanity))
@@ -366,7 +346,7 @@ using UnityEngine;
                 ActionLogBus.Log($"理智值：{actualDelta:F1}", Color.red);
 
             // 检查是否归零
-            if (_currentSanity <= _minSanity && oldValue > _minSanity)
+            if (_currentSanity <= balance.minSanity && oldValue > balance.minSanity)
             {
                 OnSanityDepleted?.Invoke();
 
@@ -429,15 +409,16 @@ using UnityEngine;
         /// </summary>
         private SanityLevel CalculateSanityLevel(float sanity)
         {
-            if (sanity >= _highThreshold)
+            SanityBalanceSettings balance = GameplayBalanceManager.Instance.Config.Sanity;
+            if (sanity >= balance.highThreshold)
             {
                 return SanityLevel.High;
             }
-            else if (sanity >= _mediumThreshold)
+            else if (sanity >= balance.mediumThreshold)
             {
                 return SanityLevel.Medium;
             }
-            else if (sanity >= _lowThreshold)
+            else if (sanity >= balance.lowThreshold)
             {
                 return SanityLevel.Low;
             }
