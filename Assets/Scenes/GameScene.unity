@@ -1319,12 +1319,6 @@ MonoBehaviour:
   - "\u4F60\u77E5\u9053\u5417\uFF1F\u7AE0\u9C7C\u5176\u5B9E\u6709\u4E5D\u6761\u547D\uFF0C\u4E00\u4E2A\u5C3E\u5DF4\u53EF\u4EE5\u62B5\u4E00\u6761\u547D"
   - "\u597D\u597D\u4E0A\u73ED\uFF01"
   - "\u518D\u9A9A\u6270\u6211\u6211\u5C31\u558A\u4EBA\u5566"
-  _squishEventChance: 0.3
-  _weightLine: 5
-  _weightSanityGain: 2
-  _squishSanityGainAmount: 1
-  _weightSanityLoss: 1
-  _squishSanityLossAmount: 0.2
   _squishButton: {fileID: 1771144954}
   _squishRect: {fileID: 1847506310}
   _squishScale: {x: 1.1, y: 0.9}
@@ -7918,7 +7912,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMin.x
@@ -7926,7 +7920,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_SizeDelta.x
@@ -7966,11 +7960,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 224.385
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -262.33
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1003545623543823919, guid: 055be26dd73372a419e612926b7d8cdd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -9296,6 +9290,7 @@ MonoBehaviour:
   _toppingRequirementItemPrefab: {fileID: 4032000640633309548, guid: 7d7a6215073a5a04db0097463a5bba86, type: 3}
   _detailCanvasGroup: {fileID: 759807686}
   _detailRect: {fileID: 759807680}
+  _viewportHeight: 300
   _detailAnchoredPos: {x: -506, y: 417}
   _detailScale: 2.5
   _collapseScale: 0.7
@@ -9305,9 +9300,6 @@ MonoBehaviour:
   _collapseEase: 26
   _autoCollapseDelay: 0.5
   _hiddenAnchoredPos: {x: -765, y: 469}
-  _dragThreshold: 10
-  _dragBoundTop: 50
-  _dragBoundBottom: 50
   _closeButton: {fileID: 759807687}
 --- !u!1 &768615377
 GameObject:
@@ -14526,8 +14518,6 @@ MonoBehaviour:
   _ingredientUnlockNotifyUI: {fileID: 1058789714}
   _octopusNPC: {fileID: 171332900}
   _showDebugLog: 1
-  _goodEndingThreshold: 90
-  _returnEndingThreshold: 60
 --- !u!1 &1150607215
 GameObject:
   m_ObjectHideFlags: 0
@@ -15802,17 +15792,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24d07b9ab79949e42b48bad549d7d8bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _coffeeMatchWeight: 0.3
-  _liquidMatchWeight: 0.3
-  _toppingMatchWeight: 0.1
-  _volumeMatchWeight: 0.3
-  _cupAdaptationWeight: 0
-  _normalModeErrorMargin: 10
-  _optimalFillRatioLow: 0.4
-  _optimalFillRatioHigh: 1
-  _sanityLossPerOverflow25ml: 2
-  _acceptableThreshold: 70
-  _perfectThreshold: 90
 --- !u!1 &1185630060
 GameObject:
   m_ObjectHideFlags: 0
@@ -17694,15 +17673,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 281eaf7081e69d842a4b0ef3a9bdc720, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _initialSanity: 100
-  _minSanity: 0
-  _maxSanity: 100
-  _satisfiedReward: 3
-  _neutralChange: 0
-  _dissatisfiedPenalty: -5
-  _highThreshold: 80
-  _mediumThreshold: 50
-  _lowThreshold: 20
   _showDebugLog: 1
   _recordHistory: 1
   _maxHistoryCount: 100
@@ -20302,8 +20272,6 @@ MonoBehaviour:
   _currentCustomer: {fileID: 0}
   _currentState: 0
   _todayQueue: []
-  _stageOneThreshold: 0.6
-  _stageTwoThreshold: 0.3
 --- !u!1 &1532068974
 GameObject:
   m_ObjectHideFlags: 0
@@ -25846,17 +25814,6 @@ MonoBehaviour:
     beanGram: 0
   _mainState: 0
   _moduleState: 0
-  _beanPerClick: 5
-  _maxBeanPerBatch: 20
-  _beanToLiquidRatio: 5
-  _slowPourSpeed: 35
-  _fastPourSpeed: 90
-  _overflowPenaltyInterval: 25
-  _overflowSanityPenalty: 0.2
-  _extractionSpeed: 20
-  _clearBeansSanityPenalty: 0.2
-  _clearPowderSanityPenalty: 0.3
-  _clearWholeCoffeeSanityPenalty: 0.4
 --- !u!1 &2027271269
 GameObject:
   m_ObjectHideFlags: 0
@@ -27303,8 +27260,6 @@ MonoBehaviour:
   _beanAmountText: {fileID: 1332036776}
   _canvasGroup: {fileID: 2126292108}
   _fadeDuration: 0.2
-  _maxBeanAmount: 20
-  _beanPerGrid: 5
   _defaultColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &2127271154
 GameObject:

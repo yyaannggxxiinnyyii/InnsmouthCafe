@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: febcd0f73b1d81d40a0dbf93c2767931, type: 3}
+  m_Name: "\u6D77\u661F"
+  m_EditorClassIdentifier: 
+  resourceId: Haixin
+  resourceName: "\u6D77\u661F"
+  nodeType: 1
+  harvestToolType: 1
+  harvestToolLevel: 0
+  harvestSanityCost: 3
+  harvestDuration: 1.2
+  yields:
+  - resourceId: Haixin
+    amount: 1
+  sprite: {fileID: 21300000, guid: 630e896cd845edc418df327bb2c45c8b, type: 3}

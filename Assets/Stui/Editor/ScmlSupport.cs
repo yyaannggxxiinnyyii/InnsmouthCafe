@@ -1,0 +1,800 @@
+﻿// Modifications Copyright (c) 2026 TerminalJack
+// Licensed under the MIT License. See the LICENSE.TXT file in the project root for details.
+//
+// Portions of this file are derived from the Spriter2UnityDX project.
+// The original author provided an open-use permission statement, preserved in THIRD_PARTY_NOTICES.md.
+
+//This project is open source. Anyone can use any part of this code however they wish
+//Feel free to use this code in your own projects, or expand on this code
+//If you have any improvements to the code itself, please visit
+//https://github.com/Dharengo/Spriter2UnityDX and share your suggestions by creating a fork
+//-Dengar/Dharengo
+
+using UnityEngine;
+using System;
+using System.Text;
+using System.Xml.Serialization;
+using System.Collections.Generic;
+
+// All of these classes are containers for the data that is read from the .scml file
+// It is directly deserialized into these classes, although some individual values are
+// modified into a format that can be used by Unity
+namespace Stui.Importing
+{
+    [XmlRoot("spriter_data")]
+    public class ScmlObject
+    {   // Master class that holds all the other data
+        [XmlElement("folder")] public List<Folder> folders = new List<Folder>(); // <folder> tags
+        [XmlElement("entity")] public List<Entity> entities = new List<Entity>(); // <entity> tags
+        [XmlArray("tag_list"), XmlArrayItem("i")] public List<TagDef> tagDefs = new List<TagDef>();
+    }
+
+    public class Folder : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        [XmlElement("file")] public List<File> files = new List<File>(); // <file> tags
+    }
+
+    public class File : ScmlElement
+    {
+        public File()
+        {
+            pivot_x = 0f;
+            pivot_y = 1f;
+        }
+
+        [XmlAttribute] public string name { get; set; }
+        [XmlAttribute] public float pivot_x { get; set; }
+        [XmlAttribute] public float pivot_y { get; set; }
+        [XmlAttribute("type")] public ObjectType objectType { get; set; }
+    }
+
+    public class Entity : ScmlElement
+    {
+        private string _name;
+
+        [XmlAttribute]
+        public string name
+        {
+            get { return _name; }
+            set { _name = EntityNameSanitizer.Sanitize(value); }
+        }
+
+        [XmlElement("obj_info")] public List<ObjectInfo> objectInfos = new List<ObjectInfo>();
+        [XmlElement("character_map")] public List<CharacterMap> characterMaps = new List<CharacterMap>(); // <character_map> tags
+        [XmlElement("animation")] public List<Animation> animations = new List<Animation>(); // <animation> tags
+        [XmlArray("var_defs"), XmlArrayItem("i")] public List<VarDef> variableDefs = new List<VarDef>();
+    }
+
+    public class ObjectInfo : ScmlElement
+    {
+        [XmlAttribute] public string realname { get; set; }
+
+        string _name;
+
+        [XmlAttribute] public string name
+        {
+            get { return string.IsNullOrEmpty(realname) ? _name : realname; }
+            set { _name = value; }
+        }
+
+        [XmlAttribute("type")] public ObjectType objectType;
+
+        float _width;
+
+        [XmlAttribute("w")] public float width
+        {
+            get { return _width; }
+            set
+            {
+                _width = ScmlImportOptions.options != null
+                    ? value / ScmlImportOptions.options.pixelsPerUnit // Convert Spriter space into Unity space using pixelsPerUnit
+                    : value * 0.01f;
+            }
+        }
+
+        float _height;
+
+        [XmlAttribute("h")] public float height
+        {
+            get { return _height; }
+            set
+            {
+                _height = ScmlImportOptions.options != null
+                    ? value / ScmlImportOptions.options.pixelsPerUnit // Convert Spriter space into Unity space using pixelsPerUnit
+                    : value * 0.01f;
+            }
+        }
+
+        [XmlAttribute("pivot_x")] public float pivot_x;
+        [XmlAttribute("pivot_y")] public float pivot_y;
+
+        [XmlArray("var_defs"), XmlArrayItem("i")] public List<VarDef> variableDefs = new List<VarDef>();
+    }
+
+    public class Eventline : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        // ? (Not used) [XmlAttribute] public int obj { get; set; }
+
+        [XmlElement("key")] public List<SimpleKey> keys = new List<SimpleKey>();
+        [XmlElement("meta")] public Metadata metadata;
+    }
+
+    public class Metadata
+    {
+        [XmlElement("varline")] public List<Varline> varlines = new List<Varline>();
+        [XmlArray("tagline"), XmlArrayItem("key")] public List<TaglineKey> taglineKeys = new List<TaglineKey>();
+    }
+
+    public class VarDef : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        [XmlAttribute("type")] public VarType type;
+
+        [XmlAttribute("default")] public string defaultValue;
+
+        // If type is String then possibleStringValues will be populated during preprocessing by SpriterEntityInfo.
+        [XmlIgnore] public List<string> possibleStringValues = new List<string>();
+    }
+
+    public class Varline : ScmlElement
+    {
+        [XmlAttribute("def")] public int varDefId; // Id of entry in corresponding collection of VarDefs.
+        [XmlElement("key")] public List<VarlineKey> keys = new List<VarlineKey>();
+
+        [XmlIgnore] public VarDef varDef; // This will be assigned during preprocessing by SpriterEntityInfo.
+    }
+
+    public class SimpleKey : ScmlElement
+    {
+        public SimpleKey() { time = 0; }
+
+        private float _time; // In seconds.
+
+        [XmlAttribute]
+        public float time
+        { //Dengar.NOTE: In Spriter, Time is measured in milliseconds
+            // ! Read in seconds.
+            // ! Set in milliseconds!
+            get { return _time; }
+            set { _time = value * 0.001f; } //Dengar.NOTE: In Unity, it is measured in seconds instead, so we need to translate that
+        }
+
+        // Use the following when getting (and especially setting) the time so that you know what units you're working in.
+        [XmlIgnore] public float time_s { get { return _time; } set { _time = value; }}
+    }
+
+    public class SpriterKey : SimpleKey
+    {
+        [XmlAttribute] public CurveType curve_type { get; set; } // enum : INSTANT,LINEAR,QUADRATIC,CUBIC //Dengar.NOTE (again, no caps)
+
+        [XmlAttribute] public float c1 { get; set; }
+        [XmlAttribute] public float c2 { get; set; }
+        [XmlAttribute] public float c3 { get; set; }
+        [XmlAttribute] public float c4 { get; set; }
+    }
+
+    public class VarlineKey : SpriterKey
+    {
+        [XmlAttribute("val")] public string value;
+    }
+
+    public class TagDef : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+    }
+
+    public class TaglineKey : SimpleKey
+    {
+        [XmlElement("tag")] public List<TagInfo> tags = new List<TagInfo>();
+    }
+
+    public class TagInfo : ScmlElement
+    {
+        [XmlAttribute("t")] public int tagDefId;
+        [XmlIgnore] public string tagName; // This will be assigned during preprocessing by SpriterEntityInfo.
+    }
+
+    public enum VarType
+    {
+        [XmlEnum("string")]
+        String,
+
+        [XmlEnum("int")]
+        Int,
+
+        [XmlEnum("float")]
+        Float
+    }
+
+    public class Soundline : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        [XmlElement("key")] public List<SoundlineKey> keys = new List<SoundlineKey>();
+    }
+
+    public class SoundlineKey : SimpleKey
+    {
+        [XmlElement("object")] public SpriterSound soundObject;
+    }
+
+    public class SpriterSound : ScmlElement
+    {
+        [XmlAttribute("folder")] public int folderId;
+        [XmlAttribute("file")] public int fileId;
+        [XmlAttribute("panning")] public float panning;
+        [XmlAttribute("volume")] public float volume;
+
+        public SpriterSound()
+        {
+            folderId = -1;
+            fileId = -1;
+            panning = 0f;
+            volume = 1.0f;
+        }
+    }
+
+    public class CharacterMap : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        [XmlElement("map")] public List<MapInstruction> maps = new List<MapInstruction>(); // <map> tags
+    }
+
+    public class MapInstruction
+    {
+        public MapInstruction() { targetFolderId = -1; targetFileId = -1; }
+
+        [XmlAttribute("folder")] public int folderId { get; set; }
+        [XmlAttribute("file")] public int fileId { get; set; }
+        [XmlAttribute("target_folder")] public int targetFolderId { get; set; }
+        [XmlAttribute("target_file")] public int targetFileId { get; set; }
+    }
+
+    public class Animation : ScmlElement
+    {
+        public Animation()
+        {
+            looping = true;
+            usesBakedSpatialData = true;
+            hasAnimatedBoneScales = false;
+        }
+
+        private string _name;
+
+        [XmlAttribute]
+        public string name
+        {
+            get { return _name; }
+            set { _name = AnimationNameSanitizer.Sanitize(value); }
+        }
+
+        private float _length;
+
+        [XmlAttribute]
+        public float length
+        {
+            get { return _length; }
+            set { _length = value * 0.001f; }
+        }
+
+        [XmlAttribute] public bool looping { get; set; } // enum : NO_LOOPING,LOOPING //Dengar.NOTE: the actual values are true and false, so it's a bool
+        [XmlArray("mainline"), XmlArrayItem("key")]
+        public List<MainlineKey> mainlineKeys = new List<MainlineKey>(); // <key> tags within a single <mainline> tag
+        [XmlElement("timeline")] public List<Timeline> timelines = new List<Timeline>(); // <timeline> tags
+        [XmlElement("eventline")] public List<Eventline> eventlines = new List<Eventline>();
+        [XmlElement("soundline")] public List<Soundline> soundlines = new List<Soundline>();
+        [XmlElement("meta")] public Metadata metadata;
+
+        [XmlIgnore] public bool usesBakedSpatialData { get; set; }
+        [XmlIgnore] public bool hasAnimatedBoneScales { get; set; }
+    }
+
+    public class MainlineKey : SpriterKey
+    {
+        public override string ToString()
+        {
+            return $"{nameof(MainlineKey)}, id:{id}, time:{time}, curve_type:{curve_type}, " +
+                $"c1:{c1} c2:{c2}, c3:{c3}, c4:{c4}";
+        }
+
+        public MainlineKey Clone()
+        {
+            var clone = (MainlineKey)MemberwiseClone();
+
+            clone.boneRefs = new List<Ref>(boneRefs);
+            clone.objectRefs = new List<Ref>(objectRefs);
+
+            return clone;
+        }
+
+        [XmlElement("bone_ref")] public List<Ref> boneRefs = new List<Ref>(); // <bone_ref> tags
+        [XmlElement("object_ref")] public List<Ref> objectRefs = new List<Ref>(); // <object_ref> tags
+    }
+
+    public class Ref : ScmlElement
+    {
+        public Ref() { parentRefId = -1; }
+
+        public override string ToString()
+        {
+            return $"{nameof(Ref)}, id:{id}, parentRefId:{parentRefId}, timelineId:{timelineId}, " +
+                $"timelineKeyId:{timelineKeyId}, z_index:{z_index}";
+        }
+
+        [XmlAttribute("parent")] public int parentRefId { get; set; } // -1==no parent - uses ScmlObject spatialInfo as parentInfo
+        [XmlAttribute("timeline")] public int timelineId { get; set; }
+        [XmlAttribute("key")] public int timelineKeyId { get; set; }
+        [XmlAttribute] public int z_index;
+
+        public static int ZIndexToSortingOrder(float zIndex)
+        {
+            return Mathf.RoundToInt(100 * zIndex);
+        }
+    }
+
+    public enum ObjectType
+    {
+        sprite,
+        bone,
+        box,
+        point,
+        sound,
+        entity,
+        variable,
+        [XmlEnum("event")] spriterEvent // Did older Spriter files have this?  Seems to be used only for <obj_info> tags.
+    }
+
+    public class Timeline : ScmlElement
+    {
+        [XmlAttribute] public string name { get; set; }
+        [XmlAttribute("object_type")] public ObjectType objectType { get; set; } // enum : SPRITE,BONE,BOX,POINT,SOUND,ENTITY,VARIABLE //Dengar.NOTE (except not in all caps)
+        [XmlElement("key")] public List<TimelineKey> keys = new List<TimelineKey>(); // <key> tags within <timeline> tags
+        [XmlElement("meta")] public Metadata metadata;
+    }
+
+    public enum CurveType
+    {
+        linear,
+        instant,
+        quadratic,
+        cubic,
+        quartic,
+        quintic,
+        bezier
+    }
+
+    public class TimelineKey : SpriterKey
+    {
+        public TimelineKey() { spin = 1; }
+
+        public override string ToString()
+        {
+            return $"{nameof(TimelineKey)}, id:{id}, time_s:{time_s}, spin:{spin}, curve_type:{curve_type}, " +
+                $"c1:{c1} c2:{c2}, c3:{c3}, c4:{c4}, info:{info}";
+        }
+
+        public TimelineKey Clone()
+        {
+            var clone = (TimelineKey)MemberwiseClone();
+
+            clone.info = info.Clone();
+            clone.timeZeroAuxKey = timeZeroAuxKey?.Clone();
+
+            return clone;
+        }
+
+        [XmlAttribute] public int spin { get; set; }
+
+        [XmlElement("bone", typeof(SpatialInfo)), XmlElement("object", typeof(SpriteInfo))]
+        public SpatialInfo info { get; set; }
+
+        [XmlIgnore] public TimelineKey timeZeroAuxKey;
+    }
+
+    public class SpatialInfo
+    {
+        public const string UnassignedParentBoneName = "***Unassigned***";
+
+        public SpatialInfo()
+        {
+            x = 0f;
+            y = 0f;
+            angle = 0f;
+            scale_x = 1f;
+            scale_y = 1f;
+            _rawScaleX = float.NaN;
+            _rawScaleY = float.NaN;
+            trueScaleX = float.NaN;
+            trueScaleY = float.NaN;
+            a = 1f;
+            parentBoneName = UnassignedParentBoneName;
+        }
+
+        public override string ToString()
+        {
+            return $"{nameof(SpatialInfo)}: x:{x}, y:{y}, angle:{angle}, scale_x:{scale_x}, scale_y:{scale_y}, " +
+                $"a(alpha):{a}, parentBoneName:{parentBoneName}";
+        }
+
+        public virtual SpatialInfo Clone()
+        {
+            return (SpatialInfo)MemberwiseClone();
+        }
+
+        public static SpatialInfo Lerp(SpatialInfo from, SpatialInfo to, float t)
+        {
+            // Create and return a SpatialInfo (or SpriteInfo) object that lerps the appropriate data between the
+            // 'from' object and the 'to' object.
+            var result = from.Clone();
+
+            if (result.haveBaked)
+            {   // The BoneBaker exclusively uses Lerp() and it (the BoneBaker) should run before anything has been
+                // baked so this is unexpected (but recoverable assuming the undo doesn't fail.)
+                if (!result.UndoBake())
+                {
+                    Debug.LogWarning("SpatialInfo.Lerp(): UndoBake() failed.");
+                }
+                else
+                {
+                    Debug.LogWarning("SpatialInfo.Lerp(): Had to undo a bake.  This is not expected and may " +
+                        "indicate a programming error.");
+                }
+            }
+
+            result._x = Mathf.Lerp(result._x, to._x, t);
+            result._y = Mathf.Lerp(result._y, to._y, t);
+            result.scale_x = Mathf.Lerp(result.sx, to.sx, t);
+            result.scale_y = Mathf.Lerp(result.sy, to.sy, t);
+            result._rawScaleX = Mathf.Lerp(result.rawScaleX, to.rawScaleX, t);
+            result._rawScaleY = Mathf.Lerp(result.rawScaleY, to.rawScaleY, t);
+            result.angle = Mathf.LerpAngle(result.angle, to.angle, t);
+            result.a = Mathf.Lerp(result.a, to.a, t);
+
+            float fromTrueScaleX = float.IsNaN(result.trueScaleX) ? 1f : result.trueScaleX;
+            float toTrueScaleX = float.IsNaN(to.trueScaleX) ? 1f : to.trueScaleX;
+            result.trueScaleX = Mathf.Lerp(fromTrueScaleX, toTrueScaleX, t);
+
+            float fromTrueScaleY = float.IsNaN(result.trueScaleY) ? 1f : result.trueScaleY;
+            float toTrueScaleY = float.IsNaN(to.trueScaleY) ? 1f : to.trueScaleY;
+            result.trueScaleY = Mathf.Lerp(fromTrueScaleY, toTrueScaleY, t);
+
+            return result;
+        }
+
+        // parentBoneName will be set appropriately once the data is loaded and processed.
+        [XmlIgnore] public string parentBoneName { get; set; }
+
+        private float _x;
+
+        [XmlAttribute]
+        public float x
+        {
+            get { return _x; }
+            set
+            {
+                if (ScmlImportOptions.options != null)
+                {
+                    _x = value * (1f / ScmlImportOptions.options.pixelsPerUnit); // Convert Spriter space into Unity space using pixelsPerUnit
+                }
+                else
+                {
+                    _x = value * 0.01f;
+                }
+            }
+        }
+
+        private float _y;
+
+        [XmlAttribute]
+        public float y
+        {
+            get { return _y; }
+            set
+            {
+                if (ScmlImportOptions.options != null)
+                {
+                    _y = value * (1f / ScmlImportOptions.options.pixelsPerUnit); // Convert Spriter space into Unity space using pixelsPerUnit
+                }
+                else
+                {
+                    _y = value * 0.01f;
+                }
+            }
+        }
+
+        [XmlAttribute] public float angle { get; set; }
+
+        private float sx;
+        private float trueScaleX;
+        private float _rawScaleX; // The value read from the .scml file as-is and never changed.
+
+        [XmlAttribute]
+        public float scale_x
+        {
+            get { return sx; }
+            set
+            {
+                sx = value;
+                if (float.IsNaN(trueScaleX)) trueScaleX = value;
+
+                if (value != 1f && float.IsNaN(_rawScaleX))
+                {   // We're basically trying to ensure that 'value' is what comes from the xml serializer and not
+                    // because of the property being set later by the developer.
+                    _rawScaleX = value;
+                }
+            }
+        }
+
+        [XmlIgnore] public float rawScaleX => float.IsNaN(_rawScaleX) ? 1f : _rawScaleX;
+
+        private float sy;
+        private float trueScaleY;
+        private float _rawScaleY; // The value read from the .scml file as-is and never changed.
+
+        [XmlAttribute]
+        public float scale_y
+        {
+            get { return sy; }
+            set
+            {
+                sy = value;
+                if (float.IsNaN(trueScaleY)) trueScaleY = value;
+
+                if (value != 1f && float.IsNaN(_rawScaleY))
+                {   // We're basically trying to ensure that 'value' is what comes from the xml serializer and not
+                    // because of the property being set later by the developer.
+                    _rawScaleY = value;
+                }
+            }
+        }
+
+        [XmlIgnore] public float rawScaleY => float.IsNaN(_rawScaleY) ? 1f : _rawScaleY;
+
+        [XmlAttribute] public float a { get; set; } // Alpha
+
+        [XmlIgnore] public bool haveBaked = false;
+        private SpatialInfo _savedUndoBakeData;
+
+        public bool UndoBake()
+        {
+            if (_savedUndoBakeData != null)
+            {
+                scale_x = _savedUndoBakeData.scale_x;
+                scale_y = _savedUndoBakeData.scale_y;
+                _rawScaleX = _savedUndoBakeData._rawScaleX;
+                _rawScaleY = _savedUndoBakeData._rawScaleY;
+                trueScaleX = _savedUndoBakeData.trueScaleX;
+                trueScaleY = _savedUndoBakeData.trueScaleY;
+                _x = _savedUndoBakeData._x;
+                _y = _savedUndoBakeData._y;
+
+                haveBaked = false;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // Baking will make sure all the scale values are off the bones and on the sprite instead...
+        public bool Bake(SpatialInfo parent)
+        {
+            if (_savedUndoBakeData == null)
+            {
+                _savedUndoBakeData = Clone();
+            }
+
+            // If either of these are still NaN at this point then we know that they had a value of 1 (the default)
+            // in the .scml file.
+            if (float.IsNaN(_rawScaleX)) _rawScaleX = 1f;
+            if (float.IsNaN(_rawScaleY)) _rawScaleY = 1f;
+
+            if (GetType() == typeof(SpatialInfo))
+            {
+                scale_x = (scale_x > 0) ? 1 : -1;
+                scale_y = (scale_y > 0) ? 1 : -1;
+                trueScaleX = Mathf.Abs(trueScaleX);
+                trueScaleY = Mathf.Abs(trueScaleY);
+
+                if (parent != null)
+                {
+                    if (!float.IsNaN(parent.trueScaleX))
+                    {
+                        _x *= parent.trueScaleX;
+                        trueScaleX *= parent.trueScaleX;
+                    }
+                    if (!float.IsNaN(parent.trueScaleY))
+                    {
+                        _y *= parent.trueScaleY;
+                        trueScaleY *= parent.trueScaleY;
+                    }
+                }
+
+                haveBaked = true;
+                return true;
+            }
+
+            if (parent != null)
+            {
+                if (!float.IsNaN(parent.trueScaleX))
+                {
+                    _x *= parent.trueScaleX;
+                    scale_x *= parent.trueScaleX;
+                }
+                if (!float.IsNaN(parent.trueScaleY))
+                {
+                    _y *= parent.trueScaleY;
+                    scale_y *= parent.trueScaleY;
+                }
+            }
+
+            haveBaked = true;
+            return true;
+        }
+    }
+
+    public class SpriteInfo : SpatialInfo
+    {
+        public SpriteInfo() : base()
+        {
+            // These will be set appropriately once the data is loaded and processed.
+            pivot_x = float.NaN;
+            pivot_y = float.NaN;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()}, {nameof(SpriteInfo)}: folderId: {folderId}, fileId: {fileId}, " +
+                $"pivot_x:{pivot_x}, pivot_y:{pivot_y}, " +
+                $"default_pivot_x:{default_pivot_x}, default_pivot_y:{default_pivot_y}, " +
+                $"IsDefaultPivots:{IsDefaultPivots}";
+        }
+
+        public override SpatialInfo Clone()
+        {
+            return (SpatialInfo)MemberwiseClone();
+        }
+
+        [XmlAttribute("folder")] public int folderId { get; set; }
+        [XmlAttribute("file")] public int fileId { get; set; }
+
+        [XmlAttribute] public float pivot_x { get; set; } // Pivot read from SCML file or file defaults if not read.
+        [XmlAttribute] public float pivot_y { get; set; }
+
+        public float default_pivot_x { get; set; } // Imported file's pivots.
+        public float default_pivot_y { get; set; }
+
+        public void InitPivots(File spriteFile)
+        {
+            if (spriteFile != null)
+            {
+                default_pivot_x = spriteFile.pivot_x; // These are the import pivots.
+                default_pivot_y = spriteFile.pivot_y;
+
+                // If a value wasn't read from the SCML file then use the file's pivots.
+                if (float.IsNaN(pivot_x) || float.IsNaN(pivot_y))
+                {
+                    pivot_x = spriteFile.pivot_x;
+                    pivot_y = spriteFile.pivot_y;
+                }
+            }
+        }
+
+        public bool IsDefaultPivots
+        {
+            get { return pivot_x == default_pivot_x && pivot_y == default_pivot_y; }
+        }
+    }
+
+    public abstract class ScmlElement
+    {
+        [XmlAttribute] public int id { get; set; }
+    }
+
+    public static class EntityNameSanitizer
+    {
+        private static readonly char[] InvalidChars =
+        {
+            '/',
+            '\\',
+            '<',
+            '>',
+            ':',
+            '"',
+            '|',
+            '?',
+            '*'
+        };
+
+        private static readonly string WarningMsg =
+            "Stui: The Spriter entity name '{0}' contains one or more characters that are invalid for " +
+            "prefab filenames and animation controller filenames.  It has been renamed to '{1}'.  Change the " +
+            "entity name in Spriter to avoid this warning.";
+
+        /// <summary>
+        /// Scans the provided entity name for invalid characters.  An animation controller
+        /// file and a prefab file will be created with this name so it can't contain any
+        /// characters that are invalid for filenames.
+        /// </summary>
+        /// <returns>
+        /// A warning will be logged if the name is invalid, in which case a sanitized
+        /// string will be returned.  The original string will be returned if it is valid.
+        /// </returns>
+        public static string Sanitize(string entityName)
+        {
+            return NameSanitizer.Sanitize(entityName, InvalidChars, WarningMsg);
+        }
+    }
+
+    public static class AnimationNameSanitizer
+    {
+        private static readonly char[] InvalidChars =
+        {
+            '.', // This chararter is invalid for animation controller state names.
+            '/',
+            '\\',
+            '<',
+            '>',
+            ':',
+            '"',
+            '|',
+            '?',
+            '*'
+        };
+
+        private static readonly string WarningMsg =
+            "Stui: The Spriter animation name '{0}' contains one or more characters that are invalid for " +
+            "Unity animation state names and/or animation clip filenames.  It has been renamed to '{1}'.  Change the " +
+            "animation name in Spriter to avoid this warning.";
+
+        /// <summary>
+        /// Scans the provided animation name for invalid characters.  An animation
+        /// clip file will be created with this name so it can't contain any characters that
+        /// are invalid for filenames.  Also, the animation controller doesn't allow for '.'
+        /// or '/'.
+        /// </summary>
+        /// <returns>
+        /// A warning will be logged if the name is invalid, in which case a sanitized
+        /// string will be returned.  The original string will be returned if it is valid.
+        /// </returns>
+        public static string Sanitize(string animationName)
+        {
+            return NameSanitizer.Sanitize(animationName, InvalidChars, WarningMsg);
+        }
+    }
+
+    public static class NameSanitizer
+    {
+        public static string Sanitize(string name, char[] invalidChars, string warningMsg)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            var original = name;
+            var sb = new StringBuilder(name);
+
+            bool wasSanitized = false;
+
+            for (int i = 0; i < sb.Length; i++)
+            {
+                char c = sb[i];
+
+                if (Array.IndexOf(invalidChars, c) >= 0)
+                {
+                    sb[i] = '_';
+                    wasSanitized = true;
+                }
+            }
+
+            if (wasSanitized)
+            {
+                Debug.LogWarningFormat(warningMsg, original, sb.ToString());
+            }
+
+            return sb.ToString();
+        }
+    }
+}

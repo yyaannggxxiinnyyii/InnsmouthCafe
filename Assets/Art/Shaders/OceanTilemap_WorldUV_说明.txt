@@ -1,0 +1,100 @@
+// ShaderGraph 材质配置说明
+// 文件路径: Assets/Art/Shaders/OceanTilemap_WorldUV.shadergraph
+
+/**
+ * 饥荒风格海洋 Tilemap Shader（世界 UV 采样）
+ *
+ * 核心原理：
+ * 1. 用世界坐标 XZ 作为 UV，而非瓦片局部 UV
+ * 2. 海底层 + 海面噪声层按世界坐标平铺采样
+ * 3. Tilemap 瓦片 Alpha 作为遮罩，裁剪出不规则形状
+ *
+ * 输入参数：
+ * - _GroundTex: 海底底层纹理（Ground_water_coral 等）
+ * - _NoiseTex: 海面噪声纹理（Ground_noise_water_shallow 等）
+ * - _WorldTiling: 世界空间平铺倍数（默认 0.125 = 1/8，因为大图是 8x8 瓦片）
+ * - _NoiseOpacity: 海面噪声不透明度（默认 0.6）
+ *
+ * 节点结构：
+ *
+ * [Absolute World Position] → XZ 分量
+ *   ↓
+ * [Multiply] (_WorldTiling) → 世界 UV
+ *   ↓
+ * [Sample Texture 2D] (_GroundTex) → 海底颜色
+ * [Sample Texture 2D] (_NoiseTex)  → 海面噪声颜色
+ *   ↓
+ * [Blend (Overlay/Multiply)] (_NoiseOpacity) → 混合
+ *   ↓
+ * [Multiply] (Vertex Color Alpha) → 用 Tilemap Alpha 裁剪
+ *   ↓
+ * [Fragment Output]
+ */
+
+// Unity ShaderGraph 创建步骤（手动操作）：
+
+/**
+ * 1. 右键 Assets/Art/Shaders/ → Create → Shader Graph → URP → Sprite Lit Shader Graph
+ * 2. 命名为: OceanTilemap_WorldUV
+ * 3. 打开 ShaderGraph 编辑器，按以下结构连接节点：
+ *
+ * 【节点布局】
+ *
+ * (左侧输入)
+ * ┌─────────────────────┐
+ * │ Texture2D Property  │ _GroundTex (海底)
+ * ├─────────────────────┤
+ * │ Texture2D Property  │ _NoiseTex (海面噪声)
+ * ├─────────────────────┤
+ * │ Float Property      │ _WorldTiling (default: 0.125)
+ * ├─────────────────────┤
+ * │ Float Property      │ _NoiseOpacity (default: 0.6)
+ * └─────────────────────┘
+ *
+ * (中间处理)
+ * ┌────────────────────────────────────────┐
+ * │ Position Node                          │ → Space: Absolute World
+ * │   → Split (取 X 和 Z)                   │
+ * │   → Combine (X, Z) → Vector2 worldUV   │
+ * └────────────────────────────────────────┘
+ *          ↓
+ * ┌────────────────────────────────────────┐
+ * │ Multiply                                │
+ * │   worldUV × _WorldTiling → tiledUV     │
+ * └────────────────────────────────────────┘
+ *          ↓
+ * ┌────────────────────────────────────────┐
+ * │ Sample Texture 2D (_GroundTex)         │
+ * │   UV: tiledUV                           │
+ * │   → groundColor                         │
+ * ├────────────────────────────────────────┤
+ * │ Sample Texture 2D (_NoiseTex)          │
+ * │   UV: tiledUV                           │
+ * │   → noiseColor                          │
+ * └────────────────────────────────────────┘
+ *          ↓
+ * ┌────────────────────────────────────────┐
+ * │ Blend Node (Mode: Overlay)             │
+ * │   Base: groundColor                     │
+ * │   Blend: noiseColor                     │
+ * │   Opacity: _NoiseOpacity                │
+ * │   → mixedColor                          │
+ * └────────────────────────────────────────┘
+ *          ↓
+ * ┌────────────────────────────────────────┐
+ * │ Vertex Color Node                       │
+ * │   → 取 Alpha 通道                       │
+ * └────────────────────────────────────────┘
+ *          ↓
+ * (输出到 Fragment)
+ * ┌────────────────────────────────────────┐
+ * │ Base Color: mixedColor                  │
+ * │ Alpha: Vertex Color Alpha               │
+ * └────────────────────────────────────────┘
+ *
+ * 4. 保存 ShaderGraph
+ * 5. 创建材质: 右键 ShaderGraph → Create → Material
+ * 6. 命名为: OceanMat_CoralShallow
+ */
+
+// 如果不想手动连节点，也可以用下面的 Shader 代码（等效实现）

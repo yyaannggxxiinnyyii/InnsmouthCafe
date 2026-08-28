@@ -194,6 +194,7 @@ namespace InnsmouthCafe.UI
             _pendingAutoCollapse = false;
             _isExpanded = false;
             _isAnimating = true;
+            SetScrollEnabled(false);
 
             _detailCanvasGroup?.DOKill();
             _detailRect?.DOKill();
@@ -325,12 +326,14 @@ namespace InnsmouthCafe.UI
                 sequence.OnComplete(() =>
                 {
                     _isAnimating = false;
+                    SetScrollEnabled(true);
                     OnDetailShown?.Invoke();
                 });
             }
             else
             {
                 _isAnimating = false;
+                SetScrollEnabled(true);
                 OnDetailShown?.Invoke();
             }
         }
@@ -345,6 +348,7 @@ namespace InnsmouthCafe.UI
             _isExpanded = false;
             _isAnimating = false;
             _isPendingExpand = false;
+            SetScrollEnabled(false);
 
             if (_detailCanvasGroup != null)
             {
@@ -453,6 +457,18 @@ namespace InnsmouthCafe.UI
             Canvas.ForceUpdateCanvases();
             _ticketScrollRect.StopMovement();
             _ticketScrollRect.verticalNormalizedPosition = 1f;
+        }
+
+        /// <summary>
+        /// 根据小票详情的显示状态启用或禁用滚动交互。
+        /// </summary>
+        /// <param name="enabled">是否允许滚动小票内容。</param>
+        private void SetScrollEnabled(bool enabled)
+        {
+            if (_ticketScrollRect != null)
+            {
+                _ticketScrollRect.enabled = enabled;
+            }
         }
 
         /// <summary>

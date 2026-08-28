@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e8b1233f514b6a4082f95cb543db5ad, type: 3}
+  m_Name: "\u987E\u5BA2SO"
+  m_EditorClassIdentifier: 
+  customerId: 
+  customerName: 
+  description: 
+  portrait: {fileID: 0}
+  prefab: {fileID: 0}
+  isSpecial: 0
+  patience: 60
+  tipMultiplier: 1
+  preferredCoffeeTypes: []
+  preferredMaterials: []
+  greetingDialogue: 
+  satisfiedDialogue: 
+  dissatisfiedDialogue: 

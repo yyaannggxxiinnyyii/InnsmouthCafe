@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b61860157e993234386a0a5246e6007e, type: 3}
+  m_Name: "\u8F7D\u5177SO"
+  m_EditorClassIdentifier: 
+  vehicleId: 
+  vehicleName: 
+  description: 
+  icon: {fileID: 0}
+  type: 0
+  level: 0
+  speedMultiplier: 1
+  sanityResistance: 0
+  upgradeCost: 100
+  nextLevelVehicle: {fileID: 0}
+  purchasePrice: 500
+  isInitial: 0

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe3ac4a20dde9c94a8e2423bcbef253a, type: 3}
+  m_Name: "\u5BD2\u6D41\u6D77\u6D0B"
+  m_EditorClassIdentifier: 
+  areaId: area_1
+  areaName: "\u5BD2\u6D41\u6D77\u6D0B"
+  energyDrainPerSecond: 0.18
+  detectionMode: 1
+  center: {x: 0, y: 0}
+  size: {x: 10, y: 10}
+  areaTiles:
+  - {fileID: 11400000, guid: 6cf9a9cd1232d8b41bda4acd26f08d8b, type: 2}

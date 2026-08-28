@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 408e9af640eae6446b1db63737fe8f5f, type: 3}
+  m_Name: "\u73CA\u745A\u7FA4"
+  m_EditorClassIdentifier: 
+  targetArea: {fileID: 11400000, guid: bc8ab3b046e70ec4eaf23abf99d805f6, type: 2}
+  waveEntries:
+  - wavePrefab: {fileID: 3063616243632902861, guid: 8ca361155506c494e9abc6142bc2c85a, type: 3}
+    density: 0.08
+    color: {r: 0.7028302, g: 0.97945106, b: 1, a: 1}
+    fpsRange: {x: 0, y: 0}
+    enableDrift: 1
+    driftSpeed: 0.08
+    driftRange: 1
+  sortingOrder: 10

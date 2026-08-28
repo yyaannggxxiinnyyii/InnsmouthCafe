@@ -118,7 +118,6 @@ public class CoffeeCraftManager : Singleton<CoffeeCraftManager>
 
         // 播放选择杯子音效
         AudioManager.Instance?.PlaySfx(SoundId.CoffeeCupSelect);
-
         ActionLogBus.Log($"选择咖啡杯：{cup.cupName}");
         Debug.Log($"[CoffeeCraft] 选择杯子：{cup.cupName}，容量：{cup.capacity}ml");
     }
