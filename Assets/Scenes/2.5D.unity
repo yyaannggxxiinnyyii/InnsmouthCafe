@@ -51616,14 +51616,13 @@ MonoBehaviour:
   - config: {fileID: 11400000, guid: 1065522a2f4248544bc43dc333dce151, type: 2}
     nodeCount: 3
     perNodeCount: 3
-    belongArea: {fileID: 11400000, guid: d0a0b1233e392e64c8b4993cf1456c7e, type: 2}
+    belongAreas:
+    - {fileID: 11400000, guid: d0a0b1233e392e64c8b4993cf1456c7e, type: 2}
   - config: {fileID: 11400000, guid: 76a5ac72940c91c46b0c91dfb997291b, type: 2}
     nodeCount: 5
     perNodeCount: 1
-    belongArea: {fileID: 11400000, guid: bc8ab3b046e70ec4eaf23abf99d805f6, type: 2}
-  spawnMode: 1
-  spawnSize: {x: 14, y: 10}
-  spawnCenter: {x: 0, y: 0}
+    belongAreas:
+    - {fileID: 11400000, guid: bc8ab3b046e70ec4eaf23abf99d805f6, type: 2}
   clusterRadius: 0.8
   clearOnGenerate: 1
   nodeParent: {fileID: 0}

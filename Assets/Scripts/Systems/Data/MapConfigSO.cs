@@ -6,9 +6,8 @@ namespace InnsmouthCafe.Data
 {
     /// <summary>
     /// 地图配置（MapConfigSO）。
-    /// 长期经营架构的核心数据：一张地图 = 一个经营存档的「世界」。
-    /// 定义：这张地图有什么顾客、订单、探索地区、章节目标。
-    /// 替代：旧的 GameModeConfigSO（7天模式）。
+    /// 长期经营架构的地图数据：定义地图基础信息、初始状态、区域列表和章节引用。
+    /// 区域经营内容由 AreaConfigSO 定义，区域空间范围由场景 Tilemap 决定。
     /// </summary>
     [CreateAssetMenu(menuName = "InnsmouthCafe/Map/Map Config", fileName = "MapConfig")]
     public class MapConfigSO : ScriptableObject
@@ -43,16 +42,6 @@ namespace InnsmouthCafe.Data
         [Tooltip("初始拥有的载具")]
         public List<VehicleConfigSO> initialVehicles = new List<VehicleConfigSO>();
 
-        [Header("经营内容")]
-        [Tooltip("该地图的普通顾客池")]
-        public CustomerPoolSO customerPool;
-
-        [Tooltip("该地图的特殊顾客池（Boss）")]
-        public CustomerPoolSO specialCustomerPool;
-
-        [Tooltip("该地图的订单池")]
-        public OrderPoolSO orderPool;
-
         [Header("探索内容")]
         [Tooltip("该地图包含的探索地区（可复用其他地图的地区）")]
         public List<AreaConfigSO> areas = new List<AreaConfigSO>();
@@ -60,10 +49,6 @@ namespace InnsmouthCafe.Data
         [Header("章节系统")]
         [Tooltip("章节节点列表（通关目标）")]
         public List<ChapterConfigSO> chapters = new List<ChapterConfigSO>();
-
-        [Header("解锁条件")]
-        [Tooltip("解锁该地图的前置条件")]
-        public MapUnlockRequirement unlockRequirement;
 
         /// <summary>初始材料条目</summary>
         [System.Serializable]

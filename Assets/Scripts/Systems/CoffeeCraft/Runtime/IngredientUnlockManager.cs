@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using InnsmouthCafe.Data;
+using InnsmouthCafe.Progression;
 using UnityEngine;
 
 /// <summary>
@@ -137,6 +138,7 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
             _unlockedLiquids.Add(liquid);
             RefreshDebugLists();
             LogUnlock($"辅助液：{liquid.liquidName}");
+            TaskProgressService.Instance.RecordResourceUnlocked(liquid.liquidId, true);
             OnUnlockStateChanged?.Invoke();
         }
 
@@ -161,6 +163,7 @@ public class IngredientUnlockManager : Singleton<IngredientUnlockManager>
             _unlockedToppings.Add(topping);
             RefreshDebugLists();
             LogUnlock($"小料：{topping.toppingName}");
+            TaskProgressService.Instance.RecordResourceUnlocked(topping.toppingId, false);
             OnUnlockStateChanged?.Invoke();
         }
 

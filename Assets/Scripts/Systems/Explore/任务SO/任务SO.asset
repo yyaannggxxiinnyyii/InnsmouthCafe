@@ -9,9 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdef2acdec701c74fb0a8c344d49e808, type: 3}
-  m_Name: "\u987E\u5BA2\u6C60SO"
+  m_Script: {fileID: 11500000, guid: c7b4d8f64f0b47e3a2d9c1f8056e7a11, type: 3}
+  m_Name: "\u4EFB\u52A1SO"
   m_EditorClassIdentifier: 
-  poolName: 
+  taskId: 
+  taskName: 
   description: 
-  customers: []
+  taskType: 0
+  targetId: 
+  targetValue: 1

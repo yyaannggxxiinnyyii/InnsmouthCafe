@@ -22,9 +22,6 @@ namespace InnsmouthCafe.Explore
             [Tooltip("浪花颜色（支持透明度）")]
             public Color color = new Color(1f, 1f, 1f, 0.6f);
 
-            [Tooltip("帧率范围（随机）")]
-            public Vector2 fpsRange = new Vector2(4f, 8f);
-
             [Header("位置漂移")]
             [Tooltip("是否启用位置漂移")]
             public bool enableDrift = true;

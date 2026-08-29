@@ -92,15 +92,15 @@ namespace InnsmouthCafe.Explore
             Tilemap tilemap = FindTilemapForArea(config.targetArea);
             if (tilemap == null)
             {
-                Debug.LogWarning($"[WaveManager] 找不到 {config.targetArea.areaName} 对应的 Tilemap");
+                Debug.LogWarning($"[WaveManager] 找不到 {config.targetArea.AreaName} 对应的 Tilemap");
                 return;
             }
 
             // 收集所有有效格子
-            List<Vector3Int> validCells = GetValidCells(tilemap);
+            List<Vector3Int> validCells = GetValidCells(tilemap, config.targetArea);
             if (validCells.Count == 0)
             {
-                Debug.LogWarning($"[WaveManager] {config.targetArea.areaName} 没有有效格子");
+                Debug.LogWarning($"[WaveManager] {config.targetArea.AreaName} 没有有效格子");
                 return;
             }
 
@@ -188,7 +188,7 @@ namespace InnsmouthCafe.Explore
                     _spawnedWaves[config.targetArea].Add(waveObj);
                 }
 
-                Debug.Log($"[WaveManager] {config.targetArea.areaName} 生成了 {count} 个 {entry.wavePrefab.name}（面积 {totalArea:F1}，密度 {entry.density}）");
+                Debug.Log($"[WaveManager] {config.targetArea.AreaName} 生成了 {count} 个 {entry.wavePrefab.name}（面积 {totalArea:F1}，密度 {entry.density}）");
             }
         }
 
@@ -202,11 +202,7 @@ namespace InnsmouthCafe.Explore
                 if (tilemap == null) continue;
 
                 // 取这个 Tilemap 的任意一个 Tile，检查是否属于目标 Area
-                var cellPos = GetRandomCellInTilemap(tilemap);
-                if (cellPos == null) continue;
-
-                var tile = tilemap.GetTile(cellPos.Value);
-                if (tile != null && area.ContainsTile(tile))
+                if (GetValidCells(tilemap, area).Count > 0)
                 {
                     return tilemap;
                 }
@@ -216,7 +212,7 @@ namespace InnsmouthCafe.Explore
         }
 
         /// <summary>收集 Tilemap 所有有 Tile 的格子</summary>
-        private List<Vector3Int> GetValidCells(Tilemap tilemap)
+        private List<Vector3Int> GetValidCells(Tilemap tilemap, AreaConfigSO area)
         {
             List<Vector3Int> cells = new List<Vector3Int>();
             BoundsInt bounds = tilemap.cellBounds;
@@ -226,7 +222,8 @@ namespace InnsmouthCafe.Explore
                 for (int y = bounds.yMin; y < bounds.yMax; y++)
                 {
                     Vector3Int cellPos = new Vector3Int(x, y, 0);
-                    if (tilemap.HasTile(cellPos))
+                    if (tilemap.HasTile(cellPos) && area != null
+                        && area.ContainsTile(tilemap.GetTile(cellPos)))
                     {
                         cells.Add(cellPos);
                     }
@@ -234,14 +231,6 @@ namespace InnsmouthCafe.Explore
             }
 
             return cells;
-        }
-
-        /// <summary>从 Tilemap 随机取一个有 Tile 的格子</summary>
-        private Vector3Int? GetRandomCellInTilemap(Tilemap tilemap)
-        {
-            var cells = GetValidCells(tilemap);
-            if (cells.Count == 0) return null;
-            return cells[Random.Range(0, cells.Count)];
         }
 
         /// <summary>

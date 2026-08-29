@@ -1,4 +1,5 @@
 using UnityEngine;
+using InnsmouthCafe.Progression;
 
 namespace InnsmouthCafe.Explore
 {
@@ -254,6 +255,11 @@ namespace InnsmouthCafe.Explore
             {
                 foreach (var y in node.Yields)
                 {
+                    if (!string.IsNullOrEmpty(y.resourceId) && y.amount > 0)
+                    {
+                        TaskProgressService.Instance.RecordCollectedMaterials(y.resourceId, y.amount);
+                    }
+
                     string msg = $"[采集] 获得 {y.resourceId} ×{y.amount}";
                     Debug.Log(msg);
                 }

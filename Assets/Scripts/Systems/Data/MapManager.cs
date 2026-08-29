@@ -7,7 +7,7 @@ namespace InnsmouthCafe.Data
 {
     /// <summary>
     /// 地图管理器（MapManager）。
-    /// 管理当前激活的地图、章节进度、地区解锁。
+    /// 管理当前激活的地图、章节进度和区域访问数据。
     /// 提供数据访问接口给经营系统和探索系统。
     /// </summary>
     public class MapManager : MonoBehaviour
@@ -127,16 +127,6 @@ namespace InnsmouthCafe.Data
                 }
             }
 
-            // 解锁该地图的初始地区（areas 列表的第一个）
-            if (mapConfig.areas != null && mapConfig.areas.Count > 0)
-            {
-                var firstArea = mapConfig.areas[0];
-                if (firstArea != null && !CurrentSave.unlockedAreas.Contains(firstArea.areaId))
-                {
-                    CurrentSave.unlockedAreas.Add(firstArea.areaId);
-                }
-            }
-
             Debug.Log($"[MapManager] 已应用地图 {mapConfig.mapName} 的初始状态");
         }
 
@@ -176,9 +166,9 @@ namespace InnsmouthCafe.Data
             }
 
             // 返回第一个未完成的章节
-            foreach (var chapter in _currentMap.chapters.OrderBy(c => c.sortOrder))
+            foreach (var chapter in _currentMap.chapters.OrderBy(c => c.SortOrder))
             {
-                if (!IsChapterCompleted(_currentMap.mapId, chapter.chapterId))
+                if (!IsChapterCompleted(_currentMap.mapId, chapter.ChapterId))
                 {
                     return chapter;
                 }
@@ -199,111 +189,6 @@ namespace InnsmouthCafe.Data
             return dict[mapId].Contains(chapterId);
         }
 
-        /// <summary>完成章节</summary>
-        public bool CompleteChapter(string mapId, string chapterId)
-        {
-            if (CurrentSave == null) return false;
-
-            var dict = CurrentSave.completedChapters.ToDictionary();
-
-            if (!dict.ContainsKey(mapId))
-            {
-                dict[mapId] = new List<string>();
-            }
-
-            if (dict[mapId].Contains(chapterId))
-            {
-                Debug.LogWarning($"[MapManager] 章节 {chapterId} 已完成");
-                return false;
-            }
-
-            dict[mapId].Add(chapterId);
-            CurrentSave.completedChapters.FromDictionary(dict);
-
-            Debug.Log($"[MapManager] 完成章节：{chapterId}");
-
-            // 应用章节奖励
-            ApplyChapterReward(mapId, chapterId);
-
-            return true;
-        }
-
-        /// <summary>应用章节奖励</summary>
-        private void ApplyChapterReward(string mapId, string chapterId)
-        {
-            if (_currentMap == null || _currentMap.mapId != mapId) return;
-
-            var chapter = _currentMap.chapters.FirstOrDefault(c => c.chapterId == chapterId);
-            if (chapter == null) return;
-
-            // 奖励金币
-            if (chapter.rewardMoney > 0)
-            {
-                PlayerInventory.Instance.AddMoney(chapter.rewardMoney);
-            }
-
-            // 奖励材料
-            if (chapter.rewardMaterials != null)
-            {
-                foreach (var entry in chapter.rewardMaterials)
-                {
-                    PlayerInventory.Instance.AddMaterial(entry.materialId, entry.count);
-                }
-            }
-
-            // 解锁探索地区
-            if (chapter.unlockAreas != null)
-            {
-                foreach (var area in chapter.unlockAreas)
-                {
-                    if (area != null)
-                    {
-                        UnlockArea(area.areaId);
-                    }
-                }
-            }
-
-            Debug.Log($"[MapManager] 已发放章节 {chapterId} 的奖励");
-        }
-
-        /// <summary>检查章节目标是否达成</summary>
-        public bool CheckChapterGoals(ChapterConfigSO chapter)
-        {
-            if (chapter == null || chapter.goals == null) return false;
-            if (CurrentSave == null) return false;
-
-            foreach (var goal in chapter.goals)
-            {
-                bool goalMet = false;
-
-                switch (goal.type)
-                {
-                    case ChapterConfigSO.GoalType.TotalRevenue:
-                        goalMet = CurrentSave.totalRevenue >= goal.targetValue;
-                        break;
-
-                    case ChapterConfigSO.GoalType.ServedCustomers:
-                        goalMet = CurrentSave.totalServedCustomers >= goal.targetValue;
-                        break;
-
-                    case ChapterConfigSO.GoalType.PerfectOrders:
-                        goalMet = CurrentSave.totalPerfectOrders >= goal.targetValue;
-                        break;
-
-                    case ChapterConfigSO.GoalType.CollectedMaterials:
-                        goalMet = CurrentSave.totalCollectedMaterials >= goal.targetValue;
-                        break;
-                }
-
-                if (!goalMet)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         #endregion
 
         #region 地区管理
@@ -314,7 +199,7 @@ namespace InnsmouthCafe.Data
             if (_currentMap == null || _currentMap.areas == null) return new List<AreaConfigSO>();
             if (CurrentSave == null) return new List<AreaConfigSO>();
 
-            return _currentMap.areas.Where(area => area != null && CurrentSave.unlockedAreas.Contains(area.areaId)).ToList();
+            return _currentMap.areas.Where(area => area != null && CurrentSave.unlockedAreas.Contains(area.AreaId)).ToList();
         }
 
         /// <summary>地区是否已解锁</summary>
@@ -342,26 +227,5 @@ namespace InnsmouthCafe.Data
 
         #endregion
 
-        #region 数据访问接口
-
-        /// <summary>获取顾客池</summary>
-        public CustomerPoolSO GetCustomerPool()
-        {
-            return _currentMap?.customerPool;
-        }
-
-        /// <summary>获取特殊顾客池</summary>
-        public CustomerPoolSO GetSpecialCustomerPool()
-        {
-            return _currentMap?.specialCustomerPool;
-        }
-
-        /// <summary>获取订单池</summary>
-        public OrderPoolSO GetOrderPool()
-        {
-            return _currentMap?.orderPool;
-        }
-
-        #endregion
     }
 }

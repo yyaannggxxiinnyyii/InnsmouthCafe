@@ -186,20 +186,7 @@ namespace InnsmouthCafe.Test
             var currentChapter = mapMgr.GetCurrentChapter();
             if (currentChapter != null)
             {
-                Debug.Log($"当前章节：{currentChapter.chapterName}");
-
-                // 模拟完成章节目标
-                SaveManager.Instance.CurrentSave.totalRevenue = 1000;
-                SaveManager.Instance.CurrentSave.totalServedCustomers = 20;
-
-                bool goalsMet = mapMgr.CheckChapterGoals(currentChapter);
-                Debug.Log($"章节目标达成：{goalsMet}");
-
-                if (goalsMet)
-                {
-                    mapMgr.CompleteChapter(testMap.mapId, currentChapter.chapterId);
-                    Debug.Log($"✅ 完成章节：{currentChapter.chapterName}");
-                }
+                Debug.Log($"当前章节：{currentChapter.ChapterName}");
             }
             else
             {
@@ -211,7 +198,7 @@ namespace InnsmouthCafe.Test
             Debug.Log($"已解锁地区：{unlockedAreas.Count} 个");
             foreach (var area in unlockedAreas)
             {
-                Debug.Log($"  - {area.areaName}");
+                Debug.Log($"  - {area.AreaName}");
             }
 
             Debug.Log("✅ 地图管理器测试完成");

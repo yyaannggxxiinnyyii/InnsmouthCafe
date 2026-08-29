@@ -15,8 +15,5 @@ MonoBehaviour:
   areaId: area_2
   areaName: "\u6696\u6D41\u6D77\u6D0B"
   energyDrainPerSecond: 0.18
-  detectionMode: 1
-  center: {x: 0, y: 0}
-  size: {x: 10, y: 10}
   areaTiles:
   - {fileID: 11400000, guid: a43578744492518408a964d5af00cc56, type: 2}

@@ -16,11 +16,4 @@ MonoBehaviour:
   chapterName: 
   description: 
   sortOrder: 0
-  goals:
-  - type: 1
-    targetValue: 0
-    description: 
-  rewardMoney: 0
-  rewardMaterials: []
-  unlockAreas: []
-  nextChapter: {fileID: 0}
+  tasks: []

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.UI;
+using InnsmouthCafe.Progression;
 
 /// <summary>
 /// 游戏流程管理器
@@ -1368,9 +1369,31 @@ public class GameFlowManager : Singleton<GameFlowManager>
         // 记录统计
         _customerDisplayUI?.HidePatienceBar();
         _todayCustomersServed++;
+        int completedOrderCount = _currentOrderSession != null
+            ? Mathf.Max(1, _currentOrderSession.SlotCount)
+            : 1;
+        TaskProgressService.Instance.RecordOrders(completedOrderCount);
+
+        int perfectOrderCount = CountPerfectOrders();
+        if (perfectOrderCount > 0)
+        {
+            TaskProgressService.Instance.RecordPerfectOrders(perfectOrderCount);
+        }
+
+        CustomerSO servedCustomer = CustomerManager.Instance?.CurrentCustomer;
+        string customerId = servedCustomer != null ? servedCustomer.customerId : null;
+        TaskProgressService.Instance.RecordCustomersServed(customerId);
+        if (servedCustomer != null && servedCustomer.specialProfile != null
+            && !string.IsNullOrEmpty(customerId))
+        {
+            TaskProgressService.Instance.RecordSpecialGuestMet(customerId);
+        }
         switch (scoringData.feedbackLevel)
         {
-            case 2: _todaySatisfiedCount++; break;
+            case 2:
+                _todaySatisfiedCount++;
+                TaskProgressService.Instance.RecordSatisfiedReview();
+                break;
             case 1: _todayNeutralCount++; break;
             case 0: _todayDissatisfiedCount++; break;
         }
@@ -1396,6 +1419,32 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         // 显示反馈
         StartCustomerFeedback(scoringData);
+    }
+
+    /// <summary>
+    /// 统计本次顾客接待中实际获得 Perfect 品质的订单数量。
+    /// </summary>
+    private int CountPerfectOrders()
+    {
+        if (_currentOrderSession == null || _currentOrderSession.SlotCount <= 0)
+        {
+            return _currentScoringData != null
+                && _currentScoringData.qualityLevel == CoffeeQuality.Perfect
+                ? 1
+                : 0;
+        }
+
+        int perfectCount = 0;
+        foreach (CustomerOrderSlotData slot in _currentOrderSession.orderSlots)
+        {
+            if (slot?.scoringData != null
+                && slot.scoringData.qualityLevel == CoffeeQuality.Perfect)
+            {
+                perfectCount++;
+            }
+        }
+
+        return perfectCount;
     }
 
     /// <summary>

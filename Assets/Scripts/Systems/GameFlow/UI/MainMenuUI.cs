@@ -4,6 +4,7 @@ using TMPro;
 using DG.Tweening;
 using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
+using InnsmouthCafe.Persistence;
 
 namespace InnsmouthCafe.UI
 {
@@ -42,7 +43,7 @@ namespace InnsmouthCafe.UI
         private TextMeshProUGUI _startButtonText;
 
         [SerializeField] [Tooltip("有存档时开始按钮显示的文本")]
-        private string _newGameText = "新的游戏";
+        private string _newGameText = "新建存档";
 
         [SerializeField] [Tooltip("无存档时开始按钮显示的文本")]
         private string _startGameText = "开始游戏";
@@ -51,9 +52,9 @@ namespace InnsmouthCafe.UI
         [SerializeField] [Tooltip("设置面板 UI 脚本（用于打开/关闭回调）")]
         private SettingsPanelUI _settingsPanel;
 
-        [Header("模式选择面板")]
-        [SerializeField] [Tooltip("模式选择面板 UI 脚本")]
-        private ModeSelectPanelUI _modeSelectPanel;
+        [Header("存档选择面板")]
+        [SerializeField] [Tooltip("三个固定存档槽位的选择面板")]
+        private SaveSlotPanelUI _saveSlotPanel;
 
         [Header("教学模式配置")]
         [SerializeField] [Tooltip("教学模式配置SO（首次游戏直接使用）")]
@@ -79,8 +80,8 @@ namespace InnsmouthCafe.UI
             ShowGroup(_mainMenuGroup, true);
             if (_settingsPanel != null)
                 _settingsPanel.Hide(immediate: true);
-            if (_modeSelectPanel != null)
-                _modeSelectPanel.Hide(immediate: true);
+            if (_saveSlotPanel != null)
+                _saveSlotPanel.Hide(immediate: true);
         }
 
         // ── 按钮绑定 ──────────────────────────────────────────
@@ -98,7 +99,7 @@ namespace InnsmouthCafe.UI
 
         private void RefreshButtonStates()
         {
-            bool hasSave = GameManager.Instance != null && GameManager.Instance.HasSaveData;
+            bool hasSave = SaveSlotService.Instance.HasAnySave();
 
             if (_continueButton != null)
                 _continueButton.gameObject.SetActive(hasSave);
@@ -111,13 +112,45 @@ namespace InnsmouthCafe.UI
 
         private void OnContinueClicked()
         {
-            GameManager.Instance?.ContinueGame();
+            if (!SaveSlotService.Instance.TryLoadMostRecentSave(out GameSaveData saveData))
+            {
+                RefreshButtonStates();
+                return;
+            }
+
+            OnSaveSelected(saveData);
         }
 
         private void OnStartClicked()
         {
-            bool tutorialCompleted = GameManager.Instance != null && GameManager.Instance.IsTutorialCompleted();
+            OpenSaveSlotPanel();
+        }
 
+        private void OpenSaveSlotPanel()
+        {
+            if (_saveSlotPanel == null)
+            {
+                Debug.LogError("[MainMenu] 存档选择面板未配置");
+                return;
+            }
+
+            RefreshButtonStates();
+            FadeGroup(_mainMenuGroup, false, () => _saveSlotPanel.Show());
+        }
+
+        /// <summary>
+        /// 接收存档面板选中的存档，并进入对应的游戏场景。
+        /// </summary>
+        /// <param name="saveData">已创建或已加载的当前存档</param>
+        public void OnSaveSelected(GameSaveData saveData)
+        {
+            if (saveData == null)
+            {
+                return;
+            }
+
+            bool tutorialCompleted = GameManager.Instance != null
+                && GameManager.Instance.IsTutorialCompleted();
             // 教学模式未完成：先播放开局CG，再进入教学
             if (!tutorialCompleted)
             {
@@ -152,11 +185,7 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
-            // 教学已完成：打开模式选择面板
-            FadeGroup(_mainMenuGroup, false, () =>
-            {
-                _modeSelectPanel?.Show();
-            });
+            UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
         }
 
         private void OnSettingsClicked()
@@ -203,12 +232,21 @@ namespace InnsmouthCafe.UI
             FadeGroup(_mainMenuGroup, true);
         }
 
-        // ── 模式选择面板关闭回调（由 ModeSelectPanelUI 调用）──
+        // ── 存档选择面板关闭回调（由 SaveSlotPanelUI 调用）──
 
+        /// <summary>
+        /// 关闭存档选择面板并返回主菜单。
+        /// </summary>
+        public void OnSaveSlotClosed()
+        {
+            _saveSlotPanel?.Hide(immediate: false);
+            FadeGroup(_mainMenuGroup, true);
+        }
+
+        [System.Obsolete("旧模式选择面板已移除；场景改造完成后删除该回调。")]
         public void OnModeSelectClosed()
         {
-            _modeSelectPanel?.Hide(immediate: false);
-            FadeGroup(_mainMenuGroup, true);
+            OnSaveSlotClosed();
         }
 
         // ── CanvasGroup 工具 ──────────────────────────────────

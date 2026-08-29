@@ -25,14 +25,5 @@ MonoBehaviour:
     count: 0
   initialTools: []
   initialVehicles: []
-  customerPool: {fileID: 0}
-  specialCustomerPool: {fileID: 0}
-  orderPool: {fileID: 0}
   areas: []
   chapters: []
-  unlockRequirement:
-    prerequisiteMap: {fileID: 0}
-    prerequisiteChapterIndex: -1
-    requiredMoney: 0
-    requiredSanityLevel: 0
-    requiredTools: []

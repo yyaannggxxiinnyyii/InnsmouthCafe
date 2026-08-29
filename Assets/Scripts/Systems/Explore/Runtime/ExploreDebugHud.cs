@@ -42,7 +42,7 @@ namespace InnsmouthCafe.Explore
             {
                 GUI.color = sanity.CurrentArea != null
                     ? Color.green : new Color(0.8f, 0.8f, 0.8f);
-                GUILayout.Label($"地区: {sanity.CurrentArea?.areaName ?? "未配置区域"}");
+                GUILayout.Label($"地区: {sanity.CurrentArea?.AreaName ?? "未配置区域"}");
                 GUI.color = Color.white;
             }
 
