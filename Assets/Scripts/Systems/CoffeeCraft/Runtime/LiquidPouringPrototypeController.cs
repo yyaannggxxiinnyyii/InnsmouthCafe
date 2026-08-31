@@ -18,12 +18,14 @@ namespace InnsmouthCafe.CoffeeCraft
         [SerializeField] private LPParticleSystem _liquidParticleSystem;
         [SerializeField] private Collider2D _cupCollectionArea;
 
-        [Header("拖拽旋转")]
-        [Tooltip("瓶子旋转时固定在世界坐标中的锚点，建议放在瓶子左上角")]
+        [Header("空格倾倒")]
+        [Tooltip("按住空格时瓶子的最大倾斜角度")]
         [SerializeField] private Transform _bottleRotationPivot;
 
         [Tooltip("瓶子允许的最大倾斜角度")]
         [SerializeField] private float _maximumTiltAngle = 80f;
+        [SerializeField] private float _tiltSpeed = 90f;
+        [SerializeField] private float _returnSpeed = 180f;
 
         [Header("倾倒速度")]
         [Tooltip("刚进入允许倾倒方向时，每秒生成的液滴数量")]
@@ -35,12 +37,11 @@ namespace InnsmouthCafe.CoffeeCraft
         [Tooltip("连线相对水平线达到该角度时使用最大倾倒速度")]
         [SerializeField] private float _maximumPourAngle = 90f;
 
-        private bool _isDraggingBottle;
         private bool _isPouring;
-        private Vector3 _dragPivotWorldPosition;
-        private Vector3 _bottleStartPosition;
         private Quaternion _bottleStartRotation;
-        private float _dragStartPointerAngle;
+        private Vector3 _bottleStartPosition;
+        private Vector3 _rotationPivotWorldPosition;
+        private float _currentTiltAngle;
         private int _collectedParticleCount;
         private LPDrawParticleSystem _particleRenderer;
         private bool _liquidAddActive;
@@ -54,6 +55,11 @@ namespace InnsmouthCafe.CoffeeCraft
         /// 当前倒液控制器使用的 LiquidFun 粒子系统。
         /// </summary>
         public LPParticleSystem LiquidParticleSystem => _liquidParticleSystem;
+
+        /// <summary>
+        /// 获取用于点击退出加液面板的倾倒瓶专用碰撞体。
+        /// </summary>
+        public Collider2D BottleInputCollider => _bottleInputCollider;
 
         /// <summary>
         /// 设置倾倒瓶下方显示的当前辅助液图标。
@@ -88,6 +94,14 @@ namespace InnsmouthCafe.CoffeeCraft
             _particleRenderer = _liquidParticleSystem != null
                 ? _liquidParticleSystem.GetComponentInChildren<LPDrawParticleSystem>(true)
                 : null;
+            if (_bottleTransform != null)
+            {
+                _bottleStartPosition = _bottleTransform.position;
+                _bottleStartRotation = _bottleTransform.rotation;
+                _rotationPivotWorldPosition = _bottleRotationPivot != null
+                    ? _bottleRotationPivot.position
+                    : _bottleTransform.position;
+            }
 
             if (_liquidSpawner != null)
             {
@@ -119,7 +133,6 @@ namespace InnsmouthCafe.CoffeeCraft
         /// </summary>
         public void ResetForDiscard()
         {
-            _isDraggingBottle = false;
             StopPouring();
             _collectedParticleCount = 0;
             SetLiquidAddActive(false);
@@ -131,8 +144,8 @@ namespace InnsmouthCafe.CoffeeCraft
             _liquidAddActive = isActive;
             if (!isActive)
             {
-                _isDraggingBottle = false;
                 StopPouring();
+                ResetBottleRotation();
             }
 
             if (_bottleTransform != null && _bottleTransform.gameObject.activeSelf != isActive)
@@ -147,66 +160,28 @@ namespace InnsmouthCafe.CoffeeCraft
         }
 
         /// <summary>
-        /// 处理瓶子的鼠标拖拽和倾斜输入。
+        /// 处理空格倾斜输入，并在松开后平滑回到初始角度。
         /// </summary>
         private void HandleBottleInput()
         {
-            if (_prototypeCamera == null || _bottleTransform == null || _bottleInputCollider == null)
+            if (_bottleTransform == null)
             {
                 return;
             }
 
-            if (Input.GetMouseButtonDown(0) && IsPointerOverBottle())
+            if (Input.GetKey(KeyCode.Space))
             {
-                _isDraggingBottle = true;
-                _bottleStartPosition = _bottleTransform.position;
-                _bottleStartRotation = _bottleTransform.rotation;
-                _dragPivotWorldPosition = GetRotationPivotWorldPosition();
-                _dragStartPointerAngle = GetPointerAngle(_dragPivotWorldPosition);
+                _currentTiltAngle = Mathf.MoveTowards(
+                    _currentTiltAngle, _maximumTiltAngle, Mathf.Max(0f, _tiltSpeed) * Time.deltaTime);
+            }
+            else
+            {
+                _currentTiltAngle = Mathf.MoveTowards(
+                    _currentTiltAngle, 0f, Mathf.Max(0f, _returnSpeed) * Time.deltaTime);
             }
 
-            if (!_isDraggingBottle)
-            {
-                return;
-            }
-
-            if (Input.GetMouseButton(0))
-            {
-                UpdateBottleTransform();
-            }
-
-            if (Input.GetMouseButtonUp(0))
-            {
-                _isDraggingBottle = false;
-                StopPouring();
-            }
-        }
-
-        /// <summary>
-        /// 判断当前鼠标位置是否落在可拖拽的瓶子碰撞范围内。
-        /// </summary>
-        private bool IsPointerOverBottle()
-        {
-            Vector2 pointerPosition = GetPointerWorldPosition();
-            return _bottleInputCollider.OverlapPoint(pointerPosition);
-        }
-
-        /// <summary>
-        /// 根据鼠标相对固定锚点的角度更新瓶子旋转与出液状态。
-        /// </summary>
-        private void UpdateBottleTransform()
-        {
-            float pointerAngle = GetPointerAngle(_dragPivotWorldPosition);
-            float tiltAngle = Mathf.Clamp(
-                Mathf.DeltaAngle(_dragStartPointerAngle, pointerAngle),
-                -_maximumTiltAngle,
-                _maximumTiltAngle);
-            Quaternion rotationDelta = Quaternion.Euler(0f, 0f, tiltAngle);
-            _bottleTransform.position = _dragPivotWorldPosition
-                + rotationDelta * (_bottleStartPosition - _dragPivotWorldPosition);
-            _bottleTransform.rotation = rotationDelta * _bottleStartRotation;
-
-            if (IsNozzleInPouringQuadrant())
+            ApplyBottleRotation();
+            if (Input.GetKey(KeyCode.Space) && IsNozzleInPouringQuadrant())
             {
                 UpdatePourSpeed();
                 StartPouring();
@@ -215,6 +190,34 @@ namespace InnsmouthCafe.CoffeeCraft
             {
                 StopPouring();
             }
+        }
+
+        /// <summary>
+        /// 将倾倒瓶恢复到初始位置和角度。
+        /// </summary>
+        private void ResetBottleRotation()
+        {
+            _currentTiltAngle = 0f;
+            if (_bottleTransform != null)
+            {
+                _bottleTransform.SetPositionAndRotation(_bottleStartPosition, _bottleStartRotation);
+            }
+        }
+
+        /// <summary>
+        /// 按旋转锚点更新倾倒瓶的世界位置和角度，确保瓶子绕锚点旋转。
+        /// </summary>
+        private void ApplyBottleRotation()
+        {
+            if (_bottleTransform == null)
+            {
+                return;
+            }
+
+            Quaternion rotationDelta = Quaternion.Euler(0f, 0f, _currentTiltAngle);
+            _bottleTransform.position = _rotationPivotWorldPosition
+                + rotationDelta * (_bottleStartPosition - _rotationPivotWorldPosition);
+            _bottleTransform.rotation = rotationDelta * _bottleStartRotation;
         }
 
         /// <summary>

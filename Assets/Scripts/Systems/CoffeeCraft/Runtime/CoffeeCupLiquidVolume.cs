@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using InnsmouthCafe.Data;
@@ -18,11 +19,18 @@ namespace InnsmouthCafe.CoffeeCraft
         [Tooltip("可选的容量调试文本")]
         [SerializeField] private TMP_Text _volumeDebugText;
 
+        [Header("杯外粒子清理")]
+        [Min(0f)]
+        [Tooltip("粒子生成后仍未进入杯内有效区域时允许存活的时间，超过后会被删除")]
+        [SerializeField] private float _outsideParticleLifetimeSeconds = 10f;
+
         private Collider2D _cupInteriorArea;
         private float _maximumCapacityMilliliters;
         private int _fullParticleCount = 1;
         private int _particleCount;
         private float _lastFillRatio = -1f;
+        private readonly Dictionary<LPParticle, float> _outsideParticles =
+            new Dictionary<LPParticle, float>();
 
         /// <summary>
         /// 杯内容量比例发生变化时通知外部显示组件。
@@ -139,6 +147,7 @@ namespace InnsmouthCafe.CoffeeCraft
 
         private void Update()
         {
+            CleanupOutsideParticles();
             RefreshMeasurement();
         }
 
@@ -159,7 +168,76 @@ namespace InnsmouthCafe.CoffeeCraft
                 {
                     _particleCount++;
                 }
+                else if (!_outsideParticles.ContainsKey(particle))
+                {
+                    _outsideParticles.Add(particle, Time.time);
+                }
             }
+        }
+
+        /// <summary>
+        /// 删除超过允许存活时间且仍未进入杯内有效区域的粒子。
+        /// </summary>
+        private void CleanupOutsideParticles()
+        {
+            if (_liquidParticleSystem == null
+                || _liquidParticleSystem.Particles == null
+                || _cupInteriorArea == null
+                || _outsideParticles.Count == 0)
+            {
+                return;
+            }
+
+            float lifetime = Mathf.Max(0f, _outsideParticleLifetimeSeconds);
+            List<int> particleIndices = new List<int>();
+            List<LPParticle> particlesToRemove = new List<LPParticle>();
+
+            foreach (KeyValuePair<LPParticle, float> entry in _outsideParticles)
+            {
+                LPParticle particle = entry.Key;
+                int particleIndex = _liquidParticleSystem.Particles.IndexOf(particle);
+                if (particleIndex < 0)
+                {
+                    particlesToRemove.Add(particle);
+                    continue;
+                }
+
+                if (_cupInteriorArea.OverlapPoint(particle.Position))
+                {
+                    if (Time.time - entry.Value >= lifetime)
+                    {
+                        particlesToRemove.Add(particle);
+                    }
+                    continue;
+                }
+
+                if (Time.time - entry.Value >= lifetime)
+                {
+                    particleIndices.Add(particleIndex);
+                    particlesToRemove.Add(particle);
+                }
+            }
+
+            foreach (LPParticle particle in particlesToRemove)
+            {
+                _outsideParticles.Remove(particle);
+            }
+
+            if (particleIndices.Count == 0)
+            {
+                return;
+            }
+
+            particleIndices.Sort();
+            int[] indices = new int[particleIndices.Count + 1];
+            indices[0] = particleIndices.Count;
+            for (int index = 0; index < particleIndices.Count; index++)
+            {
+                indices[index + 1] = particleIndices[index];
+            }
+
+            LPAPIParticles.DestroySelectedParticles(
+                _liquidParticleSystem.GetPtr(), indices);
         }
 
         /// <summary>更新可选的调试显示文本。</summary>
@@ -198,6 +276,7 @@ namespace InnsmouthCafe.CoffeeCraft
             }
 
             _particleCount = 0;
+            _outsideParticles.Clear();
             _lastFillRatio = -1f;
             RefreshVolumeDisplay();
             OnFillRatioChanged?.Invoke(0f);

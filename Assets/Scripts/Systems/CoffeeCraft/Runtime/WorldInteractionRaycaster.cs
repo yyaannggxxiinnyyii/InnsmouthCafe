@@ -20,7 +20,6 @@ namespace InnsmouthCafe.CoffeeCraft
         [SerializeField] private BeanScoopCursorPresenter _beanScoopCursor;
 
         private WorldCoffeeWorkCup _draggingCup;
-        private WorldLiquidCardInteractable _draggingLiquidCard;
         private WorldBeanBarrelInteractable _hoveredBeanBarrel;
         [SerializeField] private LiquidAddPanelController _liquidAddPanel;
 
@@ -43,23 +42,6 @@ namespace InnsmouthCafe.CoffeeCraft
             {
                 SetHoveredBeanBarrel(null);
                 _liquidAddPanel.HandleWorldInput(_targetCamera, _interactionMask);
-                return;
-            }
-
-            if (_draggingLiquidCard != null)
-            {
-                SetHoveredBeanBarrel(null);
-                if (Input.GetMouseButton(0))
-                {
-                    _draggingLiquidCard.Drag();
-                }
-
-                if (Input.GetMouseButtonUp(0))
-                {
-                    _draggingLiquidCard.EndDrag();
-                    _draggingLiquidCard = null;
-                }
-
                 return;
             }
 
@@ -96,11 +78,7 @@ namespace InnsmouthCafe.CoffeeCraft
             WorldLiquidCardInteractable liquidCard = hit.collider.GetComponentInParent<WorldLiquidCardInteractable>();
             if (liquidCard != null)
             {
-                if (liquidCard.BeginDrag(_targetCamera))
-                {
-                    _draggingLiquidCard = liquidCard;
-                }
-
+                liquidCard.TryOpenPanel();
                 return;
             }
 

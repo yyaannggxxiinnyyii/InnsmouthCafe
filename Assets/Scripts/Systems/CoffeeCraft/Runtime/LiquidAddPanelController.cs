@@ -23,6 +23,7 @@ namespace InnsmouthCafe.CoffeeCraft
 
         private LiquidSO _currentLiquid;
         private WorldCoffeeWorkCup _currentCup;
+        private WorldLiquidCardInteractable _hiddenLiquidObject;
         private bool _isOpen;
         private bool _isExtractingCoffee;
         private Transform _coffeeParticleOutlet;
@@ -109,7 +110,7 @@ namespace InnsmouthCafe.CoffeeCraft
         /// <summary>
         /// 打开面板并绑定本次添加的辅助液和工作杯。
         /// </summary>
-        public bool Open(LiquidSO liquid, WorldCoffeeWorkCup workCup)
+        public bool Open(LiquidSO liquid, WorldCoffeeWorkCup workCup, WorldLiquidCardInteractable sourceObject = null)
         {
             if (liquid == null || workCup == null || _panelContentRoot == null
                 || NewCoffeeCraftManager.Instance == null
@@ -120,11 +121,13 @@ namespace InnsmouthCafe.CoffeeCraft
 
             _currentLiquid = liquid;
             _currentCup = workCup;
+            _hiddenLiquidObject = sourceObject;
             CupContainerData selectedCup = NewCoffeeCraftManager.Instance.SelectedCup;
             if (!_currentCup.ActivateCupProfile(selectedCup))
             {
                 _currentLiquid = null;
                 _currentCup = null;
+                _hiddenLiquidObject = null;
                 return false;
             }
 
@@ -155,9 +158,14 @@ namespace InnsmouthCafe.CoffeeCraft
             _pouringController?.SetLiquidAddActive(false);
             _pouringController?.SetLiquidIcon(null);
             _currentCup?.SetCupProfileVisualActive(false);
+            if (_hiddenLiquidObject != null)
+            {
+                _hiddenLiquidObject.gameObject.SetActive(true);
+            }
             _sessionStartVolumeMilliliters = 0f;
             _currentLiquid = null;
             _currentCup = null;
+            _hiddenLiquidObject = null;
         }
 
         /// <summary>
@@ -205,11 +213,11 @@ namespace InnsmouthCafe.CoffeeCraft
             System.Array.Sort(hits3D, (first, second) => first.distance.CompareTo(second.distance));
             foreach (RaycastHit hit in hits3D)
             {
-                WorldLiquidPanelFinishInteractable finish =
-                    hit.collider.GetComponentInParent<WorldLiquidPanelFinishInteractable>();
-                if (finish != null)
+                LiquidPouringPrototypeController bottle =
+                    hit.collider.GetComponentInParent<LiquidPouringPrototypeController>();
+                if (bottle != null)
                 {
-                    finish.Finish();
+                    CommitAndClose();
                     return;
                 }
             }
@@ -218,11 +226,9 @@ namespace InnsmouthCafe.CoffeeCraft
             System.Array.Sort(hits2D, (first, second) => first.distance.CompareTo(second.distance));
             foreach (RaycastHit2D hit2D in hits2D)
             {
-                WorldLiquidPanelFinishInteractable finish2D =
-                    hit2D.collider.GetComponentInParent<WorldLiquidPanelFinishInteractable>();
-                if (finish2D != null)
+                if (_pouringController != null && hit2D.collider == _pouringController.BottleInputCollider)
                 {
-                    finish2D.Finish();
+                    CommitAndClose();
                     return;
                 }
             }
