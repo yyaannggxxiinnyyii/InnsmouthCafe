@@ -11,6 +11,8 @@ namespace InnsmouthCafe.CoffeeCraft
         [Header("场景引用")]
         [SerializeField] private Camera _prototypeCamera;
         [SerializeField] private Transform _bottleTransform;
+        [Tooltip("倾倒瓶下方用于显示当前辅助液图标的贴图组件")]
+        [SerializeField] private SpriteRenderer _bottleLiquidIconRenderer;
         [SerializeField] private Collider2D _bottleInputCollider;
         [SerializeField] private LPParticleSpawner _liquidSpawner;
         [SerializeField] private LPParticleSystem _liquidParticleSystem;
@@ -52,6 +54,21 @@ namespace InnsmouthCafe.CoffeeCraft
         /// 当前倒液控制器使用的 LiquidFun 粒子系统。
         /// </summary>
         public LPParticleSystem LiquidParticleSystem => _liquidParticleSystem;
+
+        /// <summary>
+        /// 设置倾倒瓶下方显示的当前辅助液图标。
+        /// </summary>
+        /// <param name="icon">辅助液配置中的图标；传入空值时隐藏图标。</param>
+        public void SetLiquidIcon(Sprite icon)
+        {
+            if (_bottleLiquidIconRenderer == null)
+            {
+                return;
+            }
+
+            _bottleLiquidIconRenderer.sprite = icon;
+            _bottleLiquidIconRenderer.enabled = icon != null;
+        }
 
         /// <summary>
         /// 杯内液滴数量变化时触发。

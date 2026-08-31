@@ -14,9 +14,19 @@ namespace InnsmouthCafe.CoffeeCraft
         [SerializeField] private CoffeeCupLiquidVolume _liquidVolume;
         [SerializeField] private LPParticleGroup _particleGroup;
 
+        [Tooltip("场景中的实体工作杯，用于在萃取阶段获取当前杯型侧剖面")]
+        [SerializeField] private WorldCoffeeWorkCup _workCup;
+
+        [Header("咖啡粒子")]
+        [Tooltip("将已萃取咖啡转换为粒子时使用的颜色")]
+        [SerializeField] private Color _coffeeParticleColor = new Color(0.18f, 0.07f, 0.02f, 1f);
+
         private LiquidSO _currentLiquid;
         private WorldCoffeeWorkCup _currentCup;
         private bool _isOpen;
+        private bool _isExtractingCoffee;
+        private Transform _coffeeParticleOutlet;
+        private int _generatedCoffeeParticleCount;
         private float _sessionStartVolumeMilliliters;
 
         private void Awake()
@@ -31,9 +41,34 @@ namespace InnsmouthCafe.CoffeeCraft
                 _liquidVolume.SetParticleSystem(_pouringController.LiquidParticleSystem);
             }
 
+            if (_workCup == null)
+            {
+                _workCup = FindObjectOfType<WorldCoffeeWorkCup>();
+            }
+
             // 只关闭面板显示内容，物理系统和容量组件位于外层并保持激活。
             _isOpen = false;
             SetPanelContentActive(false);
+        }
+
+        private void OnEnable()
+        {
+            if (NewCoffeeCraftManager.Instance != null)
+            {
+                NewCoffeeCraftManager.Instance.OnCraftReset += HandleCraftReset;
+                NewCoffeeCraftManager.Instance.OnExtractionStateChanged += HandleExtractionStateChanged;
+                NewCoffeeCraftManager.Instance.OnExtractionProgressChanged += HandleExtractionProgressChanged;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (NewCoffeeCraftManager.Instance != null)
+            {
+                NewCoffeeCraftManager.Instance.OnCraftReset -= HandleCraftReset;
+                NewCoffeeCraftManager.Instance.OnExtractionStateChanged -= HandleExtractionStateChanged;
+                NewCoffeeCraftManager.Instance.OnExtractionProgressChanged -= HandleExtractionProgressChanged;
+            }
         }
 
         /// <summary>
@@ -66,6 +101,8 @@ namespace InnsmouthCafe.CoffeeCraft
             _liquidVolume?.ClearParticles();
             _pouringController?.ResetForDiscard();
             _currentCup?.DeactivateSelectedCupProfile();
+            _generatedCoffeeParticleCount = 0;
+            _coffeeParticleOutlet = null;
             Close();
         }
 
@@ -90,10 +127,13 @@ namespace InnsmouthCafe.CoffeeCraft
                 _currentCup = null;
                 return false;
             }
+
             if (_particleGroup != null)
             {
                 _particleGroup._Color = liquid.displayColor;
             }
+
+            _pouringController?.SetLiquidIcon(liquid.icon);
 
             _isOpen = true;
             SetPanelContentActive(true);
@@ -113,6 +153,7 @@ namespace InnsmouthCafe.CoffeeCraft
             _isOpen = false;
             SetPanelContentActive(false);
             _pouringController?.SetLiquidAddActive(false);
+            _pouringController?.SetLiquidIcon(null);
             _currentCup?.SetCupProfileVisualActive(false);
             _sessionStartVolumeMilliliters = 0f;
             _currentLiquid = null;
@@ -196,6 +237,67 @@ namespace InnsmouthCafe.CoffeeCraft
             {
                 _panelContentRoot.SetActive(isActive);
             }
+        }
+
+        /// <summary>萃取开始时初始化固定杯型侧剖面，但隐藏所有加液视觉。</summary>
+        private void HandleExtractionStateChanged(bool isExtracting)
+        {
+            _isExtractingCoffee = isExtracting;
+            if (!isExtracting)
+            {
+                _coffeeParticleOutlet = null;
+                _workCup?.SetCupProfileVisualActive(false);
+                return;
+            }
+
+            NewCoffeeCraftManager manager = NewCoffeeCraftManager.Instance;
+            if (manager?.SelectedCup == null || _workCup == null
+                || !_workCup.ActivateCupProfile(manager.SelectedCup))
+            {
+                _isExtractingCoffee = false;
+                return;
+            }
+
+            _coffeeParticleOutlet = _workCup.GetCupExtractionOutlet(manager.SelectedCup);
+            _generatedCoffeeParticleCount = 0;
+            _workCup.SetCupProfileVisualActive(false);
+            _pouringController?.SetLiquidAddActive(false);
+            SetPanelContentActive(false);
+        }
+
+        /// <summary>根据萃取进度逐粒补齐咖啡粒子，生成过程保持视觉隐藏。</summary>
+        private void HandleExtractionProgressChanged(float currentVolume, float targetVolume)
+        {
+            if (!_isExtractingCoffee || _coffeeParticleOutlet == null || _liquidVolume == null)
+            {
+                return;
+            }
+
+            int targetParticleCount = Mathf.FloorToInt(
+                currentVolume / Mathf.Max(0.0001f, _liquidVolume.SingleParticleCapacityMilliliters));
+            int particleCount = targetParticleCount - _generatedCoffeeParticleCount;
+            if (particleCount <= 0)
+            {
+                return;
+            }
+
+            int particleFlags = _particleGroup != null && _particleGroup.ParticlesMaterial != null
+                ? _particleGroup.ParticlesMaterial.GetInt()
+                : 0;
+            int created = _liquidVolume.CreateCoffeeParticles(
+                particleCount,
+                _coffeeParticleOutlet,
+                _coffeeParticleColor,
+                particleFlags);
+            _generatedCoffeeParticleCount += created;
+        }
+
+        /// <summary>制作流程重置时允许下一杯咖啡重新生成咖啡粒子。</summary>
+        private void HandleCraftReset()
+        {
+            _isExtractingCoffee = false;
+            _generatedCoffeeParticleCount = 0;
+            _coffeeParticleOutlet = null;
         }
     }
 }

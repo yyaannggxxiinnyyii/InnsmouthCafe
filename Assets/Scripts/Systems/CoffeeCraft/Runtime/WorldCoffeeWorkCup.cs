@@ -25,6 +25,9 @@ namespace InnsmouthCafe.CoffeeCraft
 
             [Tooltip("该杯型侧剖面的 LiquidFun LPBody，SpawnOnPlay 必须关闭")]
             public LPBody liquidBody;
+
+            [Tooltip("该杯型固定的萃取出口点")]
+            public Transform extractionOutlet;
         }
 
         [Header("视觉组件")]
@@ -79,6 +82,22 @@ namespace InnsmouthCafe.CoffeeCraft
             DisableAllSideProfiles();
         }
 
+        private void OnEnable()
+        {
+            if (_liquidVolume != null)
+            {
+                _liquidVolume.OnFillRatioChanged += HandleFillRatioChanged;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_liquidVolume != null)
+            {
+                _liquidVolume.OnFillRatioChanged -= HandleFillRatioChanged;
+            }
+        }
+
         /// <summary>在所有 LiquidFun 对象完成 Awake 后，清理可能被提前初始化的侧剖面 Body。</summary>
         private void Start()
         {
@@ -96,7 +115,7 @@ namespace InnsmouthCafe.CoffeeCraft
             }
 
             _cupData = cup;
-            SetCupSprite(cup, null);
+            SetFillRatio(0f);
             SnapToAnchor(anchor);
             _lastValidPosition = transform.position;
             gameObject.SetActive(true);
@@ -173,7 +192,7 @@ namespace InnsmouthCafe.CoffeeCraft
         public void SetFillRatio(float fillRatio)
         {
             if (_cupData == null) return;
-            SetCupSprite(_cupData, _activeProfile, fillRatio);
+            SetCupSprite(_cupData, null, fillRatio);
         }
 
         /// <summary>设置工作杯是否禁止拖拽。</summary>
@@ -202,7 +221,15 @@ namespace InnsmouthCafe.CoffeeCraft
             SetCupProfileVisualActive(true);
             _cupData = cupData;
             _liquidVolume?.Configure(cupData, profile.collectionArea);
+            SetFillRatio(_liquidVolume != null ? _liquidVolume.FillRatio : 0f);
             return true;
+        }
+
+        /// <summary>获取指定杯型侧剖面的固定萃取出口点。</summary>
+        public Transform GetCupExtractionOutlet(CupContainerData cupData)
+        {
+            CupSideProfile profile = cupData != null ? FindSideProfile(cupData.cupId) : null;
+            return profile?.extractionOutlet;
         }
 
         /// <summary>关闭当前杯型侧剖面并释放其 LiquidFun 原生 Body。</summary>
@@ -307,6 +334,15 @@ namespace InnsmouthCafe.CoffeeCraft
         {
             SpriteRenderer renderer = profile?.cupRenderer != null ? profile.cupRenderer : _cupRenderer;
             if (renderer != null) renderer.sprite = cup.GetSpriteForFillRatio(Mathf.Clamp01(ratio));
+        }
+
+        /// <summary>
+        /// 接收物理容量比例变化并刷新实例杯子贴图。
+        /// </summary>
+        /// <param name="fillRatio">当前粒子数量对应的满杯比例。</param>
+        private void HandleFillRatioChanged(float fillRatio)
+        {
+            SetFillRatio(fillRatio);
         }
 
         /// <summary>判断工作杯是否进入垃圾桶范围，并执行垃圾桶交互。</summary>

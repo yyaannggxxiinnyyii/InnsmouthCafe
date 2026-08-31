@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using InnsmouthCafe.Data;
@@ -7,6 +8,8 @@ namespace InnsmouthCafe.CoffeeCraft
     /// <summary>统计工作杯内有效粒子，并按当前杯型配置换算液体容量。</summary>
     public class CoffeeCupLiquidVolume : MonoBehaviour
     {
+        private const float ParticleLifetime = 99999f;
+
         [Header("液体引用")]
         [Tooltip("用于统计的 LiquidFun 粒子系统")]
         [SerializeField] private LPParticleSystem _liquidParticleSystem;
@@ -19,6 +22,12 @@ namespace InnsmouthCafe.CoffeeCraft
         private float _maximumCapacityMilliliters;
         private int _fullParticleCount = 1;
         private int _particleCount;
+        private float _lastFillRatio = -1f;
+
+        /// <summary>
+        /// 杯内容量比例发生变化时通知外部显示组件。
+        /// </summary>
+        public event Action<float> OnFillRatioChanged;
 
         /// <summary>当前粒子数量相对满杯参考数量的比例。</summary>
         public float FillRatio => Mathf.Clamp01((float)_particleCount / Mathf.Max(1, _fullParticleCount));
@@ -61,11 +70,71 @@ namespace InnsmouthCafe.CoffeeCraft
             _liquidParticleSystem = particleSystem;
         }
 
+        /// <summary>
+        /// 将已萃取的咖啡容量按当前杯型标定转换为粒子，并从固定出口点生成。
+        /// </summary>
+        public int CreateCoffeeParticles(
+            float volumeMilliliters,
+            Transform outlet,
+            Color particleColor,
+            int particleFlags = 0)
+        {
+            if (_liquidParticleSystem == null || outlet == null || volumeMilliliters <= 0f)
+            {
+                return 0;
+            }
+
+            int particleCount = Mathf.FloorToInt(
+                volumeMilliliters / Mathf.Max(0.0001f, SingleParticleCapacityMilliliters));
+            return CreateCoffeeParticles(particleCount, outlet, particleColor, particleFlags);
+        }
+
+        /// <summary>从固定出口点生成指定数量的咖啡粒子。</summary>
+        public int CreateCoffeeParticles(
+            int particleCount,
+            Transform outlet,
+            Color particleColor,
+            int particleFlags = 0)
+        {
+            if (_liquidParticleSystem == null || outlet == null || particleCount <= 0)
+            {
+                return 0;
+            }
+
+            Color32 color = particleColor;
+            for (int index = 0; index < particleCount; index++)
+            {
+                LPAPIParticles.CreateParticleInSystem(
+                    _liquidParticleSystem.GetPtr(),
+                    particleFlags,
+                    outlet.position.x,
+                    outlet.position.y,
+                    0f,
+                    -0.5f,
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a,
+                    ParticleLifetime);
+            }
+
+            return particleCount;
+        }
+
         /// <summary>立即刷新粒子数量和容量显示。</summary>
         public void RefreshMeasurement()
         {
             RefreshParticleCount();
             RefreshVolumeDisplay();
+
+            float fillRatio = FillRatio;
+            if (Mathf.Approximately(_lastFillRatio, fillRatio))
+            {
+                return;
+            }
+
+            _lastFillRatio = fillRatio;
+            OnFillRatioChanged?.Invoke(fillRatio);
         }
 
         private void Update()
@@ -129,7 +198,9 @@ namespace InnsmouthCafe.CoffeeCraft
             }
 
             _particleCount = 0;
+            _lastFillRatio = -1f;
             RefreshVolumeDisplay();
+            OnFillRatioChanged?.Invoke(0f);
         }
     }
 }
