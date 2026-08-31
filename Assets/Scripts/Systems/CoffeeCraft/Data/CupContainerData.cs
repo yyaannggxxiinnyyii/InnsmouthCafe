@@ -20,6 +20,10 @@ namespace InnsmouthCafe.Data
         [Tooltip("杯子最大容量（ml）")]
         public float capacity;
 
+        [Min(1)]
+        [Tooltip("杯子装满时杯内的参考粒子数量，用于容量标定")]
+        public int fullParticleCount = 1200;
+
         [Header("视觉资源")]
         [Tooltip("杯子图标")]
         public Sprite cupSprite;

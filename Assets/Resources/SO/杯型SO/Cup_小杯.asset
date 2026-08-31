@@ -15,10 +15,11 @@ MonoBehaviour:
   cupId: cpu_small
   cupName: "\u5C0F\u676F"
   capacity: 200
-  cupSprite: {fileID: 21300000, guid: c933695794e1ba441bbf524124348ce4, type: 3}
-  foregroundSprite: {fileID: 21300000, guid: 2fa5a5a41f34cc449b03bad0bf108bf5, type: 3}
+  fullParticleCount: 120
+  cupSprite: {fileID: 21300000, guid: ccd13fae09968284e918e86f02781afe, type: 3}
+  foregroundSprite: {fileID: 21300000, guid: 1c59d6cb1b951404fbcf8e7ad3320732, type: 3}
   description: "\u5BB9\u91CF200ml\u7684\u5C0F\u676F"
-  fillSprite_0_25: {fileID: 21300000, guid: f70885058eb10a142a193fa9f7ca34f2, type: 3}
-  fillSprite_25_50: {fileID: 21300000, guid: 68803c3465fac464ba22d5762f0ba16c, type: 3}
-  fillSprite_50_75: {fileID: 21300000, guid: 95bac1916ceec394fa191024a9e5779e, type: 3}
-  fillSprite_75_100: {fileID: 21300000, guid: aac8ff4396d0f9d49b4d72f17a2bca54, type: 3}
+  fillSprite_0_25: {fileID: 21300000, guid: a0d6d692b01d8dc459697125b4cbbf9d, type: 3}
+  fillSprite_25_50: {fileID: 21300000, guid: 4cfb4560e12721b4b9ed83bdeeaa66f3, type: 3}
+  fillSprite_50_75: {fileID: 21300000, guid: 1fb35901721a77445b3181daf28efe9b, type: 3}
+  fillSprite_75_100: {fileID: 21300000, guid: 1f11885516eef53429e37ef18dabd6a5, type: 3}

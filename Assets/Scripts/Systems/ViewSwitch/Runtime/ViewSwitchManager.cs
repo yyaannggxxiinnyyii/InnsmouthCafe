@@ -1,31 +1,16 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using DG.Tweening;
 using InnsmouthCafe.Data;
 
 /// <summary>
 /// 界面切换管理器
 /// 负责管理三个主要游戏界面的循环切换
-/// 支持手动切换和根据制作状态自动切换
-/// 支持水平滑动切换动画
+/// 支持手动切换和根据制作状态自动切换。
+/// 负责维护视角状态并发出切换事件，实际相机动画由 DioramaCameraViewController 处理。
 /// </summary>
 public class ViewSwitchManager : Singleton<ViewSwitchManager>
 {
-
-    [Header("界面面板")]
-    [SerializeField]
-    [Tooltip("场景容器（用于水平滑动）")]
-    private RectTransform _scenePanelsContainer;
-
-    [Header("动画配置")]
-    [SerializeField]
-    [Tooltip("场景切换动画时长")]
-    private float _sceneSwitchDuration = 0.3f;
-
-    [SerializeField]
-    [Tooltip("是否启用水平滑动动画")]
-    private bool _enableSlideAnimation = true;
 
     [Header("切换按钮")]
     [SerializeField]
@@ -67,14 +52,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     private bool _canSwitch = true;
 
     /// <summary>
-    /// 是否正在切换中
-    /// </summary>
-    private bool _isSwitching = false;
-
-    private const float BarScenePosX = 0f;
-    private const float CraftBaseScenePosX = -1920f;
-    private const float CraftMixScenePosX = -3840f;
-
     /// <summary>
     /// 咖啡制作管理器引用
     /// </summary>
@@ -119,19 +96,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
             return;
         }
 
-        // 初始化场景容器位置
-        if (_scenePanelsContainer != null)
-        {
-            float initialPosX = GetScenePanelPosX(GameViewType.Bar);
-            _scenePanelsContainer.anchoredPosition = new Vector2(initialPosX, _scenePanelsContainer.anchoredPosition.y);
-
-            if (_showDebugLog)
-            {
-                Debug.Log($"[ViewSwitchManager] 场景容器初始位置: {_scenePanelsContainer.anchoredPosition}");
-            }
-        }
-
-        // 默认显示吧台接单界面
+        // 默认显示吧台视角
         ShowView(GameViewType.Bar);
 
         // 订阅咖啡制作状态变化事件
@@ -146,6 +111,21 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
                     Debug.Log("[ViewSwitchManager] 已订阅制作状态变化事件");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// 处理键盘左右切换输入，保持与界面按钮使用同一套切换逻辑。
+    /// </summary>
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            SwitchPreviousView();
+        }
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            SwitchNextView();
         }
     }
 
@@ -252,7 +232,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     /// </summary>
     public void SwitchNextView()
     {
-        if (!_canSwitch || _isSwitching)
+        if (!_canSwitch)
         {
             if (_showDebugLog)
             {
@@ -282,7 +262,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     /// </summary>
     public void SwitchPreviousView()
     {
-        if (!_canSwitch || _isSwitching)
+        if (!_canSwitch)
         {
             if (_showDebugLog)
             {
@@ -314,25 +294,14 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     /// <param name="isNext">是否向下一个方向切换</param>
     private void SwitchToView(GameViewType targetView, bool isNext)
     {
-        if (_isSwitching)
-        {
-            return;
-        }
-
         GameViewType fromView = _currentViewType;
         _currentViewType = targetView;
         _currentViewIndex = _viewList.IndexOf(targetView);
 
-        if (_enableSlideAnimation && _scenePanelsContainer != null)
-        {
-            // 使用水平滑动动画
-            AnimateSceneSwitch(fromView, targetView, isNext);
-        }
-        else
-        {
-            // 直接设置场景容器位置
-            ShowView(targetView);
-        }
+        OnViewSwitchStarted?.Invoke(fromView, targetView, isNext);
+        OnViewSwitched?.Invoke(targetView);
+        PublishViewEvent(targetView);
+        HandleViewEntered(targetView);
 
         if (_showDebugLog)
         {
@@ -341,55 +310,13 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     }
 
     /// <summary>
-    /// 水平滑动场景切换动画
-    /// </summary>
-    private void AnimateSceneSwitch(GameViewType fromView, GameViewType toView, bool isNext)
-    {
-        _isSwitching = true;
-
-        // 通知杯子动画开始（在场景滑动之前）
-        OnViewSwitchStarted?.Invoke(fromView, toView, isNext);
-
-        float targetX = GetScenePanelPosX(toView);
-
-        _scenePanelsContainer.DOAnchorPosX(targetX, _sceneSwitchDuration)
-            .SetEase(Ease.InOutQuad)
-            .SetUpdate(true)
-            .OnComplete(() =>
-            {
-                _isSwitching = false;
-                OnViewSwitched?.Invoke(toView);
-                PublishViewEvent(toView);
-                HandleViewEntered(toView);
-
-                if (_showDebugLog)
-                {
-                    Debug.Log($"[ViewSwitchManager] 场景切换完成: {toView}");
-                }
-            });
-    }
-
-    /// <summary>
-    /// 显示指定界面（通过场景容器X坐标切换）
+    /// 显示指定视角并通知监听者。
     /// </summary>
     /// <param name="viewType">界面类型</param>
     public void ShowView(GameViewType viewType)
     {
-        // 强制显示视图时必须终止旧滑动，否则旧 Tween 完成后会覆盖当前视图。
-        if (_scenePanelsContainer != null)
-        {
-            _scenePanelsContainer.DOKill();
-        }
-
-        _isSwitching = false;
         _currentViewType = viewType;
         _currentViewIndex = _viewList.IndexOf(viewType);
-
-        if (_scenePanelsContainer != null)
-        {
-            float targetX = GetScenePanelPosX(viewType);
-            _scenePanelsContainer.anchoredPosition = new Vector2(targetX, _scenePanelsContainer.anchoredPosition.y);
-        }
 
         OnViewSwitched?.Invoke(viewType);
         PublishViewEvent(viewType);
@@ -398,21 +325,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         if (_showDebugLog)
         {
             Debug.Log($"[ViewSwitchManager] 显示界面: {_currentViewType}");
-        }
-    }
-
-    private float GetScenePanelPosX(GameViewType viewType)
-    {
-        switch (viewType)
-        {
-            case GameViewType.Bar:
-                return BarScenePosX;
-            case GameViewType.CraftBase:
-                return CraftBaseScenePosX;
-            case GameViewType.CraftMix:
-                return CraftMixScenePosX;
-            default:
-                return BarScenePosX;
         }
     }
 
@@ -465,7 +377,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     }
 
     /// <summary>
-    /// 兼容旧调用：场景切换不再依赖 CanvasGroup 面板显隐
+    /// 兼容旧调用：当前视角切换不依赖 CanvasGroup 面板显隐。
     /// </summary>
     public void SetPanelReferences(CanvasGroup barPanel, CanvasGroup craftBasePanel, CanvasGroup craftMixPanel)
     {

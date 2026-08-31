@@ -41,6 +41,24 @@ TagManager:
   - name: Ocean
     uniqueID: 1634691861
     locked: 0
+  - name: Diorama_Back
+    uniqueID: 3489568979
+    locked: 0
+  - name: Diorama_Structure
+    uniqueID: 357085677
+    locked: 0
+  - name: Diorama_BackObject
+    uniqueID: 2258454861
+    locked: 0
+  - name: Diorama_Customer
+    uniqueID: 1032095527
+    locked: 0
+  - name: Diorama_Foreground
+    uniqueID: 1294426553
+    locked: 0
+  - name: Diorama_FrontObject
+    uniqueID: 986629551
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0

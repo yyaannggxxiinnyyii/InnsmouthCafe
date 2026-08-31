@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d16b1bcd5799b3c4e995f22023db9b41, type: 3}
+  m_Name: ShopLevel_3
+  m_EditorClassIdentifier: 
+  level: 3
+  levelName: "\u8212\u9002\u5496\u5561\u9986"
+  businessTimeSeconds: 600
+  customerSpawnInterval: 85
+  orderPriceMultiplier: 2
+  basePatienceBonus: 0.15
+  maxWaitingCustomers: 3
+  maxOrdersPerNight: 8
+  normalDecorationSlots: 7
+  bossDecorationSlots: 2
+  upgradeCost: 30000
+  requiredChapterId: 
+  requiredCollectionPercent: 0
+  description: "\u5E38\u5BA2\u9010\u6E10\u589E\u591A\uFF0C\u8425\u4E1A10\u5206\u949F\uFF0C\u8010\u5FC3\u52A0\u621015%\uFF0C\u62E5\u6709\u66F4\u591A\u88C5\u626E\u7A7A\u95F4\u3002"

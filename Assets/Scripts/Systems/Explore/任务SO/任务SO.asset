@@ -15,6 +15,7 @@ MonoBehaviour:
   taskId: 
   taskName: 
   description: 
-  taskType: 0
+  taskType: 5
   targetId: 
   targetValue: 1
+  countOnlyAfterActivation: 0

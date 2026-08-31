@@ -36,9 +36,29 @@ namespace InnsmouthCafe.Data
         [Tooltip("开心状态立绘（为空则使用 normalSprite）")]
         public Sprite happySprite;
 
-        [Header("耐心时间")]
-        [Tooltip("基础耐心时间（秒）")]
+        [Header("耐心值配置")]
+        [Tooltip("最大耐心值（数值型，例如 100）")]
+        public float maxPatienceValue = 100f;
+
+        [Tooltip("基础耐心降低值（每秒消耗的基础值，例如 1.0 表示每秒掉 1 点）")]
+        public float basePatienceDrainRate = 1.0f;
+
+        [Tooltip("【已弃用】基础耐心时间（秒），新系统请使用 maxPatienceValue")]
+        [HideInInspector]
         public float basePatienceTime = 60f;
+
+        [Header("订单生成策略")]
+        [Tooltip("无法完成订单的概率（0-1），用于挑战玩家备货")]
+        [Range(0f, 1f)]
+        public float impossibleOrderProbability = 0.2f;
+
+        [Tooltip("允许拒绝订单的最大次数")]
+        [Range(1, 5)]
+        public int maxOrderRejections = 2;
+
+        [Tooltip("每次拒绝订单降低的星级数")]
+        [Range(0f, 2f)]
+        public float rejectionPenaltyStars = 0.5f;
 
         [Header("订单池配置")]
         [Tooltip("顾客可抽取的订单池列表（带权重）")]
