@@ -108,6 +108,12 @@ namespace InnsmouthCafe.UI
         /// </summary>
         public void RefreshState()
         {
+            if (_selectButton != null)
+            {
+                _selectButton.interactable = BoundSlot != null
+                    && BoundSlot.IsWaitingForSubmission;
+            }
+
             if (_completedMarker == null)
             {
                 return;

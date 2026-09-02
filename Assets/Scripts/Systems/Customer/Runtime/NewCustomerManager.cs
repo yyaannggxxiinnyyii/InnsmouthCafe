@@ -6,7 +6,10 @@ using InnsmouthCafe.Business;
 using InnsmouthCafe.Scoring;
 using InnsmouthCafe.Patience;
 using InnsmouthCafe.Persistence;
+using InnsmouthCafe.Progression;
 using InnsmouthCafe.Shop;
+using InnsmouthCafe.CoffeeCraft;
+using InnsmouthCafe.Explore;
 
 namespace InnsmouthCafe.Customer
 {
@@ -53,6 +56,7 @@ namespace InnsmouthCafe.Customer
         /// 营业阶段是否激活。
         /// </summary>
         private bool _isBusinessPhaseActive;
+        private bool _isSubscribedToCoffeeCraft;
 
         /// <summary>
         /// 当前在场的所有顾客。
@@ -81,6 +85,11 @@ namespace InnsmouthCafe.Customer
         public int OrdersCompletedTonight => _ordersCompletedTonight;
 
         /// <summary>
+        /// 当前正在处理的顾客订单会话。
+        /// </summary>
+        public CustomerOrderSessionData CurrentOrderSession => CurrentServingCustomer?.orderSession;
+
+        /// <summary>
         /// 顾客生成事件（顾客进店时触发）。
         /// </summary>
         public event Action<CustomerInstance> OnCustomerSpawned;
@@ -89,6 +98,21 @@ namespace InnsmouthCafe.Customer
         /// 顾客接受订单事件。
         /// </summary>
         public event Action<OrderSO> OnOrderAccepted;
+
+        /// <summary>
+        /// 顾客接受订单后生成的小票会话事件。
+        /// </summary>
+        public event Action<CustomerOrderSessionData> OnOrderSessionAccepted;
+
+        /// <summary>
+        /// 当前订单会话中的小票状态发生变化时触发。
+        /// </summary>
+        public event Action<CustomerOrderSessionData> OnOrderSessionChanged;
+
+        /// <summary>
+        /// 玩家切换当前要制作的订单时触发。
+        /// </summary>
+        public event Action<OrderSO> OnOrderSelected;
 
         /// <summary>
         /// 顾客状态变化事件。
@@ -107,11 +131,7 @@ namespace InnsmouthCafe.Customer
 
         private void OnEnable()
         {
-            // 监听订单提交事件
-            if (OrderManager.Instance != null)
-            {
-                OrderManager.Instance.OnOrderSubmitted += HandleOrderSubmitted;
-            }
+            SubscribeToCoffeeCraft();
 
             // 监听耐心值耗尽事件
             if (CustomerPatienceManager.Instance != null)
@@ -122,10 +142,10 @@ namespace InnsmouthCafe.Customer
 
         private void OnDisable()
         {
-            // 取消监听
-            if (OrderManager.Instance != null)
+            if (_isSubscribedToCoffeeCraft && NewCoffeeCraftManager.Instance != null)
             {
-                OrderManager.Instance.OnOrderSubmitted -= HandleOrderSubmitted;
+                NewCoffeeCraftManager.Instance.OnCoffeeSubmitted -= HandleOrderSubmitted;
+                _isSubscribedToCoffeeCraft = false;
             }
 
             if (CustomerPatienceManager.Instance != null)
@@ -136,6 +156,8 @@ namespace InnsmouthCafe.Customer
 
         private void Update()
         {
+            SubscribeToCoffeeCraft();
+
             if (!_isBusinessPhaseActive)
             {
                 return;
@@ -149,8 +171,78 @@ namespace InnsmouthCafe.Customer
         }
 
         /// <summary>
-        /// 生成当天的顾客队列。
+        /// 绑定新咖啡制作管理器的提交事件，兼容管理器运行时创建顺序。
         /// </summary>
+        private void SubscribeToCoffeeCraft()
+        {
+            if (_isSubscribedToCoffeeCraft || NewCoffeeCraftManager.Instance == null)
+            {
+                return;
+            }
+
+            NewCoffeeCraftManager.Instance.OnCoffeeSubmitted += HandleOrderSubmitted;
+            _isSubscribedToCoffeeCraft = true;
+        }
+
+        /// <summary>
+        /// 根据当前地图和已进入区域生成本晚顾客队列。
+        /// </summary>
+        public void GenerateTodayQueue()
+        {
+            _todayQueue.Clear();
+            _todayQueueIndex = 0;
+
+            MapConfigSO currentMap = ChapterProgressService.Instance.CurrentMap;
+            if (currentMap == null || currentMap.areas == null)
+            {
+                Debug.LogError("[NewCustomerManager] 当前地图或区域配置为空，无法生成顾客队列");
+                return;
+            }
+
+            GameSaveData saveData = SaveSlotService.Instance.CurrentSave;
+            if (saveData == null || saveData.visitedAreaIds == null)
+            {
+                Debug.LogWarning("[NewCustomerManager] 当前没有有效存档或已进入区域记录");
+                return;
+            }
+
+            HashSet<string> visitedAreaIds = new HashSet<string>(saveData.visitedAreaIds);
+            HashSet<CustomerSO> availableCustomers = new HashSet<CustomerSO>();
+
+            foreach (AreaConfigSO area in currentMap.areas)
+            {
+                if (area == null || !visitedAreaIds.Contains(area.AreaId)
+                    || area.NormalCustomers == null)
+                {
+                    continue;
+                }
+
+                foreach (CustomerSO customer in area.NormalCustomers)
+                {
+                    if (customer != null)
+                    {
+                        availableCustomers.Add(customer);
+                    }
+                }
+            }
+
+            _todayQueue.AddRange(availableCustomers);
+            ShuffleQueue(_todayQueue);
+
+            int maxCustomersTonight = ShopUpgradeManager.Instance != null
+                ? ShopUpgradeManager.Instance.GetMaxOrdersPerNight()
+                : _todayQueue.Count;
+            if (_todayQueue.Count > maxCustomersTonight)
+            {
+                _todayQueue.RemoveRange(
+                    maxCustomersTonight,
+                    _todayQueue.Count - maxCustomersTonight);
+            }
+
+            Debug.Log($"[NewCustomerManager] 根据已进入区域生成本晚顾客队列，共 {_todayQueue.Count} 位顾客");
+        }
+
+        [Obsolete("新系统请使用无参数 GenerateTodayQueue()")]
         public void GenerateTodayQueue(DayCustomerConfigSO config, GameModeConfigSO gameModeConfig = null)
         {
             _todayQueue.Clear();
@@ -349,9 +441,9 @@ namespace InnsmouthCafe.Customer
             }
 
             // 生成订单（智能概率）
-            OrderSO order = GenerateOrderWithStrategy(customer);
+            CustomerOrderSessionData session = GenerateOrderSession(customer);
 
-            if (order == null)
+            if (session == null || session.SelectedSlot == null)
             {
                 Debug.LogError($"[NewCustomerManager] 无法为顾客 {customer.customerSO.customerName} 生成任何订单（订单池为空或配置错误）");
                 // 顾客失望离开
@@ -360,12 +452,13 @@ namespace InnsmouthCafe.Customer
                 return;
             }
 
-            customer.proposedOrder = order;
+            customer.proposedOrderSession = session;
+            customer.proposedOrder = session.SelectedSlot.orderSO;
 
             // 切换到订单已提出状态
             ChangeCustomerState(customer, CustomerState.OrderProposed);
 
-            Debug.Log($"[NewCustomerManager] 顾客 {customer.customerSO.customerName} 提出订单：{order.orderName}");
+            Debug.Log($"[NewCustomerManager] 顾客 {customer.customerSO.customerName} 提出订单：{customer.proposedOrder.orderName}");
 
             if (_autoAcceptOrderForTest)
             {
@@ -424,14 +517,43 @@ namespace InnsmouthCafe.Customer
             // 将提出的订单设为当前订单
             customer.currentOrder = customer.proposedOrder;
             customer.proposedOrder = null;
+            customer.orderSession = customer.proposedOrderSession;
+            customer.proposedOrderSession = null;
             _ordersGeneratedTonight++;
 
             // 切换到等待制作状态
             ChangeCustomerState(customer, CustomerState.Waiting);
 
             OnOrderAccepted?.Invoke(customer.currentOrder);
+            OnOrderSessionAccepted?.Invoke(customer.orderSession);
 
             Debug.Log($"[NewCustomerManager] 玩家接受订单：{customer.currentOrder.orderName}，开始制作");
+        }
+
+        /// <summary>
+        /// 选择当前顾客的一张未完成小票作为制作目标。
+        /// </summary>
+        /// <param name="slotId">需要选择的订单槽ID。</param>
+        /// <returns>选择成功返回 true。</returns>
+        public bool TrySelectOrderSlot(string slotId)
+        {
+            CustomerInstance customer = CurrentServingCustomer;
+            CustomerOrderSessionData session = customer?.orderSession;
+            if (customer == null || session == null || customer.currentState != CustomerState.Waiting)
+            {
+                return false;
+            }
+
+            CustomerOrderSlotData slot = session.GetSlot(slotId);
+            if (slot == null || !slot.IsWaitingForSubmission)
+            {
+                return false;
+            }
+
+            session.TrySelectSlot(slotId);
+            customer.currentOrder = slot.orderSO;
+            OnOrderSelected?.Invoke(customer.currentOrder);
+            return true;
         }
 
         /// <summary>
@@ -556,6 +678,114 @@ namespace InnsmouthCafe.Customer
         }
 
         /// <summary>
+        /// 为当前顾客生成普通订单或顾客组订单会话。
+        /// </summary>
+        /// <param name="customer">当前顾客实例。</param>
+        /// <returns>生成成功返回订单会话。</returns>
+        private CustomerOrderSessionData GenerateOrderSession(CustomerInstance customer)
+        {
+            if (customer?.customerSO == null)
+            {
+                return null;
+            }
+
+            CustomerOrderSessionData session = new CustomerOrderSessionData();
+            session.Initialize($"new-{customer.customerSO.customerId}-{Time.frameCount}", customer.customerSO);
+
+            SpecialCustomerProfileSO profile = customer.customerSO.specialProfile;
+            if (profile != null && profile.useCustomerOrderGroup
+                && profile.orderParticipants != null && profile.orderParticipants.Count > 0)
+            {
+                for (int i = 0; i < profile.orderParticipants.Count; i++)
+                {
+                    CustomerOrderParticipantConfig participant = profile.orderParticipants[i];
+                    if (participant == null)
+                    {
+                        continue;
+                    }
+
+                    OrderSO order = GenerateOrderFromPools(
+                        customer,
+                        participant.orderPoolEntries,
+                        $"{customer.customerSO.customerName}-{participant.displayName}");
+                    if (order == null)
+                    {
+                        continue;
+                    }
+
+                    string participantName = string.IsNullOrWhiteSpace(participant.displayName)
+                        ? $"成员{i + 1}"
+                        : participant.displayName;
+                    CustomerOrderSlotData slot = new CustomerOrderSlotData();
+                    slot.Initialize(
+                        $"{session.sessionId}-{i}",
+                        participantName,
+                        order,
+                        participant.ordererAvatarSprite);
+                    session.AddSlot(slot);
+                }
+            }
+            else
+            {
+                OrderSO order = GenerateOrderWithStrategy(customer);
+                if (order != null)
+                {
+                    CustomerOrderSlotData slot = new CustomerOrderSlotData();
+                    slot.Initialize(
+                        $"{session.sessionId}-0",
+                        customer.customerSO.customerName,
+                        order,
+                        customer.customerSO.ordererAvatarSprite);
+                    session.AddSlot(slot);
+                }
+            }
+
+            return session.SlotCount > 0 ? session : null;
+        }
+
+        /// <summary>
+        /// 从指定订单池按当前顾客的订单策略生成一张订单。
+        /// </summary>
+        /// <param name="customer">当前顾客实例。</param>
+        /// <param name="poolEntries">候选订单池。</param>
+        /// <param name="ownerName">订单归属名称。</param>
+        /// <returns>生成成功返回订单。</returns>
+        private OrderSO GenerateOrderFromPools(
+            CustomerInstance customer,
+            List<CustomerOrderPoolEntry> poolEntries,
+            string ownerName)
+        {
+            List<OrderSO> allOrders = GetAllPossibleOrders(poolEntries);
+            if (allOrders.Count == 0)
+            {
+                Debug.LogWarning($"[NewCustomerManager] {ownerName} 没有配置有效订单池");
+                return null;
+            }
+
+            List<OrderSO> fulfillableOrders = new List<OrderSO>();
+            List<OrderSO> impossibleOrders = new List<OrderSO>();
+            foreach (OrderSO order in allOrders)
+            {
+                if (CanFulfillOrder(order))
+                {
+                    fulfillableOrders.Add(order);
+                }
+                else
+                {
+                    impossibleOrders.Add(order);
+                }
+            }
+
+            bool chooseImpossible = UnityEngine.Random.value < customer.customerSO.impossibleOrderProbability;
+            List<OrderSO> candidates = chooseImpossible && impossibleOrders.Count > 0
+                ? impossibleOrders
+                : fulfillableOrders.Count > 0 ? fulfillableOrders : impossibleOrders;
+            return candidates.Count > 0
+                ? candidates[UnityEngine.Random.Range(0, candidates.Count)]
+                : null;
+        }
+
+        /// <summary>
         /// 获取顾客的所有可能订单（从所有订单池中收集）。
         /// </summary>
         /// <param name="customerSO">顾客配置。</param>
@@ -563,24 +793,115 @@ namespace InnsmouthCafe.Customer
         private List<OrderSO> GetAllPossibleOrders(CustomerSO customerSO)
         {
             List<OrderSO> allOrders = new List<OrderSO>();
-
-            if (customerSO.orderPoolEntries == null || customerSO.orderPoolEntries.Count == 0)
+            if (customerSO == null)
             {
                 return allOrders;
             }
 
-            // 遍历顾客配置的所有订单池
-            foreach (var poolEntry in customerSO.orderPoolEntries)
+            GameSaveData saveData = SaveSlotService.Instance.CurrentSave;
+            HashSet<string> visitedAreaIds = saveData?.visitedAreaIds != null
+                ? new HashSet<string>(saveData.visitedAreaIds)
+                : new HashSet<string>();
+
+            if (customerSO.belongAreas != null)
+            {
+                foreach (AreaConfigSO area in customerSO.belongAreas)
+                {
+                    if (area == null || !visitedAreaIds.Contains(area.AreaId)
+                        || area.OrderPool == null || area.OrderPool.orders == null)
+                    {
+                        continue;
+                    }
+
+                    AddOrdersWithoutDuplicates(allOrders, area.OrderPool.orders);
+                }
+            }
+
+            AddOrdersWithoutDuplicates(allOrders, customerSO.extraOrders);
+            AddOrdersFromPoolEntries(allOrders, customerSO.extraOrderPoolEntries);
+            return allOrders;
+        }
+
+        /// <summary>
+        /// 将订单加入列表并去除重复引用。
+        /// </summary>
+        private void AddOrdersWithoutDuplicates(List<OrderSO> target, List<OrderSO> orders)
+        {
+            if (orders == null)
+            {
+                return;
+            }
+
+            foreach (OrderSO order in orders)
+            {
+                if (order != null && !target.Contains(order))
+                {
+                    target.Add(order);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 从顾客额外订单池中收集订单并去除重复引用。
+        /// </summary>
+        private void AddOrdersFromPoolEntries(
+            List<OrderSO> target,
+            List<CustomerOrderPoolEntry> poolEntries)
+        {
+            if (poolEntries == null)
+            {
+                return;
+            }
+
+            foreach (CustomerOrderPoolEntry poolEntry in poolEntries)
+            {
+                if (poolEntry == null || poolEntry.orderPool == null
+                    || poolEntry.weight <= 0)
+                {
+                    continue;
+                }
+
+                AddOrdersWithoutDuplicates(target, poolEntry.orderPool.orders);
+            }
+        }
+
+        /// <summary>
+        /// 随机打乱本晚候选顾客队列。
+        /// </summary>
+        private void ShuffleQueue(List<CustomerSO> queue)
+        {
+            for (int i = queue.Count - 1; i > 0; i--)
+            {
+                int swapIndex = UnityEngine.Random.Range(0, i + 1);
+                CustomerSO customer = queue[i];
+                queue[i] = queue[swapIndex];
+                queue[swapIndex] = customer;
+            }
+        }
+
+        /// <summary>
+        /// 收集指定订单池中的所有订单。
+        /// </summary>
+        /// <param name="poolEntries">候选订单池。</param>
+        /// <returns>去重后的订单列表。</returns>
+        private List<OrderSO> GetAllPossibleOrders(List<CustomerOrderPoolEntry> poolEntries)
+        {
+            List<OrderSO> allOrders = new List<OrderSO>();
+            if (poolEntries == null || poolEntries.Count == 0)
+            {
+                return allOrders;
+            }
+
+            foreach (CustomerOrderPoolEntry poolEntry in poolEntries)
             {
                 if (poolEntry == null || poolEntry.orderPool == null || poolEntry.weight <= 0)
                 {
                     continue;
                 }
 
-                // 收集订单池中的所有订单
                 if (poolEntry.orderPool.orders != null)
                 {
-                    foreach (var order in poolEntry.orderPool.orders)
+                    foreach (OrderSO order in poolEntry.orderPool.orders)
                     {
                         if (order != null && !allOrders.Contains(order))
                         {
@@ -759,7 +1080,8 @@ namespace InnsmouthCafe.Customer
         private void HandleOrderSubmitted(OrderSO order, CoffeeData coffee)
         {
             var customer = CurrentServingCustomer;
-            if (customer == null)
+            CustomerOrderSessionData session = customer?.orderSession;
+            if (customer == null || session == null)
             {
                 Debug.LogWarning("[NewCustomerManager] 订单提交时没有当前服务顾客");
                 return;
@@ -769,6 +1091,13 @@ namespace InnsmouthCafe.Customer
             if (customer.currentOrder != order)
             {
                 Debug.LogWarning($"[NewCustomerManager] 订单不匹配：当前顾客订单={customer.currentOrder?.orderName}，提交订单={order.orderName}");
+                return;
+            }
+
+            CustomerOrderSlotData slot = FindWaitingOrderSlot(session, order);
+            if (slot == null || !slot.TrySubmitCoffee(coffee))
+            {
+                Debug.LogWarning($"[NewCustomerManager] 订单小票不可提交：{order.orderName}");
                 return;
             }
 
@@ -793,12 +1122,54 @@ namespace InnsmouthCafe.Customer
             // 映射星级到反馈档位（0-2）
             int feedbackLevel = MapStarsToFeedbackLevel(result.starRating);
 
-            // 完成订单
-            _ordersCompletedTonight++;
-            CompleteCurrentCustomerOrder(feedbackLevel);
+            CoffeeScoringData scoringData = new CoffeeScoringData
+            {
+                finalScore = result.starRating * 20f,
+                qualityLevel = result.starRating >= 4f
+                    ? CoffeeQuality.Perfect
+                    : result.starRating >= 2.5f
+                        ? CoffeeQuality.Acceptable
+                        : CoffeeQuality.Terrible,
+                feedbackLevel = feedbackLevel,
+                scoringDetail = result.feedbackText
+            };
+            slot.TryCompleteScoring(scoringData);
 
-            // 延迟2秒后顾客离开
-            Invoke(nameof(CurrentCustomerLeave), 2f);
+            _ordersCompletedTonight++;
+            customer.currentOrder = null;
+            OnOrderSessionChanged?.Invoke(session);
+
+            if (session.IsAllCompleted)
+            {
+                CompleteCurrentCustomerOrder(feedbackLevel);
+                Invoke(nameof(CurrentCustomerLeave), 2f);
+            }
+        }
+
+        /// <summary>
+        /// 查找当前订单会话中等待提交的指定订单槽。
+        /// </summary>
+        /// <param name="session">当前订单会话。</param>
+        /// <param name="order">需要查找的订单。</param>
+        /// <returns>找到时返回订单槽，否则返回 null。</returns>
+        private CustomerOrderSlotData FindWaitingOrderSlot(
+            CustomerOrderSessionData session,
+            OrderSO order)
+        {
+            if (session?.orderSlots == null || order == null)
+            {
+                return null;
+            }
+
+            foreach (CustomerOrderSlotData slot in session.orderSlots)
+            {
+                if (slot != null && slot.orderSO == order && slot.IsWaitingForSubmission)
+                {
+                    return slot;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -892,8 +1263,14 @@ namespace InnsmouthCafe.Customer
         [Tooltip("当前订单（生成后保存）")]
         public OrderSO currentOrder;
 
+        [Tooltip("当前顾客已接受的订单会话")]
+        public CustomerOrderSessionData orderSession;
+
         [Tooltip("当前提出的订单（等待玩家选择）")]
         public OrderSO proposedOrder;
+
+        [Tooltip("当前提出但尚未接受的订单会话")]
+        public CustomerOrderSessionData proposedOrderSession;
 
         [Tooltip("剩余订单申请次数")]
         public int remainingOrderAttempts;

@@ -13,6 +13,7 @@ namespace InnsmouthCafe.UI
     {
         [SerializeField] [Tooltip("辅助液图标")]
         private Image _liquidIcon;
+        [SerializeField] private TextMeshProUGUI _nameText;
 
         [SerializeField] [Tooltip("容量文本")]
         private TextMeshProUGUI _volumeText;
@@ -25,6 +26,11 @@ namespace InnsmouthCafe.UI
             if (data.liquid != null && _liquidIcon != null)
             {
                 _liquidIcon.sprite = data.liquid.icon;
+            }
+
+            if (_nameText != null)
+            {
+                _nameText.text = data.liquid != null ? data.liquid.liquidName : "";
             }
 
             if (_volumeText != null)

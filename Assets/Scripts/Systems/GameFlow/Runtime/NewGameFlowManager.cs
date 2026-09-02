@@ -27,10 +27,6 @@ namespace InnsmouthCafe.GameFlow
         [Tooltip("探索场景名称；留空时不执行场景加载")]
         [SerializeField] private string _explorationSceneName = "";
 
-        [Header("测试配置")]
-        [Tooltip("测试用顾客配置；正式版由店铺场景控制器提供")]
-        [SerializeField] private DayCustomerConfigSO _testCustomerConfig;
-
         [Header("调试信息 - 只读")]
         [Tooltip("当前游戏流程状态")]
         [SerializeField] private GameFlowState _currentState = GameFlowState.None;

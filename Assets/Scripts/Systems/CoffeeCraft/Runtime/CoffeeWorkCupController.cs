@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using InnsmouthCafe.Data;
 
@@ -12,8 +13,14 @@ namespace InnsmouthCafe.CoffeeCraft
         [SerializeField] private WorldCoffeeWorkCup _workCup;
         [SerializeField] private CoffeeCupAnchor _trayCupAnchor;
         [SerializeField] private CoffeeCupAnchor _extractorCupAnchor;
+        [SerializeField] private CoffeeCupAnchor _serveCupAnchor;
 
         private GameObject _sourceCup;
+
+        /// <summary>
+        /// 工作杯当前吸附锚点发生变化时触发。
+        /// </summary>
+        public event Action OnWorkCupAnchorChanged;
 
         private void Awake()
         {
@@ -26,6 +33,11 @@ namespace InnsmouthCafe.CoffeeCraft
 
         private void OnEnable()
         {
+            if (_workCup != null)
+            {
+                _workCup.OnAnchorChanged += HandleWorkCupAnchorChanged;
+            }
+
             if (NewCoffeeCraftManager.Instance != null)
             {
                 NewCoffeeCraftManager.Instance.OnCraftReset += ReturnCup;
@@ -36,6 +48,11 @@ namespace InnsmouthCafe.CoffeeCraft
 
         private void OnDisable()
         {
+            if (_workCup != null)
+            {
+                _workCup.OnAnchorChanged -= HandleWorkCupAnchorChanged;
+            }
+
             if (NewCoffeeCraftManager.Instance != null)
             {
                 NewCoffeeCraftManager.Instance.OnCraftReset -= ReturnCup;
@@ -81,6 +98,8 @@ namespace InnsmouthCafe.CoffeeCraft
                 _sourceCup.SetActive(true);
                 _sourceCup = null;
             }
+
+            OnWorkCupAnchorChanged?.Invoke();
         }
 
         /// <summary>
@@ -99,6 +118,22 @@ namespace InnsmouthCafe.CoffeeCraft
         public bool IsWorkCupAtExtractor()
         {
             return IsWorkCupAtAnchor(_extractorCupAnchor);
+        }
+
+        /// <summary>
+        /// 判断当前工作杯是否已放入出餐工位。
+        /// </summary>
+        public bool IsWorkCupAtServe()
+        {
+            return IsWorkCupAtAnchor(_serveCupAnchor);
+        }
+
+        /// <summary>
+        /// 转发工作杯锚点变化，供出餐等场景交互刷新状态。
+        /// </summary>
+        private void HandleWorkCupAnchorChanged(CoffeeCupAnchor anchor)
+        {
+            OnWorkCupAnchorChanged?.Invoke();
         }
 
         /// <summary>

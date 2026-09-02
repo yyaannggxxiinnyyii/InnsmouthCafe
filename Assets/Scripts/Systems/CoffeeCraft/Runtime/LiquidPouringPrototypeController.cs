@@ -43,7 +43,7 @@ namespace InnsmouthCafe.CoffeeCraft
         private Vector3 _rotationPivotWorldPosition;
         private float _currentTiltAngle;
         private int _collectedParticleCount;
-        private LPDrawParticleSystem _particleRenderer;
+        private LPDrawParticleSystem[] _particleRenderers;
         private bool _liquidAddActive;
 
         /// <summary>
@@ -55,6 +55,9 @@ namespace InnsmouthCafe.CoffeeCraft
         /// 当前倒液控制器使用的 LiquidFun 粒子系统。
         /// </summary>
         public LPParticleSystem LiquidParticleSystem => _liquidParticleSystem;
+
+        /// <summary>获取杯内小料粒子收集区域。</summary>
+        public Collider2D CupCollectionArea => _cupCollectionArea;
 
         /// <summary>
         /// 获取用于点击退出加液面板的倾倒瓶专用碰撞体。
@@ -76,6 +79,15 @@ namespace InnsmouthCafe.CoffeeCraft
             _bottleLiquidIconRenderer.enabled = icon != null;
         }
 
+        /// <summary>设置实际倒液发射器使用的粒子颜色。</summary>
+        public void SetLiquidColor(Color color)
+        {
+            if (_liquidSpawner != null && _liquidSpawner.pg != null)
+            {
+                _liquidSpawner.pg._Color = color;
+            }
+        }
+
         /// <summary>
         /// 杯内液滴数量变化时触发。
         /// </summary>
@@ -91,9 +103,9 @@ namespace InnsmouthCafe.CoffeeCraft
 
         private void Start()
         {
-            _particleRenderer = _liquidParticleSystem != null
-                ? _liquidParticleSystem.GetComponentInChildren<LPDrawParticleSystem>(true)
-                : null;
+            _particleRenderers = _liquidParticleSystem != null
+                ? _liquidParticleSystem.GetComponentsInChildren<LPDrawParticleSystem>(true)
+                : new LPDrawParticleSystem[0];
             if (_bottleTransform != null)
             {
                 _bottleStartPosition = _bottleTransform.position;
@@ -110,6 +122,7 @@ namespace InnsmouthCafe.CoffeeCraft
                 _liquidSpawner.StopSpawning();
             }
             SetLiquidAddActive(false);
+            SetParticleRendererActive(false);
         }
 
         private void Update()
@@ -153,9 +166,36 @@ namespace InnsmouthCafe.CoffeeCraft
                 _bottleTransform.gameObject.SetActive(isActive);
             }
 
-            if (_particleRenderer != null && _particleRenderer.gameObject.activeSelf != isActive)
+            // 粒子渲染器由侧剖面的生命周期统一管理，这里只切换倾倒瓶输入状态。
+        }
+
+        /// <summary>单独设置侧剖面中所有粒子渲染器的状态。</summary>
+        public void SetParticleRendererActive(bool isActive)
+        {
+            if ((_particleRenderers == null || _particleRenderers.Length == 0)
+                && _liquidParticleSystem != null)
             {
-                _particleRenderer.gameObject.SetActive(isActive);
+                _particleRenderers = _liquidParticleSystem.GetComponentsInChildren<LPDrawParticleSystem>(true);
+            }
+
+            for (int index = 0; index < (_particleRenderers?.Length ?? 0); index++)
+            {
+                LPDrawParticleSystem renderer = _particleRenderers[index];
+                if (renderer != null && renderer.gameObject.activeSelf != isActive)
+                {
+                    renderer.gameObject.SetActive(isActive);
+                }
+            }
+
+            Debug.Log($"[LiquidAddPanel] 粒子渲染器状态：{isActive}，数量={_particleRenderers?.Length ?? 0}", this);
+        }
+
+        /// <summary>单独显示或隐藏倾倒瓶，不改变粒子渲染器状态。</summary>
+        public void SetBottleActive(bool isActive)
+        {
+            if (_bottleTransform != null && _bottleTransform.gameObject.activeSelf != isActive)
+            {
+                _bottleTransform.gameObject.SetActive(isActive);
             }
         }
 
@@ -247,6 +287,12 @@ namespace InnsmouthCafe.CoffeeCraft
             _liquidSpawner.StopSpawning();
             _liquidSpawner.SpawnsPerSecond = Mathf.Max(0.1f, _minimumPourRate);
             _isPouring = false;
+        }
+
+        /// <summary>停止当前倒液但保留侧剖面和粒子渲染器。</summary>
+        public void StopPouringForPanel()
+        {
+            StopPouring();
         }
 
         /// <summary>

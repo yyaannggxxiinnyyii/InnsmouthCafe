@@ -157,6 +157,11 @@ namespace InnsmouthCafe.CoffeeCraft
         public event Action<OrderSO> OnOrderStarted;
 
         /// <summary>
+        /// 咖啡提交事件，参数为当前订单和已提交的咖啡数据。
+        /// </summary>
+        public event Action<OrderSO, CoffeeData> OnCoffeeSubmitted;
+
+        /// <summary>
         /// 制作流程重置事件。
         /// </summary>
         public event Action OnCraftReset;
@@ -278,6 +283,26 @@ namespace InnsmouthCafe.CoffeeCraft
             RefreshCoffeeVolume();
             OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
             Debug.Log($"[NewCoffeeCraft] 添加辅助液：{liquid.liquidName} {amountMl:F1}ml");
+            return true;
+        }
+
+        /// <summary>记录一个已确认落在杯内的小料。</summary>
+        public bool TryCommitTopping(ToppingSO topping)
+        {
+            if (topping == null || !CanAddLiquid())
+            {
+                return false;
+            }
+
+            EnsureCoffeeData();
+            if (_currentCoffeeData.toppings.Count >= 6)
+            {
+                return false;
+            }
+
+            _currentCoffeeData.toppings.Add(new ToppingInstanceData { topping = topping });
+            _currentStage = NewCoffeeCraftStage.Submit;
+            OnCoffeeDataChanged?.Invoke(_currentCoffeeData);
             return true;
         }
 
@@ -505,6 +530,44 @@ namespace InnsmouthCafe.CoffeeCraft
                 && HasGrinderBeans
                 && GrinderBeanBatch.CanExtract()
                 && !_isExtracting;
+        }
+
+        /// <summary>
+        /// 判断当前是否满足提交咖啡的基础条件。
+        /// </summary>
+        /// <returns>存在完整制作数据且处于可提交阶段时返回 true。</returns>
+        public bool CanSubmitCoffee()
+        {
+            return IsCraftSessionActive
+                && !_isExtracting
+                && HasSelectedCup()
+                && CurrentCoffeeData.coffeeSegments.Count > 0
+                && CurrentCoffeeData.currentTotalVolume > 0f
+                && (_currentStage == NewCoffeeCraftStage.AddLiquid
+                    || _currentStage == NewCoffeeCraftStage.AddTopping
+                    || _currentStage == NewCoffeeCraftStage.Submit);
+        }
+
+        /// <summary>
+        /// 提交当前制作完成的咖啡，并结束当前制作会话。
+        /// </summary>
+        /// <returns>提交成功返回 true。</returns>
+        public bool TrySubmitCoffee()
+        {
+            if (!CanSubmitCoffee())
+            {
+                Debug.LogWarning("[NewCoffeeCraft] 当前咖啡不满足提交条件");
+                return false;
+            }
+
+            OrderSO submittedOrder = _currentOrder;
+            CoffeeData submittedCoffee = CurrentCoffeeData.Clone();
+            OnCoffeeSubmitted?.Invoke(submittedOrder, submittedCoffee);
+
+            _currentOrder = null;
+            ResetCraft();
+            Debug.Log($"[NewCoffeeCraft] 提交订单：{submittedOrder.orderName}");
+            return true;
         }
 
         /// <summary>

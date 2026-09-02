@@ -14,13 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customerId: C01
   customerName: "\u73CA\u745A\u592B\u4EBA"
+  belongAreas: []
+  extraOrders:
+  - {fileID: 11400000, guid: 7b376cb100c98c24b97fab19286a5d23, type: 2}
+  extraOrderPoolEntries: []
   avatarSprite: {fileID: 21300000, guid: 12bd3d765857cc64cbbc714c071dc3e5, type: 3}
   ordererAvatarSprite: {fileID: 21300000, guid: 4b8032d2b0685dd4e8550c9de251a2bb, type: 3}
   normalSprite: {fileID: 21300000, guid: 19e9cb24635851242ab5388fa3a84cb8, type: 3}
   impatientSprite: {fileID: 21300000, guid: 1ec005d9793eb024b804040bb7c9f2e6, type: 3}
   angrySprite: {fileID: 21300000, guid: af73f3ff9821f854e812ab7ca2697633, type: 3}
   happySprite: {fileID: 21300000, guid: 1bf4c9a2cb9f7b84f98a12213989f5ff, type: 3}
+  maxPatienceValue: 100
+  basePatienceDrainRate: 1
   basePatienceTime: 150
+  impossibleOrderProbability: 0.2
+  maxOrderRejections: 2
+  rejectionPenaltyStars: 0.5
   orderPoolEntries:
   - orderPool: {fileID: 11400000, guid: aa24e8715613bf34f914083c2d244a0a, type: 2}
     weight: 100

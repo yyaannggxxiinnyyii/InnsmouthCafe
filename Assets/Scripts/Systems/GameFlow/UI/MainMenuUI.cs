@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
-using InnsmouthCafe.Data;
 using InnsmouthCafe.Managers;
 using InnsmouthCafe.Persistence;
+using UnityEngine.SceneManagement;
 
 namespace InnsmouthCafe.UI
 {
@@ -14,6 +14,8 @@ namespace InnsmouthCafe.UI
     /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
+        private const string LongTermGameSceneName = "GameScene_DioramaPrototype";
+
         [Header("主菜单 CanvasGroup")]
         [SerializeField] [Tooltip("主菜单页面的 CanvasGroup")]
         private CanvasGroup _mainMenuGroup;
@@ -55,17 +57,6 @@ namespace InnsmouthCafe.UI
         [Header("存档选择面板")]
         [SerializeField] [Tooltip("三个固定存档槽位的选择面板")]
         private SaveSlotPanelUI _saveSlotPanel;
-
-        [Header("教学模式配置")]
-        [SerializeField] [Tooltip("教学模式配置SO（首次游戏直接使用）")]
-        private GameModeConfigSO _tutorialConfig;
-
-        [Header("开局CG")]
-        [SerializeField] [Tooltip("开局CG面板（教学未完成时播放）")]
-        private OpeningCGPanelUI _openingCGPanel;
-
-        [SerializeField] [Tooltip("开局CG配置SO（留空则使用面板Inspector中配置的默认值）")]
-        private OpeningCGConfigSO _openingCGConfig;
 
         [Header("过渡设置")]
         [SerializeField] [Tooltip("页面切换淡入淡出时长")]
@@ -149,43 +140,7 @@ namespace InnsmouthCafe.UI
                 return;
             }
 
-            bool tutorialCompleted = GameManager.Instance != null
-                && GameManager.Instance.IsTutorialCompleted();
-            // 教学模式未完成：先播放开局CG，再进入教学
-            if (!tutorialCompleted)
-            {
-                if (_tutorialConfig == null)
-                {
-                    Debug.LogError("[MainMenu] 教学模式配置未设置");
-                    return;
-                }
-
-                if (_openingCGPanel != null)
-                {
-                    // 主菜单淡出，然后播放CG
-                    FadeGroup(_mainMenuGroup, false, () =>
-                    {
-                        _openingCGPanel.Play(_openingCGConfig, () =>
-                        {
-                            if (GameManager.Instance != null)
-                                GameManager.Instance.StartGameWithConfig(_tutorialConfig);
-                            else
-                                UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
-                        });
-                    });
-                }
-                else
-                {
-                    // 无CG面板时直接进入（降级处理）
-                    if (GameManager.Instance != null)
-                        GameManager.Instance.StartGameWithConfig(_tutorialConfig);
-                    else
-                        UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
-                }
-                return;
-            }
-
-            UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+            SceneManager.LoadScene(LongTermGameSceneName);
         }
 
         private void OnSettingsClicked()

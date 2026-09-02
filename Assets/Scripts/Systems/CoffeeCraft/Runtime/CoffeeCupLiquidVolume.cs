@@ -57,6 +57,12 @@ namespace InnsmouthCafe.CoffeeCraft
         /// <summary>兼容旧调用方的当前粒子数量属性。</summary>
         public int ParticleCount => _particleCount;
 
+        /// <summary>判断指定世界坐标是否位于当前杯型的有效内部区域。</summary>
+        public bool IsInsideCup(Vector2 worldPosition)
+        {
+            return _cupInteriorArea != null && _cupInteriorArea.OverlapPoint(worldPosition);
+        }
+
         /// <summary>从当前杯型数据读取最大容量和满杯参考粒子数量。</summary>
         public void Configure(CupContainerData cupData, Collider2D cupInteriorArea)
         {

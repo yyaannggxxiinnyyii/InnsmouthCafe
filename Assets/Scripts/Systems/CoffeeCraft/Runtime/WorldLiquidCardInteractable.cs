@@ -44,5 +44,11 @@ namespace InnsmouthCafe.CoffeeCraft
             }
             return false;
         }
+
+        /// <summary>侧剖面已打开时切换当前辅助液。</summary>
+        public bool TrySelectLiquid()
+        {
+            return _panelController != null && _panelController.SwitchLiquid(_liquid, this);
+        }
     }
 }

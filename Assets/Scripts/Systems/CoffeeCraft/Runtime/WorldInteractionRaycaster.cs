@@ -93,6 +93,13 @@ namespace InnsmouthCafe.CoffeeCraft
                 return;
             }
 
+            WorldToppingInteractable topping = hit.collider.GetComponentInParent<WorldToppingInteractable>();
+            if (topping != null)
+            {
+                topping.AddTopping();
+                return;
+            }
+
             WorldCupInteractable cup = hit.collider.GetComponentInParent<WorldCupInteractable>();
             if (cup != null)
             {
@@ -136,6 +143,14 @@ namespace InnsmouthCafe.CoffeeCraft
             if (extractor != null)
             {
                 extractor.StartExtraction();
+                return;
+            }
+
+            WorldCoffeeServeInteractable serve =
+                hit.collider.GetComponentInParent<WorldCoffeeServeInteractable>();
+            if (serve != null)
+            {
+                serve.ServeCoffee();
                 return;
             }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using InnsmouthCafe.Explore;
 
 namespace InnsmouthCafe.Data
 {
@@ -16,6 +17,18 @@ namespace InnsmouthCafe.Data
 
         [Tooltip("顾客显示名称")]
         public string customerName;
+
+        [Header("区域归属")]
+        [Tooltip("顾客所属的区域列表；玩家进入任意所属区域后，该顾客加入经营顾客池")]
+        public List<AreaConfigSO> belongAreas = new List<AreaConfigSO>();
+
+        [Header("顾客额外订单")]
+        [Tooltip("顾客自身额外指定的订单，不受区域普通订单池限制")]
+        public List<OrderSO> extraOrders = new List<OrderSO>();
+
+        [Tooltip("顾客自身额外指定的订单池，不受区域普通订单池限制")]
+        public List<CustomerOrderPoolEntry> extraOrderPoolEntries =
+            new List<CustomerOrderPoolEntry>();
 
         [Header("立绘")]
         [Tooltip("顾客头像（用于环形耐心条中心图标）")]

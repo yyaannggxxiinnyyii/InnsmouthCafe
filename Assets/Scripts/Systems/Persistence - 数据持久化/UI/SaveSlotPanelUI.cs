@@ -224,7 +224,7 @@ namespace InnsmouthCafe.UI
             _mainMenu?.OnSaveSelected(saveData);
             if (_mainMenu == null)
             {
-                SceneManager.LoadScene("GameScene");
+                SceneManager.LoadScene("GameScene_DioramaPrototype");
             }
         }
 

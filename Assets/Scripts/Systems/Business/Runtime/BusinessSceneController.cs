@@ -13,10 +13,6 @@ namespace InnsmouthCafe.Business
     /// </summary>
     public class BusinessSceneController : MonoBehaviour
     {
-        [Header("测试配置")]
-        [Tooltip("测试用顾客配置；正式版本由店铺数据提供")]
-        [SerializeField] private DayCustomerConfigSO _testCustomerConfig;
-
         [Header("营业界面")]
         [SerializeField] private GameObject _businessStatusPanel;
         [SerializeField] private TMP_Text _businessTimerText;
@@ -36,6 +32,7 @@ namespace InnsmouthCafe.Business
             if (NewCustomerManager.Instance != null)
             {
                 NewCustomerManager.Instance.OnOrderAccepted += HandleOrderAccepted;
+                NewCustomerManager.Instance.OnOrderSelected += HandleOrderSelected;
             }
             if (NewGameFlowManager.Instance != null)
             {
@@ -71,6 +68,7 @@ namespace InnsmouthCafe.Business
             if (NewCustomerManager.Instance != null)
             {
                 NewCustomerManager.Instance.OnOrderAccepted -= HandleOrderAccepted;
+                NewCustomerManager.Instance.OnOrderSelected -= HandleOrderSelected;
             }
             if (NewGameFlowManager.Instance != null)
             {
@@ -91,6 +89,19 @@ namespace InnsmouthCafe.Business
             if (_currentState != BusinessPhaseState.Running)
             {
                 Debug.LogWarning("[BusinessScene] 当前不在营业运行阶段，忽略制作订单请求", this);
+                return;
+            }
+
+            NewCoffeeCraftManager.Instance?.BeginOrder(order);
+        }
+
+        /// <summary>
+        /// 将玩家切换的小票订单传递给咖啡制作流程。
+        /// </summary>
+        private void HandleOrderSelected(OrderSO order)
+        {
+            if (_currentState != BusinessPhaseState.Running || order == null)
+            {
                 return;
             }
 
@@ -142,10 +153,7 @@ namespace InnsmouthCafe.Business
 
             NewCoffeeCraftManager.Instance?.ResetForBusiness();
 
-            if (_testCustomerConfig != null)
-            {
-                NewCustomerManager.Instance.GenerateTodayQueue(_testCustomerConfig, null);
-            }
+            NewCustomerManager.Instance.GenerateTodayQueue();
 
             BusinessTimerManager.Instance.StartBusinessTimer();
             NewCustomerManager.Instance.StartBusinessPhase();

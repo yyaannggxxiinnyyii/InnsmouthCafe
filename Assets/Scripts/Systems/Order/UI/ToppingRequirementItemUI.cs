@@ -16,15 +16,21 @@ namespace InnsmouthCafe.UI
 
         [SerializeField] [Tooltip("名称文本")]
         private TextMeshProUGUI _nameText;
+        [SerializeField] private TextMeshProUGUI _countText;
 
         /// <summary>
         /// 用指定小料初始化
         /// </summary>
-        public void Init(ToppingSO topping)
+        public void Init(ToppingSO topping, int count = 1)
         {
             if (topping != null && _toppingIcon != null)
             {
                 _toppingIcon.sprite = topping.icon;
+            }
+
+            if (_countText != null)
+            {
+                _countText.text = topping != null ? $"{count}份" : "";
             }
 
             if (_nameText != null)

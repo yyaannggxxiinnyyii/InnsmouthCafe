@@ -1,4 +1,5 @@
 using InnsmouthCafe.Data;
+using InnsmouthCafe.GameFlow;
 using UnityEngine;
 
 namespace InnsmouthCafe.Progression
@@ -28,7 +29,17 @@ namespace InnsmouthCafe.Progression
                 return;
             }
 
-            ChapterProgressService.Instance.InitializeMap(mapConfig);
+            if (!ChapterProgressService.Instance.InitializeMap(mapConfig))
+            {
+                return;
+            }
+
+            NewGameFlowManager gameFlow = NewGameFlowManager.Instance;
+            if (gameFlow != null
+                && gameFlow.CurrentState == InnsmouthCafe.GameFlow.GameFlowState.None)
+            {
+                gameFlow.StartNewDay();
+            }
         }
     }
 }

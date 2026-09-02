@@ -126,6 +126,7 @@ namespace InnsmouthCafe.UI
 
         private RectTransform _ticketContentRect;
         private ScrollRect _ticketScrollRect;
+        private RectTransform _panelRect;
         private bool _isExpanded;
         private bool _isAnimating;
         private bool _isPendingExpand;
@@ -133,6 +134,17 @@ namespace InnsmouthCafe.UI
 
         private void Awake()
         {
+            _panelRect = transform as RectTransform;
+            if (_detailCanvasGroup == null)
+            {
+                _detailCanvasGroup = GetComponent<CanvasGroup>();
+            }
+
+            if (_detailCanvasGroup == null)
+            {
+                _detailCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
             _closeButton?.onClick.AddListener(Collapse);
             CreateScrollViewport();
         }
@@ -197,7 +209,7 @@ namespace InnsmouthCafe.UI
             SetScrollEnabled(false);
 
             _detailCanvasGroup?.DOKill();
-            _detailRect?.DOKill();
+            _panelRect?.DOKill();
 
             if (_detailCanvasGroup != null)
             {
@@ -210,9 +222,9 @@ namespace InnsmouthCafe.UI
                 collapseSequence.Join(_detailCanvasGroup.DOFade(0f, _expandDuration).SetEase(Ease.InQuad));
             }
 
-            if (_detailRect != null)
+            if (_panelRect != null)
             {
-                collapseSequence.Join(_detailRect.DOScale(_collapseScale, _expandDuration).SetEase(_collapseEase));
+                collapseSequence.Join(_panelRect.DOScale(_collapseScale, _expandDuration).SetEase(_collapseEase));
             }
 
             collapseSequence.OnComplete(() =>
@@ -309,15 +321,15 @@ namespace InnsmouthCafe.UI
                 _detailCanvasGroup.blocksRaycasts = true;
             }
 
-            if (_detailRect != null)
+            if (_panelRect != null)
             {
-                _detailRect.DOKill();
-                _detailRect.anchoredPosition = _hiddenAnchoredPos;
-                _detailRect.localScale = Vector3.one * _collapseScale;
+                _panelRect.DOKill();
+                _panelRect.anchoredPosition = _hiddenAnchoredPos;
+                _panelRect.localScale = Vector3.one * _collapseScale;
 
                 Sequence sequence = DOTween.Sequence();
-                sequence.Append(_detailRect.DOAnchorPos(_detailAnchoredPos, _expandDuration).SetEase(_expandEase));
-                sequence.Join(_detailRect.DOScale(_detailScale, _expandDuration).SetEase(_expandEase));
+                sequence.Append(_panelRect.DOAnchorPos(_detailAnchoredPos, _expandDuration).SetEase(_expandEase));
+                sequence.Join(_panelRect.DOScale(_detailScale, _expandDuration).SetEase(_expandEase));
                 if (_detailCanvasGroup != null)
                 {
                     sequence.Join(_detailCanvasGroup.DOFade(1f, _crossFadeDuration).SetEase(Ease.OutQuad));
@@ -344,7 +356,7 @@ namespace InnsmouthCafe.UI
         private void HideImmediate()
         {
             _detailCanvasGroup?.DOKill();
-            _detailRect?.DOKill();
+            _panelRect?.DOKill();
             _isExpanded = false;
             _isAnimating = false;
             _isPendingExpand = false;
@@ -356,10 +368,10 @@ namespace InnsmouthCafe.UI
                 _detailCanvasGroup.blocksRaycasts = false;
             }
 
-            if (_detailRect != null)
+            if (_panelRect != null)
             {
-                _detailRect.anchoredPosition = _hiddenAnchoredPos;
-                _detailRect.localScale = Vector3.one * _collapseScale;
+                _panelRect.anchoredPosition = _hiddenAnchoredPos;
+                _panelRect.localScale = Vector3.one * _collapseScale;
             }
         }
 
@@ -539,7 +551,7 @@ namespace InnsmouthCafe.UI
                 }
 
                 GameObject item = Instantiate(_toppingRequirementItemPrefab, _toppingRequirementsContainer);
-                item.GetComponent<ToppingRequirementItemUI>()?.Init(topping);
+                item.GetComponent<ToppingRequirementItemUI>()?.Init(topping, 1);
             }
         }
 
