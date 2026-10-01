@@ -299,17 +299,11 @@ public class OrderManager : Singleton<OrderManager>
     }
 
     /// <summary>
-    /// 判断订单是否可被当前已解锁材料完成；没有解锁管理器时保留旧行为。
+    /// 判断订单是否有效；材料解锁门控随旧材料解锁系统移除，待新材料解锁系统接入后重新引入。
     /// </summary>
     private bool IsOrderFulfillable(OrderSO order)
     {
-        if (order == null)
-        {
-            return false;
-        }
-
-        return IngredientUnlockManager.Instance == null
-               || IngredientUnlockManager.Instance.CanFulfillOrder(order);
+        return order != null;
     }
 
     /// <summary>

@@ -205,7 +205,7 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
-    /// <summary>重置游戏进度（清除存档标记、模式、收集物和材料解锁状态）</summary>
+    /// <summary>重置游戏进度（清除存档标记、模式与收集物状态）</summary>
     public void ResetGameProgress()
     {
         PlayerPrefs.DeleteKey(SaveExistsKey);
@@ -219,7 +219,6 @@ public class GameManager : Singleton<GameManager>
         else
             PlayerPrefs.SetInt("Collectible_ResetFlag", 1);
 
-        IngredientUnlockManager.ClearAllUnlocks();
         GalleryManager.Instance?.ResetAllGalleryData();
 
         PlayerPrefs.Save();

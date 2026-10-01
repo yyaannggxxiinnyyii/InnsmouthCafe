@@ -180,11 +180,6 @@ namespace InnsmouthCafe.UI
                 GalleryManager.Instance.OnGalleryChanged += RefreshRedDot;
             }
 
-            if (IngredientUnlockManager.Instance != null)
-            {
-                IngredientUnlockManager.Instance.OnUnlockStateChanged += RefreshIngredientLists;
-            }
-
             RefreshRedDot();
         }
 
@@ -193,11 +188,6 @@ namespace InnsmouthCafe.UI
             if (GalleryManager.Instance != null)
             {
                 GalleryManager.Instance.OnGalleryChanged -= RefreshRedDot;
-            }
-
-            if (IngredientUnlockManager.Instance != null)
-            {
-                IngredientUnlockManager.Instance.OnUnlockStateChanged -= RefreshIngredientLists;
             }
         }
 
