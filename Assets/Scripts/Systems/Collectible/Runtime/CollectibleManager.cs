@@ -25,6 +25,9 @@ public class CollectibleManager : Singleton<CollectibleManager>
     /// <summary>重置标记键名（跨场景通信用）</summary>
     private const string PrefKeyResetFlag = "Collectible_ResetFlag";
 
+    /// <summary>收集物配置所在的 Resources 路径</summary>
+    private const string CollectibleResourcePath = "SO/收集物SO";
+
     /// <summary>收集物获得事件，参数为获得的收集物SO</summary>
     public event Action<CollectibleSO> OnCollectibleObtained;
 
@@ -131,18 +134,28 @@ public class CollectibleManager : Singleton<CollectibleManager>
     /// </summary>
     public void ResetAllCollectibles()
     {
-        foreach (var binding in _displayBindings)
+        // 必须按资源全量清键，不能只遍历 _displayBindings：
+        // 前台展示绑定允许为空，旧实现此时一件收集物也删不掉，重置形同虚设。
+        CollectibleSO[] allCollectibles = Resources.LoadAll<CollectibleSO>(CollectibleResourcePath);
+        int cleared = 0;
+
+        foreach (CollectibleSO collectible in allCollectibles)
         {
-            if (binding.collectible != null)
+            if (collectible == null || string.IsNullOrEmpty(collectible.collectibleId))
             {
-                PlayerPrefs.DeleteKey(GetPrefKey(binding.collectible));
+                continue;
             }
+
+            PlayerPrefs.DeleteKey(GetPrefKey(collectible));
+            cleared++;
         }
+
+        PlayerPrefs.DeleteKey(PrefKeyResetFlag);
         PlayerPrefs.Save();
         RefreshAllDisplays();
 
         if (_showDebugLog)
-            Debug.Log("[Collectible] 所有收集物已重置");
+            Debug.Log($"[Collectible] 所有收集物已重置（共 {cleared} 件）");
     }
 
 #if UNITY_EDITOR
@@ -150,16 +163,7 @@ public class CollectibleManager : Singleton<CollectibleManager>
     [ContextMenu("调试：重置所有收集物")]
     private void DebugResetAll()
     {
-        foreach (var binding in _displayBindings)
-        {
-            if (binding.collectible != null)
-            {
-                PlayerPrefs.DeleteKey(GetPrefKey(binding.collectible));
-            }
-        }
-        PlayerPrefs.Save();
-        RefreshAllDisplays();
-        Debug.Log("[Collectible] 所有收集物已重置");
+        ResetAllCollectibles();
     }
 #endif
 }
