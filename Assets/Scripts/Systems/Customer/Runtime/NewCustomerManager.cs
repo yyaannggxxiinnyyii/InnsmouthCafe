@@ -1112,7 +1112,39 @@ namespace InnsmouthCafe.Customer
             if (session.IsAllCompleted)
             {
                 CompleteCurrentCustomerOrder(feedbackLevel);
+                TryGrantCollectibleReward(customer, session);
                 Invoke(nameof(CurrentCustomerLeave), 2f);
+            }
+        }
+
+        /// <summary>
+        /// 顾客整场订单全部达成完美时，授予其特殊配置对应的收集物。
+        /// 口径与旧流程一致：整场品质取所有订单中的最低档，故需每张订单都是 Perfect。
+        /// </summary>
+        /// <param name="customer">已完成整场订单的顾客。</param>
+        /// <param name="session">该顾客的订单会话。</param>
+        private void TryGrantCollectibleReward(CustomerInstance customer, CustomerOrderSessionData session)
+        {
+            if (CollectibleManager.Instance == null || customer?.customerSO == null ||
+                session?.orderSlots == null || session.orderSlots.Count == 0)
+            {
+                return;
+            }
+
+            foreach (CustomerOrderSlotData slot in session.orderSlots)
+            {
+                if (slot?.scoringData == null || slot.scoringData.qualityLevel != CoffeeQuality.Perfect)
+                {
+                    return;
+                }
+            }
+
+            CollectibleSO obtained = CollectibleManager.Instance.TryObtainCollectible(
+                customer.customerSO, CoffeeQuality.Perfect);
+
+            if (obtained != null)
+            {
+                ActionLogBus.Log($"获得新的收集物：{obtained.collectibleName}", Color.cyan);
             }
         }
 
