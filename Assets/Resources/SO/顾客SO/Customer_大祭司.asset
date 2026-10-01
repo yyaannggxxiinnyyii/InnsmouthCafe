@@ -21,9 +21,9 @@ MonoBehaviour:
   avatarSprite: {fileID: 21300000, guid: 497460532169a7e4f971d7e3e351b5f7, type: 3}
   ordererAvatarSprite: {fileID: 21300000, guid: 98a1c51e639c21f4c889793d34cd589b, type: 3}
   normalSprite: {fileID: 21300000, guid: cd7b893c31e12644a99079c38e48aabf, type: 3}
-  impatientSprite: {fileID: 21300000, guid: a53c551ef80f5814e9acfc8db725b435, type: 3}
-  angrySprite: {fileID: 21300000, guid: 1ea0e2756fd7bf1408bf9b47f4873b8d, type: 3}
-  happySprite: {fileID: 21300000, guid: 7f537e13918e6dd46923d68eda49563f, type: 3}
+  impatientSprite: {fileID: 21300000, guid: 9cfe6ee8afe81234f95c49859a341751, type: 3}
+  angrySprite: {fileID: 21300000, guid: 91a7cdea0c431474db193eaa911629c8, type: 3}
+  happySprite: {fileID: 21300000, guid: 594d7da84d39c6345a7ab9fce8a0999d, type: 3}
   maxPatienceValue: 100
   basePatienceDrainRate: 1
   basePatienceTime: 150

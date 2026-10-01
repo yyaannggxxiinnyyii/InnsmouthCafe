@@ -20,10 +20,10 @@ MonoBehaviour:
   extraOrderPoolEntries: []
   avatarSprite: {fileID: 21300000, guid: 23720ae245b174d4c8b41903529a6835, type: 3}
   ordererAvatarSprite: {fileID: 21300000, guid: d940755d709a2b6459b8a1ecf184b837, type: 3}
-  normalSprite: {fileID: 21300000, guid: 83b716f5d4addc94687d9b47839f46fd, type: 3}
-  impatientSprite: {fileID: 21300000, guid: b6610d61b3733dd47bb32ab48fbad38e, type: 3}
-  angrySprite: {fileID: 21300000, guid: d4923f2bc07db8f4a95d35a552be8c8c, type: 3}
-  happySprite: {fileID: 21300000, guid: 91d44a395012983469bca33dc1c12ce6, type: 3}
+  normalSprite: {fileID: 21300000, guid: a0bfbcdbfd57c80418aa06a9a264e877, type: 3}
+  impatientSprite: {fileID: 21300000, guid: 834d7ae7ee4aa914e9495b3827929994, type: 3}
+  angrySprite: {fileID: 21300000, guid: 5d550b376b35be843a3f1e5ab8ba98c2, type: 3}
+  happySprite: {fileID: 21300000, guid: d45a3b216a7b8d24ca1d448769f6ae0b, type: 3}
   maxPatienceValue: 100
   basePatienceDrainRate: 1
   basePatienceTime: 180

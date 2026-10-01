@@ -25117,7 +25117,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _allDecorations:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: e7ed3fc840e535a40aba691eadb66f37, type: 2}
   _normalSlots:
   - {fileID: 1136950096}
   - {fileID: 1524356336}
