@@ -43,9 +43,6 @@ public class GameManager : Singleton<GameManager>
     /// <summary>当前窗口分辨率索引</summary>
     public int ResolutionIndex { get; private set; }
 
-    /// <summary>是否有存档</summary>
-    public bool HasSaveData => PlayerPrefs.HasKey(SaveExistsKey);
-
     /// <summary>当前选中的游戏模式配置（场景切换时传递）</summary>
     public GameModeConfigSO SelectedModeConfig { get; private set; }
 
@@ -130,25 +127,6 @@ public class GameManager : Singleton<GameManager>
         SceneManager.LoadScene(_gameSceneName);
     }
 
-    /// <summary>开始新游戏（兼容旧调用，不推荐直接使用）</summary>
-    public void StartNewGame()
-    {
-        PlayerPrefs.DeleteKey(SaveExistsKey);
-        PlayerPrefs.Save();
-        SceneManager.LoadScene(_gameSceneName);
-    }
-
-    /// <summary>继续游戏</summary>
-    public void ContinueGame()
-    {
-        if (!HasSaveData)
-        {
-            Debug.LogWarning("[GameManager] 没有存档，无法继续游戏");
-            return;
-        }
-        SceneManager.LoadScene(_gameSceneName);
-    }
-
     /// <summary>返回主菜单</summary>
     public void GoToMainMenu()
     {
@@ -163,13 +141,6 @@ public class GameManager : Singleton<GameManager>
 #else
             Application.Quit();
 #endif
-    }
-
-    /// <summary>创建存档标记</summary>
-    public void MarkSaveExists()
-    {
-        PlayerPrefs.SetInt(SaveExistsKey, 1);
-        PlayerPrefs.Save();
     }
 
     // ── 模式解锁管理 ──────────────────────────────────────
