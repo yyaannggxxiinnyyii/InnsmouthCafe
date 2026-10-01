@@ -368,7 +368,6 @@ public class OrderManager : Singleton<OrderManager>
         Debug.Log($"[Order] 成功确认订单 {confirmedOrder.orderName}");
 
         OnOrderGenerated?.Invoke(confirmedOrder);
-        TutorialEventBus.Publish("OrderGenerated");
         ActionLogBus.Log($"新顾客下单");
 
         return confirmedOrder;
@@ -494,7 +493,6 @@ public class OrderManager : Singleton<OrderManager>
 
         // 触发订单提交事件
         OnOrderSubmitted?.Invoke(order, coffeeData);
-        TutorialEventBus.Publish("CoffeeSubmit");
     }
 
     /// <summary>

@@ -47,11 +47,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     private bool _canSwitch = true;
 
     /// <summary>
-    /// 已进入过的界面集合
-    /// </summary>
-    private readonly HashSet<GameViewType> _visitedViews = new HashSet<GameViewType>();
-
-    /// <summary>
     /// 获取当前界面类型
     /// </summary>
     public GameViewType CurrentViewType => _currentViewType;
@@ -101,41 +96,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
         {
             SwitchNextView();
-        }
-    }
-
-    /// <summary>向教学事件总线发布视图切换事件</summary>
-    private void PublishViewEvent(GameViewType viewType)
-    {
-        switch (viewType)
-        {
-            case GameViewType.Bar:
-                TutorialEventBus.Publish(TutorialEvents.ViewSwitchBar);
-                break;
-            case GameViewType.CraftBase:
-                TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftBase);
-                break;
-            case GameViewType.CraftMix:
-                TutorialEventBus.Publish(TutorialEvents.ViewSwitchCraftMix);
-                break;
-        }
-    }
-
-    private void HandleViewEntered(GameViewType viewType)
-    {
-        bool isFirstEntry = _visitedViews.Add(viewType);
-        if (!isFirstEntry)
-        {
-            return;
-        }
-
-        if (viewType == GameViewType.CraftBase)
-        {
-            TutorialEventBus.Publish(TutorialEvents.FirstBarToCraftBaseSwitchComplete);
-        }
-        else if (viewType == GameViewType.CraftMix)
-        {
-            TutorialEventBus.Publish(TutorialEvents.FirstCraftMixSwitchComplete);
         }
     }
 
@@ -233,8 +193,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
 
         OnViewSwitchStarted?.Invoke(fromView, targetView, isNext);
         OnViewSwitched?.Invoke(targetView);
-        PublishViewEvent(targetView);
-        HandleViewEntered(targetView);
 
         if (_showDebugLog)
         {
@@ -252,8 +210,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         _currentViewIndex = _viewList.IndexOf(viewType);
 
         OnViewSwitched?.Invoke(viewType);
-        PublishViewEvent(viewType);
-        HandleViewEntered(viewType);
 
         if (_showDebugLog)
         {
