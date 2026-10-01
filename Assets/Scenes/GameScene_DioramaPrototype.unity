@@ -2700,7 +2700,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 51
   _beanScoopCursor: {fileID: 1101149820}
-  _liquidAddPanel: {fileID: 0}
+  _liquidAddPanel: {fileID: 1083733817}
 --- !u!1 &328715026
 GameObject:
   m_ObjectHideFlags: 0
