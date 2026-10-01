@@ -79,6 +79,9 @@ mono_crash.*
 /WebGL Builds.zip
 /connectwebgl.zip
 /webgl_sharing/
+# Unity 构建产物（单文件可达数百 MB，不入版本库）
+/Output/
+/Output.zip
 
 # Local helper scripts
 /temp_ps_script.ps1
