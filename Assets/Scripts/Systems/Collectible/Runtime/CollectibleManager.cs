@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using InnsmouthCafe.Data;
+using InnsmouthCafe.UI;
 
 /// <summary>
 /// 收集物管理器
@@ -31,6 +32,9 @@ public class CollectibleManager : Singleton<CollectibleManager>
     /// <summary>收集物获得事件，参数为获得的收集物SO</summary>
     public event Action<CollectibleSO> OnCollectibleObtained;
 
+    /// <summary>获得提示弹窗（懒查找，允许场景中未挂载）</summary>
+    private CollectibleNotifyUI _notifyUI;
+
     private void Start()
     {
         // 检查是否有待执行的重置标记（由主菜单场景的 GameManager 设置）
@@ -46,7 +50,7 @@ public class CollectibleManager : Singleton<CollectibleManager>
     }
 
     /// <summary>
-    /// 尝试获取收集物（由 GameFlowManager 在完美评分后调用）
+    /// 尝试获取收集物（由 NewCustomerManager 在顾客组订单全部 Perfect 后调用）
     /// </summary>
     /// <param name="customer">当前顾客配置</param>
     /// <param name="qualityLevel">咖啡品质等级</param>
@@ -79,6 +83,18 @@ public class CollectibleManager : Singleton<CollectibleManager>
             Debug.Log($"[Collectible] 获得收集物: {collectible.collectibleName}");
 
         GalleryManager.Instance?.MarkCollectibleObtained(collectible);
+
+        // 弹出获得提示：Show 内部会暂停游戏时间，点确认后恢复
+        if (_notifyUI == null)
+        {
+            _notifyUI = FindObjectOfType<CollectibleNotifyUI>();
+        }
+
+        if (_notifyUI != null)
+        {
+            _notifyUI.Show(collectible, null);
+        }
+
         OnCollectibleObtained?.Invoke(collectible);
         return collectible;
     }
