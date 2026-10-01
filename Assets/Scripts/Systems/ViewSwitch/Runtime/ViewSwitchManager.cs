@@ -2,11 +2,11 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using InnsmouthCafe.Data;
+using InnsmouthCafe.CoffeeCraft;
 
 /// <summary>
 /// 界面切换管理器
 /// 负责管理三个主要游戏界面的循环切换
-/// 支持手动切换和根据制作状态自动切换。
 /// 负责维护视角状态并发出切换事件，实际相机动画由 DioramaCameraViewController 处理。
 /// </summary>
 public class ViewSwitchManager : Singleton<ViewSwitchManager>
@@ -20,11 +20,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     [SerializeField]
     [Tooltip("右切换按钮")]
     private GameObject _rightSwitchButton;
-
-    [Header("自动切换")]
-    [SerializeField]
-    [Tooltip("是否启用根据制作状态自动切换")]
-    private bool _enableAutoSwitch = true;
 
     [Header("调试")]
     [SerializeField]
@@ -50,12 +45,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     /// 是否允许切换
     /// </summary>
     private bool _canSwitch = true;
-
-    /// <summary>
-    /// <summary>
-    /// 咖啡制作管理器引用
-    /// </summary>
-    private CoffeeCraftManager _craftManager;
 
     /// <summary>
     /// 已进入过的界面集合
@@ -98,20 +87,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
 
         // 默认显示吧台视角
         ShowView(GameViewType.Bar);
-
-        // 订阅咖啡制作状态变化事件
-        if (_enableAutoSwitch)
-        {
-            _craftManager = CoffeeCraftManager.Instance;
-            if (_craftManager != null)
-            {
-                _craftManager.OnModuleStateChanged += OnModuleStateChanged;
-                if (_showDebugLog)
-                {
-                    Debug.Log("[ViewSwitchManager] 已订阅制作状态变化事件");
-                }
-            }
-        }
     }
 
     /// <summary>
@@ -126,15 +101,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
         {
             SwitchNextView();
-        }
-    }
-
-    private void OnDestroy()
-    {
-        // 取消订阅事件
-        if (_craftManager != null)
-        {
-            _craftManager.OnModuleStateChanged -= OnModuleStateChanged;
         }
     }
 
@@ -195,39 +161,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
     }
 
     /// <summary>
-    /// 制作模块状态变化回调
-    /// 根据状态自动切换界面
-    /// </summary>
-    private void OnModuleStateChanged(CraftModuleState state)
-    {
-        if (!_enableAutoSwitch)
-        {
-            return;
-        }
-
-        switch (state)
-        {
-            case CraftModuleState.BeanSelect:
-            case CraftModuleState.GrindSelect:
-            case CraftModuleState.Extract:
-                // 取豆、研磨、萃取阶段 → 显示制作界面1
-                ShowView(GameViewType.CraftBase);
-                break;
-
-            case CraftModuleState.LiquidAdd:
-            case CraftModuleState.ToppingAdd:
-                // 加液、加料阶段 → 显示制作界面2
-                ShowView(GameViewType.CraftMix);
-                break;
-        }
-
-        if (_showDebugLog)
-        {
-            Debug.Log($"[ViewSwitchManager] 根据制作状态自动切换: {state} → {_currentViewType}");
-        }
-    }
-
-    /// <summary>
     /// 切换到下一个界面
     /// </summary>
     public void SwitchNextView()
@@ -242,7 +175,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         }
 
         // 萃取中禁止切换
-        if (CoffeeCraftManager.Instance != null && CoffeeCraftManager.Instance.IsExtracting)
+        if (NewCoffeeCraftManager.Instance != null && NewCoffeeCraftManager.Instance.IsExtracting)
         {
             ActionLogBus.Log("萃取中，无法切换界面", new Color(1f, 0.6f, 0f));
             return;
@@ -272,7 +205,7 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         }
 
         // 萃取中禁止切换
-        if (CoffeeCraftManager.Instance != null && CoffeeCraftManager.Instance.IsExtracting)
+        if (NewCoffeeCraftManager.Instance != null && NewCoffeeCraftManager.Instance.IsExtracting)
         {
             ActionLogBus.Log("萃取中，无法切换界面", new Color(1f, 0.6f, 0f));
             return;
@@ -350,20 +283,6 @@ public class ViewSwitchManager : Singleton<ViewSwitchManager>
         if (_showDebugLog)
         {
             Debug.Log($"[ViewSwitchManager] 设置切换状态: {canSwitch}");
-        }
-    }
-
-    /// <summary>
-    /// 设置是否启用自动切换
-    /// </summary>
-    /// <param name="enable">是否启用</param>
-    public void SetAutoSwitch(bool enable)
-    {
-        _enableAutoSwitch = enable;
-
-        if (_showDebugLog)
-        {
-            Debug.Log($"[ViewSwitchManager] 设置自动切换: {enable}");
         }
     }
 
