@@ -1,8 +1,7 @@
-using InnsmouthCafe.Data;
 using UnityEngine;
 
 /// <summary>
-/// 教学系统启动器，监听开场完成事件并在教学模式第一天启动咖啡教学。
+/// 教学系统启动器，监听开场完成事件并在开场结束后启动咖啡教学。
 /// </summary>
 [DisallowMultipleComponent]
 public class TutorialBootstrapper : MonoBehaviour
@@ -65,20 +64,11 @@ public class TutorialBootstrapper : MonoBehaviour
     }
 
     /// <summary>
-    /// 判断当前是否允许自动播放教学，避免普通模式或已完成教学时误触发。
+    /// 判断当前是否允许自动播放教学，避免已完成教学时误触发。
     /// </summary>
     private bool CanAutoPlay()
     {
-        if (GameManager.Instance == null || GameManager.Instance.SelectedModeConfig == null)
-            return false;
-
-        if (GameManager.Instance.SelectedModeConfig.gameMode != GameMode.Tutorial)
-            return false;
-
-        if (GameFlowManager.Instance == null || GameFlowManager.Instance.CurrentDay != 1)
-            return false;
-
-        if (_respectCompletionFlag && GameManager.Instance.IsTutorialCompleted())
+        if (_respectCompletionFlag && GameManager.Instance != null && GameManager.Instance.IsTutorialCompleted())
             return false;
 
         return true;

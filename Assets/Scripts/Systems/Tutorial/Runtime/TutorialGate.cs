@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using InnsmouthCafe.Data;
 using UnityEngine;
 
 /// <summary>
@@ -14,7 +13,7 @@ public enum TutorialGateKey
 }
 
 /// <summary>
-/// 教学门控运行时状态，普通模式直接通过，教学首日按节点等待 Release。
+/// 教学门控运行时状态，教学未运行时直接通过，教学中按节点等待 Release。
 /// </summary>
 public static class TutorialGate
 {
@@ -38,7 +37,7 @@ public static class TutorialGate
     }
 
     /// <summary>
-    /// 等待指定教学门控节点放行；非教学首日时立即通过。
+    /// 等待指定教学门控节点放行；教学未运行时立即通过。
     /// </summary>
     public static IEnumerator WaitForRelease(TutorialGateKey gateKey)
     {
@@ -50,19 +49,10 @@ public static class TutorialGate
     }
 
     /// <summary>
-    /// 判断当前是否需要启用教学门控。
+    /// 判断当前是否需要启用教学门控；仅在教学实际运行时生效。
     /// </summary>
     public static bool ShouldUseTutorialGate()
     {
-        if (GameManager.Instance == null || GameManager.Instance.SelectedModeConfig == null)
-            return false;
-
-        if (GameManager.Instance.SelectedModeConfig.gameMode != GameMode.Tutorial)
-            return false;
-
-        if (GameManager.Instance.IsTutorialCompleted())
-            return false;
-
-        return GameFlowManager.Instance != null && GameFlowManager.Instance.CurrentDay == 1;
+        return TutorialRunner.Instance != null && TutorialRunner.Instance.IsRunning;
     }
 }
