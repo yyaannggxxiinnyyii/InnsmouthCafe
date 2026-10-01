@@ -16,7 +16,6 @@ public partial class SOEditorWindow
         { Tab.OrderPool, "Assets/Resources/SO/订单池SO" },
         { Tab.Customer,  "Assets/Resources/SO/顾客SO" },
         { Tab.DayConfig, "Assets/Resources/SO/每日顾客SO" },
-        { Tab.GameMode,  "Assets/Resources/SO/游戏模式SO" },
     };
 
     // ── 资源类型映射 ──────────────────────────────────────────────────────
@@ -26,7 +25,6 @@ public partial class SOEditorWindow
         Tab.OrderPool => typeof(OrderPoolSO),
         Tab.Customer  => typeof(CustomerSO),
         Tab.DayConfig => typeof(DayCustomerConfigSO),
-        Tab.GameMode  => typeof(GameModeConfigSO),
         _             => null
     };
 
@@ -36,7 +34,6 @@ public partial class SOEditorWindow
         Tab.OrderPool => "t:OrderPoolSO",
         Tab.Customer  => "t:CustomerSO",
         Tab.DayConfig => "t:DayCustomerConfigSO",
-        Tab.GameMode  => "t:GameModeConfigSO",
         _             => ""
     };
 

@@ -12,7 +12,7 @@ using UnityEngine;
 public partial class SOEditorWindow : EditorWindow
 {
     // ── 枚举 ──────────────────────────────────────────────────────────────
-    internal enum Tab { Order, OrderPool, Customer, DayConfig, GameMode }
+    internal enum Tab { Order, OrderPool, Customer, DayConfig }
 
     // ── 持久状态 ──────────────────────────────────────────────────────────
     private Tab _currentTab = Tab.Order;
@@ -89,7 +89,7 @@ public partial class SOEditorWindow : EditorWindow
         GUILayout.BeginArea(rect);
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-        string[] labels = { "订单 SO", "订单池 SO", "顾客 SO", "每日配置 SO", "游戏模式 SO" };
+        string[] labels = { "订单 SO", "订单池 SO", "顾客 SO", "每日配置 SO" };
         for (int i = 0; i < labels.Length; i++)
         {
             bool active  = (int)_currentTab == i;

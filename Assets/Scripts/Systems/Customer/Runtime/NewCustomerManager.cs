@@ -242,36 +242,6 @@ namespace InnsmouthCafe.Customer
             Debug.Log($"[NewCustomerManager] 根据已进入区域生成本晚顾客队列，共 {_todayQueue.Count} 位顾客");
         }
 
-        [Obsolete("新系统请使用无参数 GenerateTodayQueue()")]
-        public void GenerateTodayQueue(DayCustomerConfigSO config, GameModeConfigSO gameModeConfig = null)
-        {
-            _todayQueue.Clear();
-            _todayQueueIndex = 0;
-
-            if (config == null)
-            {
-                Debug.LogError("[NewCustomerManager] 顾客配置为空，无法生成队列");
-                return;
-            }
-
-            // 1. 固定队列
-            if (config.fixedQueue != null && config.fixedQueue.Count > 0)
-            {
-                _todayQueue.AddRange(config.fixedQueue);
-            }
-
-            // 2. 随机普通顾客
-            if (config.randomNormalCount > 0 && config.randomNormalPool != null)
-            {
-                var randomNormal = DrawFromPool(config.randomNormalPool, config.randomNormalCount);
-                _todayQueue.AddRange(randomNormal);
-            }
-
-            // 3. 随机特殊顾客（暂不实现，预留）
-
-            Debug.Log($"[NewCustomerManager] 今日顾客队列生成完成，共 {_todayQueue.Count} 位顾客");
-        }
-
         /// <summary>
         /// 开始营业阶段（启动顾客自动生成）。
         /// </summary>
