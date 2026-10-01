@@ -292,7 +292,6 @@ namespace InnsmouthCafe.UI
 
             _pendingAutoCollapse = true;
             yield return new WaitForSeconds(_expandDuration + _autoCollapseDelay);
-            yield return TutorialGate.WaitForRelease(TutorialGateKey.BeforeFirstTicketAutoCollapse);
             if (_pendingAutoCollapse && _isExpanded && !_isAnimating)
             {
                 Collapse();
