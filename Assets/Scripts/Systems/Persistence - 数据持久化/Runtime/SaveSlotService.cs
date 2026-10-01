@@ -17,7 +17,6 @@ namespace InnsmouthCafe.Persistence
 
         private const string SaveDirectoryName = "Saves";
         private const string SaveFileFormat = "save_slot_{0}.json";
-        private const string GlobalCodexFileName = "global_codex.json";
 
         private static SaveSlotService _instance;
 
@@ -53,9 +52,6 @@ namespace InnsmouthCafe.Persistence
 
         private string SaveDirectoryPath =>
             Path.Combine(Application.persistentDataPath, SaveDirectoryName);
-
-        private string GlobalCodexFilePath =>
-            Path.Combine(SaveDirectoryPath, GlobalCodexFileName);
 
         private void Awake()
         {
@@ -275,44 +271,6 @@ namespace InnsmouthCafe.Persistence
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// 读取局外图鉴数据；文件不存在时返回空白数据。
-        /// </summary>
-        public GlobalCodexData LoadGlobalCodex()
-        {
-            if (!File.Exists(GlobalCodexFilePath))
-            {
-                return new GlobalCodexData();
-            }
-
-            try
-            {
-                string json = File.ReadAllText(GlobalCodexFilePath);
-                GlobalCodexData codexData = JsonUtility.FromJson<GlobalCodexData>(json);
-                return codexData ?? new GlobalCodexData();
-            }
-            catch (Exception exception)
-            {
-                Debug.LogWarning($"[SaveSlot] 读取局外图鉴失败，将返回空白数据：{exception.Message}");
-                return new GlobalCodexData();
-            }
-        }
-
-        /// <summary>
-        /// 保存局外图鉴数据，不会影响任何局内存档。
-        /// </summary>
-        public bool SaveGlobalCodex(GlobalCodexData codexData)
-        {
-            if (codexData == null)
-            {
-                Debug.LogWarning("[SaveSlot] 局外图鉴数据为空，无法保存。");
-                return false;
-            }
-
-            codexData.version = GlobalCodexData.CurrentVersion;
-            return TryWriteJson(GlobalCodexFilePath, codexData);
         }
 
         private void OnApplicationQuit()

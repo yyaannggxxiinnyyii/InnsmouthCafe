@@ -198,12 +198,6 @@ namespace InnsmouthCafe.UI
             FadeGroup(_mainMenuGroup, true);
         }
 
-        [System.Obsolete("旧模式选择面板已移除；场景改造完成后删除该回调。")]
-        public void OnModeSelectClosed()
-        {
-            OnSaveSlotClosed();
-        }
-
         // ── CanvasGroup 工具 ──────────────────────────────────
 
         /// <summary>淡入/淡出 CanvasGroup，完成后执行 onDone</summary>
