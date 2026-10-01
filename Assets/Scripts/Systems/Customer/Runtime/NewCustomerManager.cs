@@ -239,7 +239,46 @@ namespace InnsmouthCafe.Customer
                     _todayQueue.Count - maxCustomersTonight);
             }
 
-            Debug.Log($"[NewCustomerManager] 根据已进入区域生成本晚顾客队列，共 {_todayQueue.Count} 位顾客");
+            // 特殊顾客：已进入区域配置里的特殊顾客必定登场，并在开店前应用其每日效果
+            // 注意在人数上限裁剪之后加入，避免特殊顾客被裁掉
+            List<CustomerSO> specialCustomers = new List<CustomerSO>();
+            foreach (AreaConfigSO area in currentMap.areas)
+            {
+                if (area == null || !visitedAreaIds.Contains(area.AreaId))
+                {
+                    continue;
+                }
+
+                CustomerSO specialCustomer = area.SpecialCustomer;
+                if (specialCustomer == null || _todayQueue.Contains(specialCustomer)
+                    || specialCustomers.Contains(specialCustomer))
+                {
+                    continue;
+                }
+
+                specialCustomers.Add(specialCustomer);
+            }
+
+            foreach (CustomerSO specialCustomer in specialCustomers)
+            {
+                _todayQueue.Add(specialCustomer);
+
+                SpecialCustomerProfileSO profile = specialCustomer.specialProfile;
+                if (profile == null || profile.dayStartEffects == null)
+                {
+                    continue;
+                }
+
+                SpecialCustomerEffectContext context = new SpecialCustomerEffectContext(_todayQueue);
+                foreach (SpecialCustomerEffectSO effect in profile.dayStartEffects)
+                {
+                    effect?.Apply(context);
+                }
+
+                Debug.Log($"[NewCustomerManager] 特殊顾客「{specialCustomer.customerName}」登场，已应用 {profile.dayStartEffects.Count} 条开场效果，耐心倍率 {context.PatienceMultiplier}（暂未作用于耐心值）");
+            }
+
+            Debug.Log($"[NewCustomerManager] 根据已进入区域生成本晚顾客队列，共 {_todayQueue.Count} 位顾客，其中特殊顾客 {specialCustomers.Count} 位");
         }
 
         /// <summary>
