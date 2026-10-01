@@ -1,10 +1,9 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using InnsmouthCafe.Data;
 
 /// <summary>
 /// 游戏全局管理器
-/// 负责分辨率/窗口设置持久化、场景切换、模式解锁管理等全局功能
+/// 负责分辨率/窗口设置持久化与场景切换等全局功能
 /// 跨场景持久存在
 /// </summary>
 public class GameManager : Singleton<GameManager>
@@ -14,19 +13,10 @@ public class GameManager : Singleton<GameManager>
     [Tooltip("主菜单场景名")]
     private string _mainMenuSceneName = "MainScene";
 
-    [SerializeField]
-    [Tooltip("游戏场景名")]
-    private string _gameSceneName = "GameScene";
-
     // PlayerPrefs 键名
     private const string PrefKeyDisplayMode = "DisplayMode";      // 0=窗口 1=全屏
     private const string PrefKeyResolutionIndex = "ResolutionIndex";
     private const string SaveExistsKey = "SaveExists";
-
-    // 模式解锁 PlayerPrefs 键名
-    private const string PrefKeyTutorialDone = "ModeUnlock_Tutorial_Done";
-    private const string PrefKeyNormalUnlocked = "ModeUnlock_Normal";
-    private const string PrefKeyHardUnlocked = "ModeUnlock_Hard";
 
     /// <summary>窗口模式下可选分辨率列表</summary>
     public static readonly (int width, int height)[] WindowedResolutions =
@@ -42,9 +32,6 @@ public class GameManager : Singleton<GameManager>
 
     /// <summary>当前窗口分辨率索引</summary>
     public int ResolutionIndex { get; private set; }
-
-    /// <summary>当前选中的游戏模式配置（场景切换时传递）</summary>
-    public GameModeConfigSO SelectedModeConfig { get; private set; }
 
     protected override void Awake()
     {
@@ -65,7 +52,7 @@ public class GameManager : Singleton<GameManager>
     /// </summary>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == _mainMenuSceneName || scene.name == _gameSceneName)
+        if (scene.name == _mainMenuSceneName)
         {
             AudioManager.Instance?.PlayDefaultBgm();
         }
@@ -112,21 +99,6 @@ public class GameManager : Singleton<GameManager>
 
     // ── 场景切换 ──────────────────────────────────────────
 
-    /// <summary>以指定模式配置启动游戏场景</summary>
-    public void StartGameWithConfig(GameModeConfigSO config)
-    {
-        if (config == null)
-        {
-            Debug.LogError("[GameManager] GameModeConfigSO 为空，无法启动游戏");
-            return;
-        }
-
-        SelectedModeConfig = config;
-        PlayerPrefs.DeleteKey(SaveExistsKey);
-        PlayerPrefs.Save();
-        SceneManager.LoadScene(_gameSceneName);
-    }
-
     /// <summary>返回主菜单</summary>
     public void GoToMainMenu()
     {
@@ -143,75 +115,10 @@ public class GameManager : Singleton<GameManager>
 #endif
     }
 
-    // ── 模式解锁管理 ──────────────────────────────────────
-
-    /// <summary>教学模式是否已完成</summary>
-    public bool IsTutorialCompleted()
-    {
-        return PlayerPrefs.GetInt(PrefKeyTutorialDone, 0) == 1;
-    }
-
-    /// <summary>标记教学模式完成，同时解锁普通模式</summary>
-    public void MarkTutorialCompleted()
-    {
-        PlayerPrefs.SetInt(PrefKeyTutorialDone, 1);
-        PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
-        PlayerPrefs.Save();
-        Debug.Log("[GameManager] 教学模式完成，普通模式已解锁");
-    }
-
-    /// <summary>查询指定模式是否已解锁</summary>
-    public bool IsModeUnlocked(GameMode mode)
-    {
-        switch (mode)
-        {
-            case GameMode.Tutorial:
-                return true; // 教学模式始终可用
-            case GameMode.Normal:
-                return PlayerPrefs.GetInt(PrefKeyNormalUnlocked, 0) == 1;
-            case GameMode.Hard:
-                return PlayerPrefs.GetInt(PrefKeyHardUnlocked, 0) == 1;
-            case GameMode.Endless:
-                return GalleryManager.Instance != null
-                    && GalleryManager.Instance.AreAllEndingsUnlocked();
-            default:
-                return false;
-        }
-    }
-
-    /// <summary>解锁指定模式</summary>
-    public void UnlockMode(GameMode mode)
-    {
-        if (IsModeUnlocked(mode))
-        {
-            return;
-        }
-
-        switch (mode)
-        {
-            case GameMode.Normal:
-                PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
-                PlayerPrefs.Save();
-                Debug.Log("[GameManager] 普通模式已解锁");
-                break;
-            case GameMode.Hard:
-                PlayerPrefs.SetInt(PrefKeyHardUnlocked, 1);
-                PlayerPrefs.Save();
-                Debug.Log("[GameManager] 困难模式已解锁");
-                break;
-            default:
-                Debug.LogWarning($"[GameManager] 不支持直接解锁模式: {mode}");
-                break;
-        }
-    }
-
-    /// <summary>重置游戏进度（清除存档标记、模式与收集物状态）</summary>
+    /// <summary>重置游戏进度（清除存档标记与收集物状态）</summary>
     public void ResetGameProgress()
     {
         PlayerPrefs.DeleteKey(SaveExistsKey);
-        PlayerPrefs.DeleteKey(PrefKeyTutorialDone);
-        PlayerPrefs.DeleteKey(PrefKeyNormalUnlocked);
-        PlayerPrefs.DeleteKey(PrefKeyHardUnlocked);
 
         // 重置收集物
         if (CollectibleManager.Instance != null)
@@ -226,25 +133,11 @@ public class GameManager : Singleton<GameManager>
     }
 
 #if UNITY_EDITOR
-    /// <summary>编辑器调试：重置所有模式解锁状态</summary>
-    [ContextMenu("调试：重置模式解锁")]
-    private void DebugResetModeUnlock()
+    /// <summary>编辑器调试：重置游戏进度</summary>
+    [ContextMenu("调试：重置游戏进度")]
+    private void DebugResetGameProgress()
     {
         ResetGameProgress();
-    }
-
-    /// <summary>编辑器调试：解锁所有模式</summary>
-    [ContextMenu("调试：解锁所有模式")]
-    private void DebugUnlockAllModes()
-    {
-        PlayerPrefs.SetInt(PrefKeyTutorialDone, 1);
-        PlayerPrefs.SetInt(PrefKeyNormalUnlocked, 1);
-        PlayerPrefs.SetInt(PrefKeyHardUnlocked, 1);
-        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Lost);
-        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Return);
-        GalleryManager.Instance?.MarkEndingUnlocked(GameEnding.Good);
-        PlayerPrefs.Save();
-        Debug.Log("[GameManager] 所有模式已解锁");
     }
 #endif
 }
