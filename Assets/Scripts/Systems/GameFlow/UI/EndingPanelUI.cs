@@ -12,7 +12,7 @@ namespace InnsmouthCafe.UI
     /// <summary>
     /// 结局系统UI
     /// 管理过场Panel（图片+打字机文本，点击推进）和结局Panel（图片+标题+描述）
-    /// 监听 GameFlowManager.OnGameEnding 触发
+    /// 结局播放由图鉴重播入口 ReplayEndingFromGallery 触发
     /// </summary>
     public class EndingPanelUI : MonoBehaviour
     {
@@ -88,9 +88,6 @@ namespace InnsmouthCafe.UI
         /// <summary>当前是否从图鉴中重播结局；重播结束后只关闭播放层，不返回主菜单。</summary>
         private bool _isGalleryReplay;
 
-        /// <summary>当前已订阅结局事件的游戏流程管理器。</summary>
-        private GameFlowManager _subscribedGameFlowManager;
-
         private void Awake()
         {
             // 初始状态：整个结局系统不可见、不阻挡射线
@@ -103,72 +100,21 @@ namespace InnsmouthCafe.UI
         private void OnEnable()
         {
             SceneManager.activeSceneChanged += HandleActiveSceneChanged;
-            TrySubscribeGameFlowManager();
         }
 
         private void OnDisable()
         {
             SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
-            UnsubscribeGameFlowManager();
         }
 
         // ── 结局触发 ──────────────────────────────────────────
 
         /// <summary>
-        /// 活动场景变化后隐藏残留结局层，并重新绑定当前场景的游戏流程结局事件。
+        /// 活动场景变化后隐藏残留结局层。
         /// </summary>
         private void HandleActiveSceneChanged(Scene previousScene, Scene currentScene)
         {
             HideEndingLayer(true);
-            TrySubscribeGameFlowManager();
-        }
-
-        /// <summary>
-        /// 订阅当前场景的游戏流程结局事件，避免跨场景保留后漏接 GameFlowManager。
-        /// </summary>
-        private void TrySubscribeGameFlowManager()
-        {
-            GameFlowManager currentManager = GameFlowManager.Instance;
-            if (currentManager == null || _subscribedGameFlowManager == currentManager)
-            {
-                return;
-            }
-
-            UnsubscribeGameFlowManager();
-            _subscribedGameFlowManager = currentManager;
-            _subscribedGameFlowManager.OnGameEnding += OnGameEnding;
-        }
-
-        /// <summary>
-        /// 取消订阅已绑定的游戏流程结局事件。
-        /// </summary>
-        private void UnsubscribeGameFlowManager()
-        {
-            if (_subscribedGameFlowManager == null)
-            {
-                return;
-            }
-
-            _subscribedGameFlowManager.OnGameEnding -= OnGameEnding;
-            _subscribedGameFlowManager = null;
-        }
-
-        private void OnGameEnding(GameEnding ending)
-        {
-            if (_endingConfigSO == null)
-            {
-                Debug.LogError("[Ending] EndingConfigSO 未配置");
-                return;
-            }
-
-            _currentConfig = _endingConfigSO.GetEndingConfig(ending);
-            if (_currentConfig == null)
-            {
-                Debug.LogError($"[Ending] 结局配置为空: {ending}");
-                return;
-            }
-
-            StartCoroutine(PlayEndingSequence());
         }
 
         /// <summary>
